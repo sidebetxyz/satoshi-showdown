@@ -1,14 +1,27 @@
-const mongoose = require("mongoose");
+require("dotenv").config();
 
-async function connectToDB() {
-  const uri = process.env.MONGODB_URI;
-  try {
-    await mongoose.connect(uri);
-    console.log("Connected to MongoDB Atlas via Mongoose");
-  } catch (err) {
-    console.error("Failed to connect to MongoDB Atlas", err);
-    throw err;
-  }
-}
+const express = require("express");
+const walletRoutes = require("./routes/walletRoutes");
+const { connectToDB } = require("./utils/database");
 
-module.exports = { connectToDB };
+const app = express();
+const port = process.env.PORT || 3000;
+
+// Enable JSON parsing for incoming requests
+app.use(express.json());
+
+// Establish database connection
+connectToDB();
+
+// Setup routes
+app.use("/wallet", walletRoutes);
+
+// Root endpoint
+app.get("/", (req, res) => {
+  res.send("Welcome to SatoshiShowdown Server!");
+});
+
+// Start the server
+app.listen(port, () => {
+  console.log(`Server running on http://localhost:${port}`);
+});

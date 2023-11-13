@@ -1,8 +1,12 @@
-const { getDB } = require('../utils/database');
+const mongoose = require("mongoose");
 
-function WalletModel() {
-    const db = getDB();
-    return db.collection('wallets');
-}
+const walletSchema = new mongoose.Schema({
+  address: { type: String, required: true, unique: true },
+  privateKey: { type: String, required: true },
+  // You can add additional fields as needed, such as userId if wallets are tied to specific users
+  // userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+});
 
-module.exports = WalletModel;
+const Wallet = mongoose.model("Wallet", walletSchema);
+
+module.exports = Wallet;

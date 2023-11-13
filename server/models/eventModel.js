@@ -1,28 +1,16 @@
-const { getDB } = require("../utils/database");
+const mongoose = require("mongoose");
 
-const eventSchema = {
-  // Common Attributes
-  id: String, // Unique identifier for the event
-  name: String,
+const eventSchema = new mongoose.Schema({
+  name: { type: String, required: true },
   description: String,
-  type: String, // e.g., matchup, contest, competition, wager
-  entryFee: Number,
-  startTime: Date,
+  type: { type: String, required: true }, // e.g., matchup, contest, competition, wager
+  entryFee: { type: Number, required: true },
+  startTime: { type: Date, required: true },
   endTime: Date,
-  status: String, // e.g., pending, active, completed
-  participants: Array, // List of participant identifiers
+  participants: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // Assuming you have a User model
+  // You can add additional fields as needed
+});
 
-  // Specific Attributes based on type
-  // Add any additional fields that are specific to certain types of events
-};
+const Event = mongoose.model("Event", eventSchema);
 
-function EventModel() {
-  const db = getDB();
-  return db.collection("events").withConverter(eventConverter); // Assuming you're using a converter for schema enforcement
-}
-
-const eventConverter = {
-  // Implement methods to convert to/from database format if needed
-};
-
-module.exports = EventModel;
+module.exports = Event;
