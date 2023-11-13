@@ -1,4 +1,4 @@
-const { getDB } = require('../services/db');
+const { getDB } = require('../utils/database');
 
 function WalletModel() {
     const db = getDB();
