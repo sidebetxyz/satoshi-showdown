@@ -1,12 +1,15 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { createSegwitWallet } = require('../services/wallet');
-const { storePrivateKey } = require('../services/keyStorage');
+const { createSegwitWallet } = require("../services/wallet");
 
-router.get('/createWallet', async (req, res) => {
-    const { address, privateKey } = createSegwitWallet();
-    await storePrivateKey(address, privateKey);
+router.get("/createWallet", async (req, res) => {
+  try {
+    const address = await createSegwitWallet();
     res.json({ address });
+  } catch (error) {
+    console.error("Error creating wallet:", error);
+    res.status(500).send("Error creating wallet");
+  }
 });
 
 module.exports = router;
