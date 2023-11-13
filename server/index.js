@@ -11,13 +11,7 @@ const port = process.env.PORT || 3000;
 app.use(express.json());
 
 // Establish database connection
-connectToDB()
-  .then(() => {
-    console.log(`Connected to MongoDB Atlas via Mongoose`);
-  })
-  .catch((err) => {
-    console.error("Database connection failed", err);
-  });
+connectToDB();
 
 // Setup routes
 app.use("/wallet", walletRoutes);
