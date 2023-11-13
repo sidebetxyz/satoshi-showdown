@@ -1,11 +1,8 @@
 const crypto = require("crypto");
 
-// Encryption/decryption settings
-const algorithm = "aes-256-ctr"; // or another algorithm of your choice
-const secretKey = process.env.ENCRYPTION_KEY; // should be 32 bytes for aes-256-ctr
-const ivLength = 16; // AES block size in bytes
+const algorithm = "aes-256-ctr";
+const secretKey = process.env.ENCRYPTION_KEY; // Ensure this is 32 bytes for AES-256
 
-// Encrypt function
 function encrypt(text) {
   const iv = crypto.randomBytes(16); // AES block size is 16 bytes
   const cipher = crypto.createCipheriv(
@@ -21,20 +18,19 @@ function encrypt(text) {
   };
 }
 
-// Decrypt function
 function decrypt(hash) {
   const decipher = crypto.createDecipheriv(
     algorithm,
-    secretKey,
-    Buffer.from(hash.iv, "hex")
+    Buffer.from(secretKey, "hex"), // Convert the hex string back to bytes
+    Buffer.from(hash.iv, "hex") // The IV needs to be in byte format
   );
 
-  const decrpyted = Buffer.concat([
+  const decrypted = Buffer.concat([
     decipher.update(Buffer.from(hash.content, "hex")),
     decipher.final(),
   ]);
 
-  return decrpyted.toString();
+  return decrypted.toString();
 }
 
 module.exports = { encrypt, decrypt };
