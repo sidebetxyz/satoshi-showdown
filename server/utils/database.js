@@ -4,10 +4,7 @@ let db;
 
 async function connectToDB() {
   const uri = process.env.MONGODB_URI;
-  const client = new MongoClient(uri, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  });
+  const client = new MongoClient(uri);
   try {
     await client.connect();
     db = client.db();
