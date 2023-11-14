@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 
 const eventSchema = new mongoose.Schema({
+  wallet: { type: mongoose.Schema.Types.ObjectId, ref: "Wallet" }, // Add a reference to the associated wallet
   name: { type: String, required: true },
   description: String,
   type: { type: String, required: true }, // e.g., matchup, contest, competition, wager
