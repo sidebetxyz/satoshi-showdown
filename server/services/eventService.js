@@ -1,6 +1,7 @@
 const Event = require("../models/eventModel");
 const Blockchain = require("../models/blockchainModel");
-const walletService = require("./walletService"); // Assuming this service has the wallet creation logic
+const walletService = require("./walletService");
+const BlockchainService = require("./blockchainService");
 
 const eventService = {
   async createEvent(eventData) {
@@ -26,6 +27,28 @@ const eventService = {
         // other blockchain fields
       });
       await newBlockchainEntry.save();
+
+      // Automatically start monitoring the new wallet's address
+      BlockchainService.monitorAddress(creatorWallet.address, async (output, transaction) => {
+        // Validate the transaction (e.g., check amount matches entry fee, etc.)
+        const isValidTransaction = /* your validation logic */;
+
+        if (isValidTransaction) {
+          // Update the event and blockchain entry status
+          newBlockchainEntry.transactionStatus = "processing"; // or other appropriate status
+          newBlockchainEntry.transactionInfo = { /* transaction details */ };
+          await newBlockchainEntry.save();
+
+          // Update event status if necessary
+          newEvent.status = /* your updated status */;
+          await newEvent.save();
+
+          // Notify participants or perform other actions as needed
+        } else {
+          console.log("Invalid transaction detected:", transaction);
+          // Handle invalid transaction case
+        }
+      });
 
       return newEvent;
     } catch (error) {
