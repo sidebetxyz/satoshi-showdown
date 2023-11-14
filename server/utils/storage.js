@@ -1,5 +1,5 @@
 const Wallet = require("../models/walletModel");
-const { encrypt, decrypt } = require("../utils/encryption"); // Assuming you have encryption utilities
+const { encrypt, decrypt } = require("./encryption"); // Assuming you have encryption utilities
 
 async function storePrivateKey(address, privateKey) {
   try {
