@@ -1,4 +1,4 @@
-const Event = require("../schemas/eventModel"); // Adjust the path as needed
+const Event = require("../models/eventModel"); // Adjust the path as needed
 const { createSegwitWallet } = require("./wallet"); // For generating wallet addresses
 
 const eventService = {
