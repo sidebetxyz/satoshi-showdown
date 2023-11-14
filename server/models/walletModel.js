@@ -6,7 +6,7 @@ const walletSchema = new mongoose.Schema({
     iv: { type: String, required: true },
     content: { type: String, required: true },
   },
-  // Add any additional fields as needed
+  // Additional fields as necessary
 });
 
 const Wallet = mongoose.model("Wallet", walletSchema);

@@ -1,12 +1,26 @@
 const mongoose = require("mongoose");
+const crypto = require("crypto");
+const { v4: uuidv4 } = require("uuid");
 
 const eventSchema = new mongoose.Schema({
-  wallet: { type: mongoose.Schema.Types.ObjectId, ref: "Wallet" }, // Add a reference to the associated wallet
+  privateSerialNumber: {
+    type: String,
+    required: true,
+    unique: true,
+    default: () => crypto.randomBytes(16).toString("hex"), // 32 characters hexadecimal
+  },
+  publicId: {
+    type: String,
+    required: true,
+    unique: true,
+    default: uuidv4,
+  },
+  wallet: { type: mongoose.Schema.Types.ObjectId, ref: "Wallet" },
   name: { type: String, required: true },
   description: String,
-  type: { type: String, required: true }, // e.g., matchup, contest, competition, wager
+  type: { type: String, required: true },
   entryFee: { type: Number, required: true },
-  maxParticipants: { type: Number, required: true }, // Max number of participants
+  maxParticipants: { type: Number, required: true },
   startTime: { type: Date, required: true },
   endTime: Date,
   status: {
@@ -20,17 +34,13 @@ const eventSchema = new mongoose.Schema({
       "cancelled",
     ],
     default: "awaitingDeposit",
-    index: true, // Indexing the 'status' field
   },
-  // Store participant addresses since we are not using user accounts
-  participants: [{ type: String }],
-  // Additional fields to manage Bitcoin transactions, like addresses or transaction IDs
-  transactionDetails: {
-    creatorDeposit: { type: String }, // Bitcoin transaction ID for creator's deposit
-    participantDeposits: [{ type: String }], // Bitcoin transaction IDs for participants' deposits
-  },
-  creatorDepositAddress: { type: String, required: true, index: true }, // Address for the event creator's deposit
-  participantDepositAddresses: [{ type: String }], // Addresses for each participant's deposit
+  participants: [
+    {
+      address: { type: String, required: true },
+      transactionId: { type: String }, // Transaction ID once confirmed
+    },
+  ],
 });
 
 const Event = mongoose.model("Event", eventSchema);

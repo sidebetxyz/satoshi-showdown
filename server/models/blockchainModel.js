@@ -9,7 +9,9 @@ const blockchainSchema = new mongoose.Schema({
     default: "waiting",
   },
   transactionInfo: {
-    // Transaction details like amount, hash, etc.
+    amount: Number,
+    hash: String,
+    // Other relevant transaction details
   },
   timestamp: { type: Date, default: Date.now },
 });
