@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { createNewWallet } = require("../services/walletService");
 
-router.post("/createWallet", async (req, res) => {
+router.post("/create", async (req, res) => {
   try {
     const wallet = await createNewWallet();
     res.json({ address: wallet.address });
