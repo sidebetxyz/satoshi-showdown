@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { createNewWallet } = require("../services/wallet");
+const { createNewWallet } = require("../services/walletService");
 
 router.post("/createWallet", async (req, res) => {
   try {
