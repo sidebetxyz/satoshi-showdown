@@ -19,6 +19,7 @@ const eventSchema = new mongoose.Schema({
       "cancelled",
     ],
     default: "awaitingDeposit",
+    index: true, // Indexing the 'status' field
   },
   // Store participant addresses since we are not using user accounts
   participants: [{ type: String }],
@@ -27,7 +28,8 @@ const eventSchema = new mongoose.Schema({
     creatorDeposit: { type: String }, // Bitcoin transaction ID for creator's deposit
     participantDeposits: [{ type: String }], // Bitcoin transaction IDs for participants' deposits
   },
-  // Additional fields as needed...
+  creatorDepositAddress: { type: String, required: true, index: true }, // Address for the event creator's deposit
+  participantDepositAddresses: [{ type: String }], // Addresses for each participant's deposit
 });
 
 const Event = mongoose.model("Event", eventSchema);
