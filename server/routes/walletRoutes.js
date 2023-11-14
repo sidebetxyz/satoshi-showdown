@@ -1,10 +1,10 @@
 const express = require("express");
 const router = express.Router();
-const { createNewWallet } = require("../services/walletService");
+const { createSegwitWallet } = require("../services/walletService");
 
 router.post("/create", async (req, res) => {
   try {
-    const wallet = await createNewWallet();
+    const wallet = await createSegwitWallet();
     res.json({ address: wallet.address });
   } catch (error) {
     console.error("Error creating wallet:", error);
