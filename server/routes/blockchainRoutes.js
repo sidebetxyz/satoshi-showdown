@@ -1,10 +1,46 @@
 const express = require("express");
 const router = express.Router();
 const Blockchain = require("../models/blockchainModel");
-const Event = require("../models/eventModel"); // Import if needed for referencing events
-// Import other required models or services
+const BlockchainService = require("../services/blockchainService");
 
-// Route to add a new transaction to an event
+// Route to start monitoring transactions using the BlockchainService
+router.get("/startMonitoring", (req, res) => {
+  BlockchainService.start(); // Starts the WebSocket connection
+  res.send("Started monitoring blockchain transactions.");
+});
+
+// Route to monitor a specific address
+router.post("/monitorAddress", (req, res) => {
+  const { address } = req.body;
+
+  // Define the callback function for transaction detection
+  const transactionCallback = (output, transaction) => {
+    // Implement logic to handle the detected transaction
+    // e.g., validate, save to database, notify users
+    console.log(`Transaction detected for address ${address}:`, transaction);
+
+    // Save transaction details using Blockchain model
+    const newTransaction = new Blockchain({
+      // Set transaction details based on the output and transaction
+    });
+
+    newTransaction
+      .save()
+      .then(() => {
+        console.log("Transaction saved to database.");
+      })
+      .catch((error) => {
+        console.error("Error saving transaction:", error);
+      });
+  };
+
+  // Start monitoring the address using BlockchainService
+  BlockchainService.monitorAddress(address, transactionCallback);
+
+  res.send(`Started monitoring address: ${address}`);
+});
+
+// Existing route to add a new transaction - might be used for manual additions or other purposes
 router.post("/addTransaction", async (req, res) => {
   try {
     const { eventId, transactionData } = req.body;
