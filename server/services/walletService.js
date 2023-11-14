@@ -15,10 +15,9 @@ async function createSegwitWallet() {
   });
 
   const privateKey = keyPair.toWIF();
-  // Encrypt and store the private key securely
   await storePrivateKey(address, privateKey);
 
-  return address;
+  return { address }; // Return an object with the address property
 }
 
 module.exports = { createSegwitWallet };
