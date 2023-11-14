@@ -12,6 +12,4 @@ router.post("/create", async (req, res) => {
   }
 });
 
-// Other routes...
-
 module.exports = router;

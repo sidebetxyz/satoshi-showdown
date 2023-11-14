@@ -2,6 +2,7 @@ require("dotenv").config();
 
 const express = require("express");
 const walletRoutes = require("./routes/walletRoutes");
+const eventRoutes = require("./routes/eventRoutes"); // Import event routes
 const { connectToDB } = require("./utils/database");
 
 const app = express();
@@ -13,8 +14,9 @@ app.use(express.json());
 // Establish database connection
 connectToDB();
 
-// Setup routes
+// Setup routes for wallets and events
 app.use("/wallet", walletRoutes);
+app.use("/event", eventRoutes); // Setup event routes
 
 // Root endpoint
 app.get("/", (req, res) => {

@@ -12,8 +12,6 @@ const eventService = {
     await newEvent.save();
     return newEvent;
   },
-
-  // Other event operations like updateEvent, addParticipant, etc.
 };
 
 module.exports = eventService;
