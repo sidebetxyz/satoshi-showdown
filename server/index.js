@@ -1,7 +1,8 @@
 require("dotenv").config();
 
 const express = require("express");
-const eventRoutes = require("./routes/eventRoutes"); // Import event routes
+const eventRoutes = require("./routes/eventRoutes");
+const blockcypherRoutes = require("./routes/blockcypherRoutes");
 const { connectToDB } = require("./utils/database");
 
 const app = express();
@@ -13,8 +14,9 @@ app.use(express.json());
 // Establish database connection
 connectToDB();
 
-// Setup routes for events
-app.use("/event", eventRoutes); // Setup event routes
+// Setup routes
+app.use("/event", eventRoutes);
+app.use("/blockcypher", blockcypherRoutes);
 
 // Root endpoint
 app.get("/", (req, res) => {
