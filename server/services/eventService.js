@@ -2,6 +2,7 @@ const Event = require("../models/eventModel");
 const Transaction = require("../models/transactionModel");
 const walletService = require("./walletService");
 const transactionService = require("./transactionService");
+
 const eventService = {
   async createEvent(eventData) {
     try {
@@ -31,19 +32,24 @@ const eventService = {
       transactionService.monitorAddress(
         creatorWallet.address,
         async (output, transaction) => {
-          // Transaction validation logic
-          const isValidTransaction = console.log("Hit isValidTransaction");
+          // Implement the transaction validation logic
+          const isValidTransaction = this.validateTransaction(
+            output,
+            transaction
+          );
 
           if (isValidTransaction) {
-            // Update the event and transaction entry status
-            newTransactionEntry.transactionStatus = "processing"; // or other appropriate status
+            // Update the transaction entry status
+            newTransactionEntry.transactionStatus = "confirmed";
             newTransactionEntry.transactionInfo = {
-              /* transaction details */
+              amount: output.value,
+              hash: transaction.hash,
+              // other transaction details
             };
             await newTransactionEntry.save();
 
             // Update event status if necessary
-            newEvent.status = console.log("Hit newEvent.status");
+            newEvent.status = "active"; // Example status update
             await newEvent.save();
 
             // Notify participants or perform other actions as needed
@@ -59,6 +65,12 @@ const eventService = {
       console.error("Error creating event:", error);
       throw error;
     }
+  },
+
+  validateTransaction(output, transaction) {
+    // Implement the logic to validate the transaction
+    // This could include checking the amount, confirmations, etc.
+    return true; // Return true if the transaction is valid
   },
 };
 

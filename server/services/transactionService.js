@@ -26,7 +26,14 @@ class TransactionService {
     this.ws.send(JSON.stringify({ op: "addr_sub", addr: address }));
   }
 
-  // Method to handle incoming WebSocket messages
+  // Method to stop monitoring an address
+  stopMonitoringAddress(address) {
+    if (this.addressesToMonitor.has(address)) {
+      this.addressesToMonitor.delete(address);
+      this.ws.send(JSON.stringify({ op: "addr_unsub", addr: address }));
+    }
+  }
+
   handleMessage(data) {
     const message = JSON.parse(data);
 
@@ -36,11 +43,6 @@ class TransactionService {
         if (this.addressesToMonitor.has(output.addr)) {
           const callback = this.addressesToMonitor.get(output.addr);
           callback(output, message.x); // Call the callback with transaction details
-
-          // Process the transaction for further validation and actions
-          this.processTransaction(output, message.x).catch((error) => {
-            console.error("Error processing transaction:", error);
-          });
         }
       });
     }
@@ -59,15 +61,14 @@ class TransactionService {
 
   // Method for transaction validation and processing
   async processTransaction(output, transaction) {
-    // Validate the transaction
-    // For example, check if the amount matches the expected amount
     const isValidTransaction = this.validateTransaction(output, transaction);
 
     if (isValidTransaction) {
-      // Update the transaction status in your database
-      await this.updateTransactionStatus(transaction);
-
-      // Notify relevant parties (users, services, etc.)
+      // Assuming you have a method to update transaction status in your model
+      await TransactionModel.updateTransactionStatus(
+        transaction.hash,
+        "confirmed"
+      );
       this.notifyPartiesAboutTransaction(transaction);
     } else {
       console.log("Invalid transaction detected:", transaction);
@@ -75,9 +76,10 @@ class TransactionService {
   }
 
   validateTransaction(output, transaction) {
-    // Implement validation logic
-    // e.g., check the transaction amount and number of confirmations
-    return true; // return true if valid, false otherwise
+    // Example validation logic
+    const expectedAmount = console.log("Hit expectedAmount");
+    const transactionAmount = output.value; // Assuming value is in the output
+    return transactionAmount === expectedAmount;
   }
 
   async updateTransactionStatus(transaction) {
