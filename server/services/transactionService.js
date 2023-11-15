@@ -1,6 +1,6 @@
 const WebSocket = require("ws");
 
-class BlockchainService {
+class TransactionService {
   constructor() {
     this.ws = new WebSocket("wss://ws.blockchain.info/inv");
     this.addressesToMonitor = new Map(); // Stores addresses and their associated callback functions
@@ -91,4 +91,4 @@ class BlockchainService {
   }
 }
 
-module.exports = new BlockchainService();
+module.exports = new TransactionService();

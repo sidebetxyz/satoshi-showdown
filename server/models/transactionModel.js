@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const blockchainSchema = new mongoose.Schema({
+const transactionSchema = new mongoose.Schema({
   event: { type: mongoose.Schema.Types.ObjectId, ref: "Event", required: true },
   address: { type: String, required: true },
   transactionStatus: {
@@ -16,6 +16,6 @@ const blockchainSchema = new mongoose.Schema({
   timestamp: { type: Date, default: Date.now },
 });
 
-const Blockchain = mongoose.model("Blockchain", blockchainSchema);
+const Transaction = mongoose.model("Transaction", transactionSchema);
 
-module.exports = Blockchain;
+module.exports = Transaction;

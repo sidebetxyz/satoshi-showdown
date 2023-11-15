@@ -1,8 +1,7 @@
 const Event = require("../models/eventModel");
-const Blockchain = require("../models/blockchainModel");
+const Transaction = require("../models/transactionModel");
 const walletService = require("./walletService");
-const BlockchainService = require("./blockchainService");
-
+const transactionService = require("./transactionService");
 const eventService = {
   async createEvent(eventData) {
     try {
@@ -19,34 +18,32 @@ const eventService = {
       });
       await newEvent.save();
 
-      // Create an initial blockchain entry for the event
-      const newBlockchainEntry = new Blockchain({
+      // Create an initial transaction entry for the event
+      const newTransactionEntry = new Transaction({
         event: newEvent._id,
         address: creatorWallet.address,
         transactionStatus: "waiting", // Initial status
-        // other blockchain fields
+        // other transaction fields
       });
-      await newBlockchainEntry.save();
+      await newTransactionEntry.save();
 
       // Automatically start monitoring the new wallet's address
-      BlockchainService.monitorAddress(
+      transactionService.monitorAddress(
         creatorWallet.address,
         async (output, transaction) => {
-          // Validate the transaction (e.g., check amount matches entry fee, etc.)
-          const isValidTransaction = console.log(
-            "Transaction validation goes here."
-          );
+          // Transaction validation logic
+          const isValidTransaction = console.log("Hit isValidTransaction");
 
           if (isValidTransaction) {
-            // Update the event and blockchain entry status
-            newBlockchainEntry.transactionStatus = "processing"; // or other appropriate status
-            newBlockchainEntry.transactionInfo = {
+            // Update the event and transaction entry status
+            newTransactionEntry.transactionStatus = "processing"; // or other appropriate status
+            newTransactionEntry.transactionInfo = {
               /* transaction details */
             };
-            await newBlockchainEntry.save();
+            await newTransactionEntry.save();
 
             // Update event status if necessary
-            newEvent.status = console.log("New event status goes here.");
+            newEvent.status = console.log("Hit newEvent.status");
             await newEvent.save();
 
             // Notify participants or perform other actions as needed
