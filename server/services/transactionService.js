@@ -24,6 +24,7 @@ class TransactionService {
     this.addressesToMonitor.set(address, callback);
     // Subscribe to the address
     this.ws.send(JSON.stringify({ op: "addr_sub", addr: address }));
+    console.log(`Started monitoring address: ${address}`);
   }
 
   // Method to stop monitoring an address
@@ -43,6 +44,12 @@ class TransactionService {
         if (this.addressesToMonitor.has(output.addr)) {
           const callback = this.addressesToMonitor.get(output.addr);
           callback(output, message.x); // Call the callback with transaction details
+
+          // Log the transaction details
+          console.log(
+            `Transaction detected for address ${output.addr}:`,
+            message.x
+          );
         }
       });
     }
@@ -63,12 +70,20 @@ class TransactionService {
   async processTransaction(output, transaction) {
     const isValidTransaction = this.validateTransaction(output, transaction);
 
+    // Log the transaction processing attempt
+    console.log(
+      `Processing transaction for address ${output.addr}:`,
+      transaction
+    );
+
     if (isValidTransaction) {
-      // Assuming you have a method to update transaction status in your model
+      // Update transaction status in your model
       await TransactionModel.updateTransactionStatus(
         transaction.hash,
         "confirmed"
       );
+
+      // Notify relevant parties about the transaction
       this.notifyPartiesAboutTransaction(transaction);
     } else {
       console.log("Invalid transaction detected:", transaction);
