@@ -29,7 +29,7 @@ const eventService = {
       // Create a webhook for the event's Bitcoin address
       await blockCypherService.createWebhook(
         creatorWallet.address,
-        "https://9610-149-102-224-202.ngrok-free.app/blockcypher/webhook"
+        "https://22f5-149-102-224-202.ngrok-free.app/blockcypher/webhook"
       );
 
       return newEvent;

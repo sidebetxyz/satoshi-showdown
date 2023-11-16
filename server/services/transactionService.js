@@ -7,12 +7,11 @@ class TransactionService {
   }
 
   async handleWebhook(data) {
-    console.log("Received transaction event:", data);
+    // Log the entire data object received from BlockCypher
+    console.log("Received BlockCypher webhook event:", data);
 
-    for (const tx of data.txs) {
-      const output = tx.outputs[0]; // Assuming the first output
-      await this.processTransaction(output, tx);
-    }
+    // Additional processing logic goes here...
+    // For now, just log the data to inspect its structure
   }
 
   async processTransaction(output, transaction) {
