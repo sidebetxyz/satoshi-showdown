@@ -1,7 +1,6 @@
 const bitcoin = require("bitcoinjs-lib");
 const ECPairFactory = require("ecpair").default;
 const ecc = require("tiny-secp256k1");
-
 const { storePrivateKey } = require("../utils/storage");
 
 const ECPair = ECPairFactory(ecc);
@@ -15,9 +14,10 @@ async function createSegwitWallet() {
   });
 
   const privateKey = keyPair.toWIF();
-  await storePrivateKey(address, privateKey);
+  const walletId = await storePrivateKey(address, privateKey);
 
-  return { address }; // Return an object with the address property
+  // Return both the address and the _id of the saved wallet
+  return { address, _id: walletId };
 }
 
 module.exports = { createSegwitWallet };

@@ -7,7 +7,7 @@ const eventSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
-    default: () => crypto.randomBytes(16).toString("hex"), // 32 characters hexadecimal
+    default: () => crypto.randomBytes(16).toString("hex"),
   },
   publicId: {
     type: String,
@@ -15,7 +15,6 @@ const eventSchema = new mongoose.Schema({
     unique: true,
     default: uuidv4,
   },
-  wallet: { type: mongoose.Schema.Types.ObjectId, ref: "Wallet" },
   name: { type: String, required: true },
   description: String,
   type: { type: String, required: true },
@@ -37,8 +36,8 @@ const eventSchema = new mongoose.Schema({
   },
   participants: [
     {
-      address: { type: String, required: true },
-      transactionId: { type: String }, // Transaction ID once confirmed
+      wallet: { type: mongoose.Schema.Types.ObjectId, ref: "Wallet" },
+      transaction: { type: mongoose.Schema.Types.ObjectId, ref: "Transaction" },
     },
   ],
 });

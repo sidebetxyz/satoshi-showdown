@@ -1,45 +1,23 @@
-const Event = require("../models/eventModel");
-const Transaction = require("../models/transactionModel");
 const walletService = require("./walletService");
-const BlockCypherService = require("./blockcypherService");
-
-const blockCypherService = new BlockCypherService(
-  process.env.BLOCKCYPHER_TOKEN
-);
 
 const eventService = {
   async createEvent(eventData) {
     try {
-      const creatorWallet = await walletService.createSegwitWallet();
-      eventData.wallet = creatorWallet._id;
+      // Step 1: Create Wallet
+      const wallet = await walletService.createSegwitWallet();
 
-      const newEvent = new Event({
-        ...eventData,
-        creatorDepositAddress: creatorWallet.address,
-      });
-      await newEvent.save();
+      // Print the wallet address and ID on separate lines to the console
+      console.log("Wallet created: Address -", wallet.address);
+      console.log("Wallet ID -", wallet._id);
 
-      const newTransactionEntry = new Transaction({
-        event: newEvent._id,
-        address: creatorWallet.address,
-        transactionStatus: "waiting",
-      });
-      await newTransactionEntry.save();
-
-      // Create a webhook for the event's Bitcoin address
-      await blockCypherService.createWebhook(
-        creatorWallet.address,
-        "https://22f5-149-102-224-202.ngrok-free.app/blockcypher/webhook"
-      );
-
-      return newEvent;
+      // You can return the wallet or handle it as needed
+      return wallet;
     } catch (error) {
-      console.error("Error creating event:", error);
+      console.error("Error creating wallet:", error);
       throw error;
     }
   },
-
-  // Additional methods...
+  // Additional methods can be added here...
 };
 
 module.exports = eventService;

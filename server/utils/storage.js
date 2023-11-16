@@ -6,9 +6,12 @@ async function storePrivateKey(address, privateKey) {
     const encryptedKey = encrypt(privateKey);
     const wallet = new Wallet({ address, privateKey: encryptedKey });
     await wallet.save();
+
+    // Return the saved wallet's ID
+    return wallet._id;
   } catch (error) {
     console.error("Error storing private key:", error);
-    throw error; // Or handle it as per your application's error handling strategy
+    throw error;
   }
 }
 

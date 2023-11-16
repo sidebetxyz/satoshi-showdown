@@ -7,9 +7,6 @@ router.post("/webhook", async (req, res) => {
   try {
     const eventData = req.body;
 
-    // Log the received event for debugging purposes
-    console.log("Received BlockCypher webhook event:", eventData);
-
     // Process the event using TransactionService
     await TransactionService.handleWebhook(eventData);
 
