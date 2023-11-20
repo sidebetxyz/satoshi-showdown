@@ -39,7 +39,38 @@ class WebhookService {
     }
   }
 
-  // ... other methods ...
+  async handleWebhook(data) {
+    // Log the entire data object received from BlockCypher
+    console.log("Received BlockCypher webhook event:", data);
+
+    // Additional processing logic goes here...
+    // For now, just log the data to inspect its structure
+  }
+
+  async listWebhooks() {
+    try {
+      const response = await axios.get(
+        `${this.apiBaseUrl}/hooks?token=${this.apiToken}`
+      );
+      console.log("Active webhooks:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error("Error listing webhooks:", error);
+      throw error;
+    }
+  }
+
+  async deleteWebhook(webhookId) {
+    try {
+      await axios.delete(
+        `${this.apiBaseUrl}/hooks/${webhookId}?token=${this.apiToken}`
+      );
+      console.log("Webhook deleted successfully");
+    } catch (error) {
+      console.error("Error deleting webhook:", error);
+      throw error;
+    }
+  }
 }
 
 module.exports = WebhookService;
