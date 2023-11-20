@@ -7,11 +7,12 @@ class WebhookService {
     this.webhookUrl = `${process.env.WEBHOOK_DOMAIN}/webhook/receive`; // Set the webhook URL
   }
 
-  async createWebhook(address) {
+  async createWebhook(address, confirmations = 6) {
     const webhookData = {
-      event: "unconfirmed-tx",
+      event: "tx-confirmation",
       address: address,
       url: this.webhookUrl,
+      confirmations: confirmations, // Number of confirmations to wait for
     };
 
     try {
@@ -19,10 +20,10 @@ class WebhookService {
         `${this.apiBaseUrl}/hooks?token=${this.apiToken}`,
         webhookData
       );
-      console.log("Webhook created:", response.data);
+      console.log("tx-confirmation Webhook created:", response.data);
       return response.data;
     } catch (error) {
-      console.error("Error creating webhook:", error);
+      console.error("Error creating tx-confirmation webhook:", error);
       throw error;
     }
   }
