@@ -1,9 +1,10 @@
 require("dotenv").config();
 
 const express = require("express");
-const eventRoutes = require("./routes/eventRoutes");
-const blockcypherRoutes = require("./routes/blockcypherRoutes");
 const { connectToDB } = require("./utils/database");
+
+const eventRoutes = require("./routes/eventRoutes");
+const webhookRoutes = require("./routes/webhookRoutes");
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -16,7 +17,7 @@ connectToDB();
 
 // Setup routes
 app.use("/event", eventRoutes);
-app.use("/blockcypher", blockcypherRoutes);
+app.use("/webhook", webhookRoutes);
 
 // Root endpoint
 app.get("/", (req, res) => {

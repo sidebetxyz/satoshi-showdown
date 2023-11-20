@@ -1,16 +1,17 @@
 const axios = require("axios");
 
-class BlockCypherService {
+class WebhookService {
   constructor(apiToken) {
     this.apiBaseUrl = "https://api.blockcypher.com/v1/btc/test3";
     this.apiToken = apiToken;
+    this.webhookUrl = `${process.env.WEBHOOK_DOMAIN}/webhook/receive`; // Set the webhook URL
   }
 
-  async createWebhook(address, callbackUrl) {
+  async createWebhook(address) {
     const webhookData = {
       event: "unconfirmed-tx",
       address: address,
-      url: callbackUrl,
+      url: this.webhookUrl,
     };
 
     try {
@@ -24,6 +25,14 @@ class BlockCypherService {
       console.error("Error creating webhook:", error);
       throw error;
     }
+  }
+
+  async handleWebhook(data) {
+    // Log the entire data object received from BlockCypher
+    console.log("Received BlockCypher webhook event:", data);
+
+    // Additional processing logic goes here...
+    // For now, just log the data to inspect its structure
   }
 
   async listWebhooks() {
@@ -52,4 +61,4 @@ class BlockCypherService {
   }
 }
 
-module.exports = BlockCypherService;
+module.exports = WebhookService;

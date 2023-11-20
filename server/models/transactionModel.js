@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 
 const transactionSchema = new mongoose.Schema({
-  event: { type: mongoose.Schema.Types.ObjectId, ref: "Event" }, // Not required
   wallet: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Wallet",

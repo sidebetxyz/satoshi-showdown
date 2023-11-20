@@ -6,12 +6,25 @@ class TransactionService {
     // Initialization
   }
 
-  async handleWebhook(data) {
-    // Log the entire data object received from BlockCypher
-    console.log("Received BlockCypher webhook event:", data);
+  async createTransaction(walletId, address, amount, hash) {
+    try {
+      const newTransaction = new TransactionModel({
+        wallet: walletId,
+        address: address,
+        transactionInfo: {
+          amount: amount,
+          hash: hash,
+        },
+        transactionStatus: "waiting",
+      });
 
-    // Additional processing logic goes here...
-    // For now, just log the data to inspect its structure
+      await newTransaction.save();
+      console.log("Transaction created:", newTransaction);
+      return newTransaction;
+    } catch (error) {
+      console.error("Error creating transaction:", error);
+      throw error;
+    }
   }
 
   async processTransaction(output, transaction) {

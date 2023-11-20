@@ -1,23 +1,47 @@
 const walletService = require("./walletService");
+const TransactionService = require("./transactionService");
+const WebhookService = require("./webhookService");
+const EventModel = require("../models/eventModel");
+
+const webhookService = new WebhookService(process.env.BLOCKCYPHER_TOKEN);
 
 const eventService = {
   async createEvent(eventData) {
     try {
       // Step 1: Create Wallet
-      const wallet = await walletService.createSegwitWallet();
+      const newWallet = await walletService.createSegwitWallet();
 
-      // Print the wallet address and ID on separate lines to the console
-      console.log("Wallet created: Address -", wallet.address);
-      console.log("Wallet ID -", wallet._id);
+      // Step 2: Create Transaction
+      const newTransaction = await TransactionService.createTransaction(
+        newWallet._id,
+        newWallet.address,
+        eventData.transactionAmount, // Example amount
+        eventData.transactionHash // Example hash
+      );
 
-      // You can return the wallet or handle it as needed
-      return wallet;
+      // Step 3: Create Webhook
+      const newWebhook = await webhookService.createWebhook(newWallet.address);
+
+      // Step 4: Create Event with Wallet and Transaction information
+      const newEvent = new EventModel({
+        ...eventData,
+        participants: [
+          {
+            wallet: newWallet._id,
+            transaction: newTransaction._id,
+          },
+        ],
+        // Other event details
+      });
+      await newEvent.save();
+
+      return newEvent;
     } catch (error) {
-      console.error("Error creating wallet:", error);
+      console.error("Error in event creation:", error);
       throw error;
     }
   },
-  // Additional methods can be added here...
+  // Additional methods...
 };
 
 module.exports = eventService;

@@ -1,14 +1,14 @@
 const express = require("express");
 const router = express.Router();
-const TransactionService = require("../services/transactionService");
+const WebhookService = require("../services/webhookService");
 
 // POST endpoint for handling BlockCypher webhook events
-router.post("/webhook", async (req, res) => {
+router.post("/receive", async (req, res) => {
   try {
     const eventData = req.body;
 
-    // Process the event using TransactionService
-    await TransactionService.handleWebhook(eventData);
+    // Process the event using Webhook Service
+    await WebhookService.handleWebhook(eventData);
 
     // Respond with a success status
     res.status(200).send("Event processed successfully");
