@@ -1,5 +1,4 @@
 const TransactionModel = require("../models/transactionModel");
-const EventModel = require("../models/eventModel"); // Import the Event model
 const WebhookModel = require("../models/webhookModel"); // Import the Webhook model
 
 class TransactionService {
@@ -13,7 +12,7 @@ class TransactionService {
         wallet: walletId,
         address: address,
         transactionInfo: {
-          amount: amount
+          amount: amount,
         },
         transactionStatus: "waiting",
       });
@@ -27,45 +26,53 @@ class TransactionService {
     }
   }
 
-  async processWebhook(webhookId, transactionData) {
-    try {
-      const webhook = await WebhookModel.findById(webhookId);
-      if (!webhook) {
-        throw new Error(`Webhook with ID ${webhookId} not found`);
-      }
-
-      // Find the corresponding transaction and event
-      const transaction = await TransactionModel.findById(
-        webhook.transactionId
-      );
-      const event = await EventModel.findById(webhook.eventId);
-
-      if (!transaction || !event) {
-        throw new Error("Transaction or Event not found for the given webhook");
-      }
-
-      // Validate the transaction
-      const isValidTransaction = this.validateTransaction(
-        transactionData,
-        event.entryFee
-      );
-
-      if (isValidTransaction) {
-        await this.updateTransactionStatus(transaction._id, "confirmed");
-        this.notifyPartiesAboutTransaction(transaction);
-
-        // Update the webhook status
-        webhook.status = "processed";
-        webhook.processedAt = new Date();
-        await webhook.save();
-      } else {
-        webhook.status = "error";
-        webhook.errorDetails = "Invalid transaction detected";
-        await webhook.save();
-      }
-    } catch (error) {
-      console.error("Error processing webhook:", error);
+  async processWebhook(webhookId, data) {
+    const webhook = await WebhookModel.findById(webhookId);
+    if (!webhook) {
+      throw new Error(`Webhook with ID ${webhookId} not found`);
     }
+
+    const transaction = await TransactionModel.findById(webhook.transactionId);
+    if (!transaction) {
+      throw new Error(`Transaction with ID ${webhook.transactionId} not found`);
+    }
+
+    // Update confirmations
+    transaction.confirmations = data.confirmations;
+    await transaction.save();
+
+    // Check for the amount and update status
+    const receivedAmount = this.extractAmountFromWebhookData(
+      data,
+      transaction.address
+    );
+
+    if (receivedAmount === transaction.transactionInfo.amount) {
+      if (data.confirmations === 0) {
+        transaction.transactionStatus = "processing";
+      } else if (data.confirmations > 0 && data.confirmations < 6) {
+        transaction.transactionStatus = "confirming";
+      } else if (data.confirmations >= 6) {
+        transaction.transactionStatus = "complete";
+      }
+      await transaction.save();
+    } else {
+      console.error("Received amount does not match expected amount");
+      transaction.transactionStatus = "error";
+      await transaction.save();
+    }
+  }
+
+  // The rest of the methods remain unchanged
+
+  extractAmountFromWebhookData(data, address) {
+    let amount = 0;
+    data.outputs.forEach((output) => {
+      if (output.addresses.includes(address)) {
+        amount = output.value;
+      }
+    });
+    return amount;
   }
 
   validateTransaction(transactionData, expectedAmount) {

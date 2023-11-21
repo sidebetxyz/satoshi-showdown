@@ -1,6 +1,6 @@
 const axios = require("axios");
 const Webhook = require("../models/webhookModel");
-const Transaction = require("../models/transactionModel"); // Import the Transaction model
+const TransactionService = require("../services/transactionService"); // Import the Transaction model
 const { v4: uuidv4 } = require("uuid");
 
 class WebhookService {
@@ -44,64 +44,18 @@ class WebhookService {
   }
 
   async handleWebhook(uniqueId, data) {
-    console.log("Received BlockCypher webhook event for Unique ID:", uniqueId);
-    console.log("Webhook event data:", data);
+    try {
+      const webhook = await Webhook.findOne({ uniqueId: uniqueId });
 
-    const webhook = await Webhook.findOne({ uniqueId: uniqueId });
-
-    if (webhook) {
-      console.log("Webhook found:", webhook);
-
-      const transaction = await Transaction.findById(webhook.transactionId);
-      if (transaction) {
-        console.log(transaction);
-
-        const expectedAmount = transaction.transactionInfo.amount;
-        const receivedAmount = this.extractAmountFromWebhookData(
-          data,
-          webhook.address
-        );
-
-        console.log(expectedAmount);
-        console.log(receivedAmount);
-
-        // Update transaction with the current number of confirmations
-        transaction.confirmations = data.confirmations;
-        await transaction.save();
-
-        if (receivedAmount === expectedAmount && data.confirmations === 0) {
-          transaction.transactionStatus = "processing";
-          await transaction.save();
-          console.log("Transaction processing started:", transaction);
-        }
-
-        if (data.confirmations >= webhook.totalConfirmations) {
-          transaction.transactionStatus = "complete";
-          await transaction.save();
-          webhook.status = "processed";
-          webhook.processedAt = new Date();
-          await webhook.save();
-          console.log("Transaction completed:", transaction);
-        }
+      if (webhook) {
+        // Use TransactionService directly, without 'new'
+        await TransactionService.processWebhook(webhook._id, data);
       } else {
-        console.error(
-          "Transaction not found for webhook:",
-          webhook.transactionId
-        );
+        console.error("Webhook with unique ID not found:", uniqueId);
       }
-    } else {
-      console.error("Webhook with unique ID not found:", uniqueId);
+    } catch (error) {
+      console.error("Error handling webhook:", error);
     }
-  }
-
-  extractAmountFromWebhookData(data, subscribedAddress) {
-    let amount = 0;
-    data.outputs.forEach((output) => {
-      if (output.addresses.includes(subscribedAddress)) {
-        amount = output.value;
-      }
-    });
-    return amount;
   }
 
   async listWebhooks() {

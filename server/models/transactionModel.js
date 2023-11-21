@@ -9,7 +9,7 @@ const transactionSchema = new mongoose.Schema({
   address: { type: String, required: true },
   transactionStatus: {
     type: String,
-    enum: ["waiting", "processing", "complete", "canceled"],
+    enum: ["waiting", "processing", "confirming", "complete", "canceled"],
     default: "waiting",
   },
   transactionInfo: {
@@ -18,7 +18,7 @@ const transactionSchema = new mongoose.Schema({
   },
   confirmations: {
     type: Number,
-    default: 0, // Start with 0 confirmations
+    default: -1, // Start with -1 confirmations
   },
   webhook: { type: mongoose.Schema.Types.ObjectId, ref: "Webhook" },
   timestamp: { type: Date, default: Date.now },

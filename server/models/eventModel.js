@@ -20,7 +20,7 @@ const eventSchema = new mongoose.Schema({
   type: { type: String, required: true },
   entryFee: { type: Number, required: true },
   maxParticipants: { type: Number, required: true },
-  startTime: { type: Date, required: true },
+  startTime: { type: Date, default: Date.now }, // Set default to current time
   endTime: Date,
   status: {
     type: String,
