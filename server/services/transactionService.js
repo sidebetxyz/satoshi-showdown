@@ -1,19 +1,19 @@
 const TransactionModel = require("../models/transactionModel");
 const EventModel = require("../models/eventModel"); // Import the Event model
+const WebhookModel = require("../models/webhookModel"); // Import the Webhook model
 
 class TransactionService {
   constructor() {
     // Initialization
   }
 
-  async createTransaction(walletId, address, amount, hash) {
+  async createTransaction(walletId, address, amount) {
     try {
       const newTransaction = new TransactionModel({
         wallet: walletId,
         address: address,
         transactionInfo: {
-          amount: amount,
-          hash: hash,
+          amount: amount
         },
         transactionStatus: "waiting",
       });
@@ -27,51 +27,63 @@ class TransactionService {
     }
   }
 
-  async processTransaction(output, transaction) {
-    const event = await this.getEventByAddress(output.addr);
-    if (!event) {
-      console.error(`Event not found for address: ${output.addr}`);
-      return;
-    }
+  async processWebhook(webhookId, transactionData) {
+    try {
+      const webhook = await WebhookModel.findById(webhookId);
+      if (!webhook) {
+        throw new Error(`Webhook with ID ${webhookId} not found`);
+      }
 
-    const isValidTransaction = this.validateTransaction(
-      output,
-      transaction,
-      event.entryFee
-    );
-
-    console.log(`Processing transaction:`, transaction);
-
-    if (isValidTransaction) {
-      await TransactionModel.updateTransactionStatus(
-        transaction.hash,
-        "confirmed"
+      // Find the corresponding transaction and event
+      const transaction = await TransactionModel.findById(
+        webhook.transactionId
       );
-      this.notifyPartiesAboutTransaction(transaction);
-    } else {
-      console.log("Invalid transaction detected:", transaction);
+      const event = await EventModel.findById(webhook.eventId);
+
+      if (!transaction || !event) {
+        throw new Error("Transaction or Event not found for the given webhook");
+      }
+
+      // Validate the transaction
+      const isValidTransaction = this.validateTransaction(
+        transactionData,
+        event.entryFee
+      );
+
+      if (isValidTransaction) {
+        await this.updateTransactionStatus(transaction._id, "confirmed");
+        this.notifyPartiesAboutTransaction(transaction);
+
+        // Update the webhook status
+        webhook.status = "processed";
+        webhook.processedAt = new Date();
+        await webhook.save();
+      } else {
+        webhook.status = "error";
+        webhook.errorDetails = "Invalid transaction detected";
+        await webhook.save();
+      }
+    } catch (error) {
+      console.error("Error processing webhook:", error);
     }
   }
 
-  async getEventByAddress(address) {
-    return await EventModel.findOne({ creatorDepositAddress: address });
+  validateTransaction(transactionData, expectedAmount) {
+    // Logic to validate the transaction based on the data received from webhook
+    // For instance, comparing the transaction amount with expectedAmount
+    // Return true if valid, false otherwise
   }
 
-  validateTransaction(output, transaction, expectedAmount) {
-    const transactionAmount = output.value; // Assuming value is in the output
-    return transactionAmount === expectedAmount;
-  }
-
-  async updateTransactionStatus(transactionHash, newStatus) {
-    await TransactionModel.findOneAndUpdate(
-      { hash: transactionHash },
-      { status: newStatus }
-    );
-    console.log("Updated transaction status:", transactionHash, newStatus);
+  async updateTransactionStatus(transactionId, newStatus) {
+    await TransactionModel.findByIdAndUpdate(transactionId, {
+      status: newStatus,
+    });
+    console.log("Updated transaction status:", transactionId, newStatus);
   }
 
   notifyPartiesAboutTransaction(transaction) {
     console.log("Notifying parties about transaction:", transaction);
+    // Additional logic to notify relevant parties about the transaction
   }
 }
 

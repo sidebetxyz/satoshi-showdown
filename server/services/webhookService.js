@@ -1,18 +1,22 @@
 const axios = require("axios");
-const Webhook = require("../models/webhookModel"); // Import the Webhook model
+const Webhook = require("../models/webhookModel");
+const Transaction = require("../models/transactionModel"); // Import the Transaction model
+const { v4: uuidv4 } = require("uuid");
 
 class WebhookService {
   constructor() {
-    this.apiBaseUrl = process.env.BLOCKCYPHER_BASE_URL; // Moved to .env
-    this.apiToken = process.env.BLOCKCYPHER_TOKEN; // Moved to .env
-    this.webhookUrl = `${process.env.WEBHOOK_DOMAIN}/webhook/receive`;
+    this.apiBaseUrl = process.env.BLOCKCYPHER_BASE_URL;
+    this.apiToken = process.env.BLOCKCYPHER_TOKEN;
   }
 
-  async createWebhook(address, confirmations = 6) {
+  async createWebhook(address, transactionId, confirmations = 6) {
+    const uniqueId = uuidv4();
+    const callbackUrl = `${process.env.WEBHOOK_DOMAIN}/webhook/receive/${uniqueId}`;
+
     const webhookData = {
       event: "tx-confirmation",
       address: address,
-      url: this.webhookUrl,
+      url: callbackUrl,
       confirmations: confirmations,
     };
 
@@ -22,29 +26,82 @@ class WebhookService {
         webhookData
       );
 
-      // Save webhook data to the database
       const newWebhook = new Webhook({
+        uniqueId: uniqueId,
         address: address,
+        transactionId: transactionId, // Link the transaction ID
         type: "tx-confirmation",
-        status: "pending", // or another default status
-        // Additional fields as needed
+        status: "pending",
       });
       await newWebhook.save();
 
       console.log("tx-confirmation Webhook created:", response.data);
-      return response.data;
+      return newWebhook;
     } catch (error) {
       console.error("Error creating tx-confirmation webhook:", error);
       throw error;
     }
   }
 
-  async handleWebhook(data) {
-    // Log the entire data object received from BlockCypher
-    console.log("Received BlockCypher webhook event:", data);
+  async handleWebhook(uniqueId, data) {
+    console.log("Received BlockCypher webhook event for Unique ID:", uniqueId);
+    console.log("Webhook event data:", data);
 
-    // Additional processing logic goes here...
-    // For now, just log the data to inspect its structure
+    const webhook = await Webhook.findOne({ uniqueId: uniqueId });
+
+    if (webhook) {
+      console.log("Webhook found:", webhook);
+
+      const transaction = await Transaction.findById(webhook.transactionId);
+      if (transaction) {
+        console.log(transaction);
+
+        const expectedAmount = transaction.transactionInfo.amount;
+        const receivedAmount = this.extractAmountFromWebhookData(
+          data,
+          webhook.address
+        );
+
+        console.log(expectedAmount);
+        console.log(receivedAmount);
+
+        // Update transaction with the current number of confirmations
+        transaction.confirmations = data.confirmations;
+        await transaction.save();
+
+        if (receivedAmount === expectedAmount && data.confirmations === 0) {
+          transaction.transactionStatus = "processing";
+          await transaction.save();
+          console.log("Transaction processing started:", transaction);
+        }
+
+        if (data.confirmations >= webhook.totalConfirmations) {
+          transaction.transactionStatus = "complete";
+          await transaction.save();
+          webhook.status = "processed";
+          webhook.processedAt = new Date();
+          await webhook.save();
+          console.log("Transaction completed:", transaction);
+        }
+      } else {
+        console.error(
+          "Transaction not found for webhook:",
+          webhook.transactionId
+        );
+      }
+    } else {
+      console.error("Webhook with unique ID not found:", uniqueId);
+    }
+  }
+
+  extractAmountFromWebhookData(data, subscribedAddress) {
+    let amount = 0;
+    data.outputs.forEach((output) => {
+      if (output.addresses.includes(subscribedAddress)) {
+        amount = output.value;
+      }
+    });
+    return amount;
   }
 
   async listWebhooks() {
@@ -66,6 +123,7 @@ class WebhookService {
         `${this.apiBaseUrl}/hooks/${webhookId}?token=${this.apiToken}`
       );
       console.log("Webhook deleted successfully");
+      // Optionally, remove the webhook from the database as well
     } catch (error) {
       console.error("Error deleting webhook:", error);
       throw error;

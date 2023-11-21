@@ -1,37 +1,31 @@
-const walletService = require("./walletService");
+// Import models and other services
+const EventModel = require("../models/eventModel");
+const WalletService = require("./walletService");
 const TransactionService = require("./transactionService");
 const WebhookService = require("./webhookService");
-const EventModel = require("../models/eventModel");
 
-const webhookService = new WebhookService(process.env.BLOCKCYPHER_TOKEN);
+const webhookService = new WebhookService();
 
 const eventService = {
   async createEvent(eventData) {
     try {
-      // Step 1: Create Wallet
-      const newWallet = await walletService.createSegwitWallet();
-
-      // Step 2: Create Transaction
+      const newWallet = await WalletService.createSegwitWallet();
       const newTransaction = await TransactionService.createTransaction(
         newWallet._id,
         newWallet.address,
-        eventData.transactionAmount, // Example amount
-        eventData.transactionHash // Example hash
+        eventData.entryFee
       );
 
-      // Step 3: Create Webhook
-      const newWebhook = await webhookService.createWebhook(newWallet.address);
+      const newWebhook = await webhookService.createWebhook(
+        newWallet.address,
+        newTransaction._id
+      );
 
-      // Step 4: Create Event with Wallet and Transaction information
       const newEvent = new EventModel({
         ...eventData,
         participants: [
-          {
-            wallet: newWallet._id,
-            transaction: newTransaction._id,
-          },
+          { wallet: newWallet._id, transaction: newTransaction._id },
         ],
-        // Other event details
       });
       await newEvent.save();
 
@@ -41,7 +35,7 @@ const eventService = {
       throw error;
     }
   },
-  // Additional methods...
+  // Other methods...
 };
 
 module.exports = eventService;

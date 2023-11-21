@@ -15,11 +15,14 @@ const transactionSchema = new mongoose.Schema({
   transactionInfo: {
     amount: Number,
     hash: String,
-    // Other relevant transaction details
   },
+  confirmations: {
+    type: Number,
+    default: 0, // Start with 0 confirmations
+  },
+  webhook: { type: mongoose.Schema.Types.ObjectId, ref: "Webhook" },
   timestamp: { type: Date, default: Date.now },
 });
 
 const Transaction = mongoose.model("Transaction", transactionSchema);
-
 module.exports = Transaction;
