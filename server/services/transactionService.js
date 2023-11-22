@@ -1,11 +1,12 @@
 const TransactionModel = require("../models/transactionModel");
 const WebhookModel = require("../models/webhookModel"); // Import the Webhook model
+const EventService = require("./eventService"); // Import the EventService
 
 class TransactionService {
-  constructor() {
-    // Initialization
-  }
+  // Initialization
+  constructor() {}
 
+  // Create a new transaction
   async createTransaction(walletId, address, amount) {
     try {
       const newTransaction = new TransactionModel({
@@ -26,6 +27,7 @@ class TransactionService {
     }
   }
 
+  // Process webhook data and update the corresponding transaction
   async processWebhook(webhookId, data) {
     const webhook = await WebhookModel.findById(webhookId);
     if (!webhook) {
@@ -54,6 +56,11 @@ class TransactionService {
         transaction.transactionStatus = "confirming";
       } else if (data.confirmations >= 6) {
         transaction.transactionStatus = "complete";
+        await transaction.save();
+
+        // Update the event based on transaction completion
+        const eventService = new EventService();
+        await eventService.updateEventOnTransactionComplete(transaction._id);
       }
       await transaction.save();
     } else {
@@ -63,8 +70,7 @@ class TransactionService {
     }
   }
 
-  // The rest of the methods remain unchanged
-
+  // Extract the amount from webhook data
   extractAmountFromWebhookData(data, address) {
     let amount = 0;
     data.outputs.forEach((output) => {
@@ -75,12 +81,13 @@ class TransactionService {
     return amount;
   }
 
+  // Validate the transaction based on the data received from webhook
   validateTransaction(transactionData, expectedAmount) {
-    // Logic to validate the transaction based on the data received from webhook
-    // For instance, comparing the transaction amount with expectedAmount
+    // Add logic for transaction validation
     // Return true if valid, false otherwise
   }
 
+  // Update the transaction status
   async updateTransactionStatus(transactionId, newStatus) {
     await TransactionModel.findByIdAndUpdate(transactionId, {
       status: newStatus,
@@ -88,9 +95,10 @@ class TransactionService {
     console.log("Updated transaction status:", transactionId, newStatus);
   }
 
+  // Notify relevant parties about the transaction
   notifyPartiesAboutTransaction(transaction) {
     console.log("Notifying parties about transaction:", transaction);
-    // Additional logic to notify relevant parties about the transaction
+    // Additional logic for notifications
   }
 }
 

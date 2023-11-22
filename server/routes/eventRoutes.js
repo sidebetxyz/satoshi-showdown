@@ -14,6 +14,31 @@ router.post("/create", async (req, res) => {
   }
 });
 
+// Route to get an event by its publicId
+router.get("/:publicId", async (req, res) => {
+  try {
+    const publicId = req.params.publicId;
+    const event = await eventService.getEventByPublicId(publicId);
+    res.status(200).json(event);
+  } catch (error) {
+    console.error("Error retrieving event:", error);
+    res.status(500).send("Error retrieving event");
+  }
+});
+
+// Route to join an event
+router.post("/:publicId/join", async (req, res) => {
+  try {
+    const publicId = req.params.publicId;
+    const participantData = req.body; // Assuming participant data is sent in the request body
+    const event = await eventService.joinEvent(publicId, participantData);
+    res.status(200).json(event);
+  } catch (error) {
+    console.error("Error joining event:", error);
+    res.status(500).send("Error joining event");
+  }
+});
+
 // Additional event-related routes can be added here as needed
 
 module.exports = router;
