@@ -39,10 +39,11 @@ const eventSchema = new mongoose.Schema({
     default: "awaitingDeposit",
   },
   participants: [
-    // List of participants in the event.
     {
       wallet: { type: mongoose.Schema.Types.ObjectId, ref: "Wallet" },
       transaction: { type: mongoose.Schema.Types.ObjectId, ref: "Transaction" },
+      depositAddress: String,
+      transactionUniqueId: String,
     },
   ],
 });

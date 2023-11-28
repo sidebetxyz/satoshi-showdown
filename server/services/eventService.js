@@ -4,94 +4,54 @@ const TransactionService = require("./transactionService");
 const WebhookService = require("./webhookService");
 const TransactionModel = require("../models/transactionModel");
 
-// Initialize services
-const webhookService = new WebhookService();
-const transactionService = new TransactionService();
+class EventService {
+  constructor() {}
 
-const eventService = {
-  // Method to create a new event
+  // Create a new event with initial participant (event creator)
   async createEvent(eventData) {
     try {
-      // Create a new wallet for the event
-      const newWallet = await WalletService.createSegwitWallet();
+      const walletService = new WalletService();
+      const transactionService = new TransactionService();
+      const webhookService = new WebhookService();
 
-      // Create a new transaction for the event's entry fee
+      const newWallet = await walletService.createSegwitWallet();
       const newTransaction = await transactionService.createTransaction(
         newWallet._id,
         newWallet.address,
         eventData.entryFee
       );
 
-      // Set up a new webhook for transaction confirmation
       const newWebhook = await webhookService.createWebhook(
         newWallet.address,
         newTransaction._id,
         eventData.confirmations
       );
 
-      // Create and save the new event model
       const newEvent = new EventModel({
         ...eventData,
         participants: [
-          { wallet: newWallet._id, transaction: newTransaction._id },
+          {
+            wallet: newWallet._id,
+            transaction: newTransaction._id,
+            depositAddress: newWallet.address,
+            transactionUniqueId: newTransaction.uniqueId,
+          },
         ],
         status: "awaitingDeposit",
       });
-      await newEvent.save();
 
+      await newEvent.save();
       console.log("Event created:", newEvent);
       return newEvent;
     } catch (error) {
       console.error("Error in event creation:", error);
       throw error;
     }
-  },
+  }
 
-  // Method to update an event upon transaction completion
-  async updateEventOnTransactionComplete(transactionId) {
-    try {
-      // Check if transaction is complete
-      const transaction = await TransactionModel.findById(transactionId);
-      if (!transaction || transaction.transactionStatus !== "complete") {
-        throw new Error("Transaction not complete or not found");
-      }
-
-      // Find the associated event
-      const event = await EventModel.findOne({
-        "participants.transaction": transactionId,
-      });
-      if (!event) {
-        throw new Error("Event not found for the given transaction");
-      }
-
-      // Check if all participants' transactions are complete
-      const allParticipantsComplete = await Promise.all(
-        event.participants.map(async (part) => {
-          const participantTransaction = await TransactionModel.findById(
-            part.transaction
-          );
-          return participantTransaction.transactionStatus === "complete";
-        })
-      ).then((results) => results.every((status) => status));
-
-      // Update event status if all participants have completed transactions
-      if (allParticipantsComplete) {
-        event.status = "active";
-        await event.save();
-        console.log("Event updated to active:", event);
-      }
-
-      return event;
-    } catch (error) {
-      console.error("Error updating event on transaction complete:", error);
-      throw error;
-    }
-  },
-
-  // Method to retrieve an event by its public ID
+  // Retrieve an event by its public ID
   async getEventByPublicId(publicId) {
     try {
-      // Fetch the event by public ID
       const event = await EventModel.findOne({ publicId });
       if (!event) {
         throw new Error("Event not found");
@@ -101,36 +61,41 @@ const eventService = {
       console.error("Error retrieving event:", error);
       throw error;
     }
-  },
+  }
 
-  // Method to allow a user to join an event
-  async joinEvent(publicId, participantData) {
+  // Join an existing event as a participant
+  async joinEvent(publicId) {
     try {
-      // Validate if the event is accepting participants
+      const walletService = new WalletService();
+      const transactionService = new TransactionService();
+      const webhookService = new WebhookService();
+
       const event = await this.getEventByPublicId(publicId);
-      if (event.status !== "awaitingParticipants") {
-        throw new Error("Event is not accepting new participants");
+      if (
+        event.status !== "awaitingParticipants" ||
+        event.getAvailableSlots() === 0
+      ) {
+        throw new Error("Event is not accepting new participants or is full");
       }
 
-      // Create a wallet and transaction for the new participant
-      const newWallet = await WalletService.createSegwitWallet();
+      const newWallet = await walletService.createSegwitWallet();
       const newTransaction = await transactionService.createTransaction(
         newWallet._id,
         newWallet.address,
         event.entryFee
       );
 
-      // Create a webhook for the new transaction
       const newWebhook = await webhookService.createWebhook(
         newWallet.address,
         newTransaction._id,
         event.confirmations
       );
 
-      // Add the participant to the event
       event.participants.push({
         wallet: newWallet._id,
         transaction: newTransaction._id,
+        depositAddress: newWallet.address,
+        transactionUniqueId: newTransaction.uniqueId,
       });
 
       await event.save();
@@ -140,7 +105,102 @@ const eventService = {
       console.error("Error joining event:", error);
       throw error;
     }
-  },
-};
+  }
 
-module.exports = eventService;
+  // Update event status when a transaction is in processing state
+  async updateEventOnTransactionProcessing(transactionId) {
+    try {
+      const transactionService = new TransactionService();
+      const transaction = await transactionService.getTransactionById(
+        transactionId
+      );
+
+      if (!transaction || transaction.status !== "processing") {
+        throw new Error("Transaction not in processing state or not found");
+      }
+
+      const event = await EventModel.findOne({
+        "participants.transactionUniqueId": transaction.uniqueId,
+      });
+
+      if (!event) {
+        throw new Error("Event not found for the given transaction");
+      }
+
+      if (event.status === "awaitingDeposit") {
+        event.status = "awaitingParticipants";
+        await event.save();
+        console.log("Event status updated to awaiting participants:", event);
+      }
+
+      return event;
+    } catch (error) {
+      console.error("Error updating event on transaction processing:", error);
+      throw error;
+    }
+  }
+
+  // Finalize the event when all participant spots are filled
+  async finalizeEventWhenFull(eventId) {
+    try {
+      const event = await EventModel.findById(eventId);
+      if (!event) {
+        throw new Error("Event not found");
+      }
+
+      if (event.participants.length >= event.maxParticipants) {
+        event.status = "active";
+        await event.save();
+        console.log("Event finalized as all spots are filled:", event);
+      }
+
+      return event;
+    } catch (error) {
+      console.error("Error finalizing event when full:", error);
+      throw error;
+    }
+  }
+
+  // Method to process payments
+  async processPayment(transactionId, data) {
+    const transaction = await TransactionModel.findById(transactionId);
+    if (!transaction) {
+      throw new Error(`Transaction with ID ${transactionId} not found`);
+    }
+
+    transaction.confirmations = data.confirmations;
+    await transaction.save();
+
+    const receivedAmount = this._extractAmountFromWebhookData(
+      data,
+      transaction.address
+    );
+
+    if (receivedAmount === transaction.transactionInfo.amount) {
+      if (data.confirmations === 0) {
+        transaction.status = "processing";
+        await this.updateEventOnTransactionProcessing(transaction._id);
+      } else if (data.confirmations >= 6) {
+        transaction.status = "complete";
+        await this.finalizeEventWhenFull(transaction.eventId);
+      }
+      await transaction.save();
+    } else {
+      console.error("Received amount does not match expected amount");
+      transaction.status = "error";
+      await transaction.save();
+    }
+  }
+
+  _extractAmountFromWebhookData(data, address) {
+    let amount = 0;
+    data.outputs.forEach((output) => {
+      if (output.addresses.includes(address)) {
+        amount = output.value;
+      }
+    });
+    return amount;
+  }
+}
+
+module.exports = EventService;

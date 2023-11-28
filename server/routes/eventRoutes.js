@@ -1,11 +1,12 @@
 const express = require("express");
 const router = express.Router();
-const eventService = require("../services/eventService");
+const EventService = require("../services/eventService");
 
 // Route to create a new event
 router.post("/create", async (req, res) => {
   try {
     const eventData = req.body;
+    const eventService = new EventService();
     const newEvent = await eventService.createEvent(eventData);
     res.status(201).json(newEvent);
   } catch (error) {
@@ -18,6 +19,7 @@ router.post("/create", async (req, res) => {
 router.get("/:publicId", async (req, res) => {
   try {
     const publicId = req.params.publicId;
+    const eventService = new EventService();
     const event = await eventService.getEventByPublicId(publicId);
     res.status(200).json(event);
   } catch (error) {
@@ -31,6 +33,7 @@ router.post("/:publicId/join", async (req, res) => {
   try {
     const publicId = req.params.publicId;
     const participantData = req.body; // Assuming participant data is sent in the request body
+    const eventService = new EventService();
     const event = await eventService.joinEvent(publicId, participantData);
     res.status(200).json(event);
   } catch (error) {
