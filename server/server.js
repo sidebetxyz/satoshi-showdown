@@ -1,77 +1,56 @@
-// Load environment variables based on the current Node environment
-require("dotenv").config({
+import dotenv from "dotenv";
+import express from "express";
+import fs from "fs";
+import https from "https";
+import morgan from "morgan";
+import helmet from "helmet";
+import cors from "cors";
+import { connectToDB } from "./utils/database.js";
+import log from "./utils/log.js";
+import eventRoutes from "./routes/eventRoutes.js";
+import webhookRoutes from "./routes/webhookRoutes.js";
+
+// Load environment variables based on the Node environment
+dotenv.config({
   path: process.env.NODE_ENV === "development" ? ".env.dev" : ".env.prod",
 });
 
-// Core Module Imports
-const express = require("express");
-const fs = require("fs");
-const https = require("https");
-
-// Utility Imports
-const { connectToDB } = require("./utils/database");
-
-// Route Imports
-const eventRoutes = require("./routes/eventRoutes");
-const webhookRoutes = require("./routes/webhookRoutes");
-
-// Middleware Imports
-const helmet = require("helmet");
-const cors = require("cors");
-const morgan = require("morgan");
-
-// Initializing Express application
+// Initialize Express application
 const app = express();
 
-// Server Configuration
-// Define the server port
+// Define server port (default to 3000 if not specified)
 const port = process.env.PORT || 3000;
 
-// Middleware Setup
-// Enable JSON parsing for incoming requests
-app.use(express.json());
+// Middleware setup
+app.use(express.json()); // Parse JSON request bodies
+app.use(morgan("dev")); // Log HTTP requests
+app.use(helmet()); // Secure app by setting various HTTP headers
+app.use(cors()); // Enable CORS
 
-// Logging middleware for development environment
-app.use(morgan("dev"));
-
-// Security middleware to set various HTTP headers
-app.use(helmet());
-
-// Enable Cross-Origin Resource Sharing
-app.use(cors());
-
-// Global Error Handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).send("Something broke!");
-});
-
-// Establishing Database Connection
+// Database connection
 connectToDB();
 
-// Routing Setup
-// Event-related requests are routed to eventRoutes
-app.use("/event", eventRoutes);
+// API routing
+app.use("/event", eventRoutes); // Event management routes
+app.use("/webhook", webhookRoutes); // Webhook processing routes
 
-// Webhook-related requests are routed to webhookRoutes
-app.use("/webhook", webhookRoutes);
+// Global error handling
+app.use((err, req, res, next) => {
+  log.error(err.stack); // Log error
+  res.status(500).send("Something broke!"); // Send generic error response
+});
 
-// HTTPS Server Setup
 try {
-  // Reading SSL certificate and private key from files
+  // HTTPS server setup
   const privateKey = fs.readFileSync(process.env.SSL_PRIVATE_KEY_PATH, "utf8");
   const certificate = fs.readFileSync(process.env.SSL_CERTIFICATE_PATH, "utf8");
   const credentials = { key: privateKey, cert: certificate };
-
-  // Creating and starting HTTPS server
   const httpsServer = https.createServer(credentials, app);
+
+  // Start server
   httpsServer.listen(port, () => {
-    console.log(`Secure server running on https://localhost:${port}`);
+    log.info(`Secure server running on https://localhost:${port}`);
   });
 } catch (error) {
-  console.error("Failed to start HTTPS server:", error.message);
-  // Uncomment the below lines to enable an HTTP server as a fallback.
-  // app.listen(3001, () => {
-  //   console.log(`Insecure server running on http://localhost:3001`);
-  // });
+  log.error("Failed to start HTTPS server:", error.message);
 }
