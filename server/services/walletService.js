@@ -1,34 +1,42 @@
 import bitcoin from "bitcoinjs-lib";
-import ECPairFactory from "ecpair";
-import ecc from "tiny-secp256k1";
+import * as ecc from "tiny-secp256k1";
+import { ECPairFactory } from "ecpair";
 import { storePrivateKey } from "../utils/storage.js";
 
 /**
  * WalletService for managing cryptocurrency wallets.
- * This service handles operations such as creating new wallets, especially SegWit wallets for Bitcoin.
+ * Facilitates operations like creating new wallets, with a focus on SegWit wallets for Bitcoin.
  */
 export class WalletService {
+  /**
+   * Initializes the WalletService with the appropriate network configuration.
+   * This setup primarily uses Bitcoin's testnet for wallet-related operations.
+   */
   constructor() {
-    this.network = bitcoin.networks.testnet; // Set network to Bitcoin's testnet for wallet operations
+    this.network = bitcoin.networks.testnet;
+    this.ECPair = ECPairFactory(ecc);
   }
 
   /**
-   * Creates a new SegWit wallet using Bitcoin's testnet.
-   * SegWit (Segregated Witness) wallets offer benefits like reduced transaction fees.
-   * @returns {Object} Object containing the wallet's address and ID.
+   * Creates a new Segregated Witness (SegWit) wallet using the Bitcoin testnet.
+   * SegWit wallets are advantageous for their smaller transaction sizes and malleability fixes.
+   *
+   * @returns {Object} An object containing the new wallet's address and database ID.
    */
   async createSegwitWallet() {
-    const keyPair = ECPair.makeRandom({ network: this.network }); // Generate random key pair
+    const keyPair = this.ECPair.makeRandom({ network: this.network });
     const { address } = bitcoin.payments.p2wpkh({
       pubkey: keyPair.publicKey,
       network: this.network,
-    }); // Derive address
-    const privateKey = keyPair.toWIF(); // Convert private key to Wallet Import Format
-    const walletId = await storePrivateKey(address, privateKey); // Store private key securely
-    return { address, _id: walletId }; // Return wallet details
+    });
+
+    const privateKey = keyPair.toWIF();
+    const walletId = await storePrivateKey(address, privateKey);
+
+    return { address, _id: walletId };
   }
 
-  // Additional wallet management methods can be implemented as needed
+  // Additional wallet management methods can be implemented as needed.
 }
 
 export default WalletService;
