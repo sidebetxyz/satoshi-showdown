@@ -1,30 +1,31 @@
 import winston from "winston";
 
 /**
- * Configures the Winston logger for the application.
- * Creates a logging instance with multiple transports for different
- * logging levels and outputs (e.g., file, console).
+ * Logger Configuration
  *
- * @module log
+ * Sets up the Winston logger for application-wide logging. Configures different transports
+ * for logging at various levels (e.g., error, info) to different outputs like files or console.
+ * This module provides a centralized logger to be used across the application.
  */
 const log = winston.createLogger({
-  level: "info", // Default logging level
-  format: winston.format.json(), // Log output format set to JSON
+  level: "info",
+  format: winston.format.json(),
   transports: [
-    // Transport for logging error level messages to 'error.log'
+    // File transport for error logs
     new winston.transports.File({ filename: "error.log", level: "error" }),
-    // Transport for logging all messages to 'combined.log'
+    // File transport for combined logs
     new winston.transports.File({ filename: "combined.log" }),
   ],
 });
 
-// Adding console transport for logging in non-production environments
+// Adding console transport for non-production environments
 if (process.env.NODE_ENV !== "production") {
-  log.add(
-    new winston.transports.Console({
-      format: winston.format.simple(), // Console log format set to simple
-    })
-  );
+  log.add(new winston.transports.Console({ format: winston.format.simple() }));
 }
 
-export default log; // Exporting the configured logger
+// Function to stop the logger (useful during testing)
+export const stopLogger = () => {
+  log.end();
+};
+
+export default log;

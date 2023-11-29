@@ -8,10 +8,13 @@
     "start": "NODE_ENV=production node server.js",
     "dev": "NODE_ENV=development nodemon server.js",
     "prod": "npm start",
-    "test": "jest"
+    "test": "node --no-warnings --experimental-vm-modules node_modules/.bin/jest"
   },
   "jest": {
-    "testEnvironment": "node"
+    "setupFiles": [
+      "<rootDir>/jest.setup.js"
+    ],
+    "verbose": true
   },
   "keywords": [
     "bitcoin",
