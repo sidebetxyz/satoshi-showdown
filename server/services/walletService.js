@@ -1,45 +1,50 @@
-const bitcoin = require("bitcoinjs-lib");
-const ECPairFactory = require("ecpair").default;
-const ecc = require("tiny-secp256k1");
-const { storePrivateKey } = require("../utils/storage");
+import bitcoin from "bitcoinjs-lib";
+import ECPairFactory from "ecpair";
+import ecc from "tiny-secp256k1";
+import { storePrivateKey } from "../utils/storage.js";
 
 // ECPair is a factory for Bitcoin keypairs
 const ECPair = ECPairFactory(ecc);
 
-// Using Bitcoin's testnet for this service
-const network = bitcoin.networks.testnet;
+/**
+ * Service for handling wallet operations.
+ * This includes creating new wallets, particularly SegWit wallets
+ * for Bitcoin transactions.
+ */
+export class WalletService {
+  constructor() {
+    // Using Bitcoin's testnet for wallet operations
+    this.network = bitcoin.networks.testnet;
+  }
 
-class WalletService {
   /**
    * Creates a new Segregated Witness (SegWit) wallet.
-   * SegWit wallets allow for smaller transaction sizes and malleability fixes.
+   * SegWit wallets offer benefits like smaller transaction sizes
+   * and malleability fixes.
+   *
    * @returns {Object} An object containing the new wallet's address and its database ID.
    */
   async createSegwitWallet() {
-    // Generate a random key pair for the wallet
-    const keyPair = ECPair.makeRandom({ network });
+    // Generate a random key pair for the wallet using the Bitcoin testnet
+    const keyPair = ECPair.makeRandom({ network: this.network });
 
     // Derive the wallet's address from the public key
     const { address } = bitcoin.payments.p2wpkh({
       pubkey: keyPair.publicKey,
-      network,
+      network: this.network,
     });
 
-    // Convert the wallet's private key to Wallet Import Format (WIF)
+    // Convert the private key to Wallet Import Format (WIF) for compatibility
     const privateKey = keyPair.toWIF();
 
-    // Store the private key securely and retrieve the wallet's database ID
+    // Securely store the private key and retrieve the corresponding wallet ID
     const walletId = await storePrivateKey(address, privateKey);
 
-    // Log the wallet's address and ID for debugging purposes
-    console.log("Wallet created: Address -", address);
-    console.log("Wallet ID -", walletId);
-
-    // Return the wallet's address and database ID
+    // Return the wallet's address and ID for further operations
     return { address, _id: walletId };
   }
 
-  // Additional methods can be added here in the future
+  // Additional methods for wallet management can be added here
 }
 
-module.exports = WalletService;
+export default WalletService;
