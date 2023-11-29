@@ -4,52 +4,46 @@ import TransactionService from "./transactionService.js";
 import WebhookService from "./webhookService.js";
 
 /**
- * Service for managing events including creation, retrieval,
- * and participant management.
+ * EventService for managing gaming events, including event creation, participant management, and updates.
  */
 export class EventService {
-  /**
-   * Constructs the EventService with dependencies.
-   */
   constructor() {
+    // Instantiate dependencies for event-related operations
     this.walletService = new WalletService();
     this.transactionService = new TransactionService();
     this.webhookService = new WebhookService();
   }
 
   /**
-   * Creates a new event and initializes its associated resources
-   * like wallet and transaction.
-   *
-   * @param {Object} eventData - Data for the new event.
-   * @returns {Object} Newly created event data.
+   * Creates a new event, initializing necessary resources like wallet and transaction.
+   * @param {Object} eventData - Data for creating a new event.
+   * @returns {Object} Data of the newly created event.
    */
   async createEvent(eventData) {
-    // Logic to create a new wallet, transaction, and webhook goes here
+    // Implementation for event creation
+    // Utilize the wallet, transaction, and webhook services as needed
   }
 
   /**
    * Retrieves an event by its public identifier.
-   *
-   * @param {String} publicId - Public ID of the event to retrieve.
-   * @returns {Object} Event data.
+   * @param {string} publicId - Public ID of the event.
+   * @returns {Object} Event data if found.
    */
   async getEventByPublicId(publicId) {
-    // Logic to retrieve an event by its publicId goes here
+    // Implementation to fetch event data by its public ID
   }
 
   /**
-   * Allows a participant to join an existing event.
-   *
-   * @param {String} publicId - Public ID of the event to join.
-   * @param {Object} participantData - Data of the participant joining the event.
-   * @returns {Object} Updated event data.
+   * Allows a participant to join an event.
+   * @param {string} publicId - Public ID of the event to join.
+   * @param {Object} participantData - Data of the participant joining.
+   * @returns {Object} Updated event data with the new participant.
    */
   async joinEvent(publicId, participantData) {
-    // Logic for a participant to join an event goes here
+    // Implementation for participant joining an event
   }
 
-  // Additional methods for event updates and management can be added here
+  // Additional methods for event management can be added here
 }
 
 export default EventService;

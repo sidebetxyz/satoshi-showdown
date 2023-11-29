@@ -1,32 +1,25 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
-// Schema to manage blockchain transactions.
+// Schema for blockchain transactions associated with wallets
 const transactionSchema = new mongoose.Schema({
-  uniqueId: { type: String, required: true, unique: true }, // Unique identifier for the transaction.
+  address: { type: String, required: true }, // Blockchain address involved in the transaction
+  uniqueId: { type: String, required: true, unique: true }, // Unique identifier for the transaction, used for user interaction without registration
   wallet: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Wallet",
     required: true,
-  },
-  address: { type: String, required: true }, // Blockchain address involved in the transaction.
+  }, // Wallet associated with the transaction
+  expectedAmount: { type: Number, required: true }, // Expected amount of cryptocurrency for the transaction
+  receivedAmount: { type: Number, default: 0 }, // Actual received amount, used for validation
   status: {
-    // Status of the transaction (waiting, processing, etc.).
     type: String,
-    enum: ["waiting", "processing", "confirming", "complete", "canceled"],
+    enum: ["waiting", "processing", "completed", "cancelled"],
     default: "waiting",
-  },
-  transactionInfo: {
-    // Details about the transaction like amount and hash.
-    amount: Number,
-    hash: String,
-  },
-  confirmations: {
-    // Number of confirmations received for the transaction.
-    type: Number,
-    default: null,
-  },
-  timestamp: { type: Date, default: Date.now }, // Timestamp of when the transaction was created.
+  }, // Status of the transaction, indicating its current phase
+  createdTimestamp: { type: Date, default: Date.now }, // Timestamp when the transaction was created
+  startedConfirmingTimestamp: Date, // Timestamp indicating when the transaction started confirming on the blockchain
+  completedAtTimestamp: Date, // Timestamp when the transaction reached the required number of confirmations
 });
 
 const Transaction = mongoose.model("Transaction", transactionSchema);
-module.exports = Transaction;
+export default Transaction;

@@ -3,71 +3,59 @@ import WebhookModel from "../models/webhookModel.js";
 import { v4 as uuidv4 } from "uuid";
 
 /**
- * Service for handling webhooks.
- * Webhooks are used for receiving real-time notifications or events from external systems.
- * This service facilitates the creation and processing of webhooks, particularly for transaction confirmations.
+ * WebhookService for handling webhooks related to blockchain transactions.
+ * This service enables the creation and processing of webhooks for transaction confirmations.
  */
 export class WebhookService {
   constructor() {
-    // Base URL and token for the external API (e.g., BlockCypher)
-    this.apiBaseUrl = process.env.BLOCKCYPHER_BASE_URL;
-    this.apiToken = process.env.BLOCKCYPHER_TOKEN;
+    this.apiBaseUrl = process.env.BLOCKCYPHER_BASE_URL; // API base URL for external service
+    this.apiToken = process.env.BLOCKCYPHER_TOKEN; // Token for API authentication
   }
 
   /**
-   * Creates a new webhook for monitoring transaction confirmations.
-   *
-   * @param {string} address - The Bitcoin address to monitor.
-   * @param {string} transactionId - The ID of the associated transaction.
-   * @param {number} [confirmations=6] - The number of confirmations to wait for.
-   * @returns {Promise<Object>} The newly created webhook object.
+   * Creates a new webhook for transaction confirmation.
+   * @param {string} address - Address to monitor for transactions.
+   * @param {string} transactionId - Associated transaction ID.
+   * @param {number} confirmations - Number of confirmations to wait for.
+   * @returns {Promise<Object>} Created webhook data.
    */
   async createWebhook(address, transactionId, confirmations = 6) {
-    const uniqueId = uuidv4();
-    const callbackUrl = `${process.env.WEBHOOK_DOMAIN}/webhook/receive/${uniqueId}`;
+    const uniqueId = uuidv4(); // Generate a unique identifier
+    const callbackUrl = `${process.env.WEBHOOK_DOMAIN}/webhook/receive/${uniqueId}`; // Construct callback URL
     const webhookData = {
       event: "tx-confirmation",
       address,
       url: callbackUrl,
       confirmations,
     };
-
-    try {
-      const response = await axios.post(
-        `${this.apiBaseUrl}/hooks?token=${this.apiToken}`,
-        webhookData
-      );
-
-      const newWebhook = new WebhookModel({
-        uniqueId,
-        address,
-        transactionId,
-        type: "tx-confirmation",
-        status: "pending",
-      });
-      await newWebhook.save();
-
-      return newWebhook;
-    } catch (error) {
-      console.error("Error creating tx-confirmation webhook:", error);
-      throw error;
-    }
+    const response = await axios.post(
+      `${this.apiBaseUrl}/hooks?token=${this.apiToken}`,
+      webhookData
+    ); // Create webhook via external API
+    const newWebhook = new WebhookModel({
+      uniqueId,
+      address,
+      transactionId,
+      type: "tx-confirmation",
+      status: "pending",
+    });
+    await newWebhook.save(); // Save webhook in the database
+    return newWebhook; // Return webhook details
   }
 
   /**
-   * Handles the processing of an incoming webhook event.
-   *
-   * @param {string} uniqueId - The unique ID of the webhook.
-   * @param {Object} data - The payload of the webhook event.
-   * @returns {Promise<Object>} A response indicating the result of the processing.
+   * Processes received webhook data.
+   * @param {string} uniqueId - Unique ID of the webhook.
+   * @param {Object} data - Payload from the webhook event.
+   * @returns {Promise<Object>} Response indicating processing result.
    */
   async handleWebhook(uniqueId, data) {
-    // Processing logic for the incoming webhook goes here
+    // Implementation for processing the webhook event
     console.log(`Handling webhook with unique ID: ${uniqueId} and data:`, data);
     return { status: "success", message: "Webhook processed successfully" };
   }
 
-  // Additional methods for webhook management can be added here
+  // Additional webhook-related methods can be implemented here
 }
 
 export default WebhookService;

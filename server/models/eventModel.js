@@ -1,32 +1,29 @@
-const mongoose = require("mongoose");
-const crypto = require("crypto");
-const { v4: uuidv4 } = require("uuid");
+import mongoose from "mongoose";
+import crypto from "crypto";
+import { v4 as uuidv4 } from "uuid";
 
-// Schema for creating and managing events.
+// Schema for event management in the application
 const eventSchema = new mongoose.Schema({
   privateSerialNumber: {
-    // A private identifier for internal use.
     type: String,
     required: true,
     unique: true,
-    default: () => crypto.randomBytes(16).toString("hex"),
+    default: () => crypto.randomBytes(16).toString("hex"), // Internal unique identifier for the event
   },
   publicId: {
-    // Public identifier for external reference (e.g., in URLs).
     type: String,
     required: true,
     unique: true,
-    default: uuidv4,
+    default: uuidv4, // Publicly visible identifier, used for external references
   },
-  name: { type: String, required: true }, // Name of the event.
-  description: String, // Description of the event.
-  type: { type: String, required: true }, // Type of event (e.g., tournament, meetup).
-  entryFee: { type: Number, required: true }, // Entry fee for the event.
-  maxParticipants: { type: Number, required: true }, // Maximum number of participants.
-  startTime: { type: Date, default: Date.now }, // Start time of the event.
-  endTime: Date, // End time of the event.
+  name: { type: String, required: true }, // Name of the event
+  description: String, // Brief description of the event
+  type: { type: String, required: true }, // Type/category of the event
+  entryFee: { type: Number, required: true }, // Entry fee required for participation
+  maxParticipants: { type: Number, required: true }, // Maximum number of participants allowed in the event
+  startTime: { type: Date, default: Date.now }, // Scheduled start time of the event
+  endTime: Date, // Scheduled end time of the event
   status: {
-    // Status of the event (awaiting deposit, active, etc.).
     type: String,
     enum: [
       "awaitingDeposit",
@@ -37,26 +34,15 @@ const eventSchema = new mongoose.Schema({
       "cancelled",
     ],
     default: "awaitingDeposit",
-  },
+  }, // Current status of the event
   participants: [
     {
-      wallet: { type: mongoose.Schema.Types.ObjectId, ref: "Wallet" },
-      transaction: { type: mongoose.Schema.Types.ObjectId, ref: "Transaction" },
-      depositAddress: String,
-      transactionUniqueId: String,
+      depositAddress: String, // Address for the participant's deposit
+      transactionUniqueId: String, // Unique identifier for the transaction associated with the participant
+      wallet: { type: mongoose.Schema.Types.ObjectId, ref: "Wallet" }, // Reference to the participant's wallet
     },
   ],
 });
 
-// Instance method to get the current number of participants.
-eventSchema.methods.getParticipantCount = function () {
-  return this.participants.length;
-};
-
-// Instance method to get the number of available slots.
-eventSchema.methods.getAvailableSlots = function () {
-  return this.maxParticipants - this.participants.length;
-};
-
 const Event = mongoose.model("Event", eventSchema);
-module.exports = Event;
+export default Event;
