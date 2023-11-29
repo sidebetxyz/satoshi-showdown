@@ -1,13 +1,18 @@
-const Wallet = require("../models/walletModel");
-const { encrypt, decrypt } = require("./encryption"); // Assuming you have encryption utilities
+import WalletModel from "../models/walletModel.js";
+import { encrypt, decrypt } from "./encryption.js";
 
-async function storePrivateKey(address, privateKey) {
+/**
+ * Stores a private key securely in the database after encryption.
+ * @param {string} address - The associated wallet address.
+ * @param {string} privateKey - The private key to be stored.
+ * @returns {Promise<string>} The ID of the stored wallet.
+ */
+export async function storePrivateKey(address, privateKey) {
   try {
     const encryptedKey = encrypt(privateKey);
-    const wallet = new Wallet({ address, privateKey: encryptedKey });
+    const wallet = new WalletModel({ address, privateKey: encryptedKey });
     await wallet.save();
 
-    // Return the saved wallet's ID
     return wallet._id;
   } catch (error) {
     console.error("Error storing private key:", error);
@@ -15,14 +20,17 @@ async function storePrivateKey(address, privateKey) {
   }
 }
 
-async function retrievePrivateKey(address) {
+/**
+ * Retrieves a private key from the database using the wallet address.
+ * @param {string} address - The address of the wallet.
+ * @returns {Promise<string|null>} The decrypted private key or null if not found.
+ */
+export async function retrievePrivateKey(address) {
   try {
-    const wallet = await Wallet.findOne({ address });
+    const wallet = await WalletModel.findOne({ address });
     return wallet ? decrypt(wallet.privateKey) : null;
   } catch (error) {
     console.error("Error retrieving private key:", error);
     return null; // Or handle the error as appropriate
   }
 }
-
-module.exports = { storePrivateKey, retrievePrivateKey };
