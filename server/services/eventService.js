@@ -4,24 +4,63 @@ import TransactionService from "./transactionService.js";
 import WebhookService from "./webhookService.js";
 
 /**
- * EventService for managing gaming events, including event creation, participant management, and updates.
+ * EventService - Manages gaming events, including their creation, updates, and participant management.
  */
 export class EventService {
   constructor() {
-    // Instantiate dependencies for event-related operations
+    // Dependencies for event-related operations
     this.walletService = new WalletService();
     this.transactionService = new TransactionService();
     this.webhookService = new WebhookService();
   }
 
   /**
-   * Creates a new event, initializing necessary resources like wallet and transaction.
-   * @param {Object} eventData - Data for creating a new event.
-   * @returns {Object} Data of the newly created event.
+   * Creates a new event and sets up related resources like wallets and transactions.
+   * @param {Object} eventData - Data for creating the new event.
+   * @returns {Promise<Object>} - Data of the newly created event.
    */
   async createEvent(eventData) {
-    // Implementation for event creation
-    // Utilize the wallet, transaction, and webhook services as needed
+    try {
+      // Create a new wallet for the event
+      const newWallet = await this.walletService.createSegwitWallet();
+
+      // Create a transaction for the event's entry fee
+      const newTransaction = await this.transactionService.createTransaction(
+        newWallet._id,
+        newWallet.address,
+        eventData.entryFee
+      );
+
+      // Setup a webhook for monitoring the transaction
+      const newWebhook = await this.webhookService.createWebhook(
+        newWallet.address,
+        newTransaction._id,
+        eventData.confirmations
+      );
+
+      // Create a new event model with initial data
+      const newEvent = new EventModel({
+        ...eventData,
+        participants: [
+          {
+            wallet: newWallet._id,
+            transaction: newTransaction._id,
+            depositAddress: newWallet.address,
+            transactionUniqueId: newTransaction.uniqueId,
+          },
+        ],
+        status: "awaitingDeposit",
+      });
+
+      // Save the new event to the database
+      await newEvent.save();
+
+      // Return the created event data
+      return newEvent;
+    } catch (error) {
+      console.error("Error in creating event:", error);
+      throw error;
+    }
   }
 
   /**
@@ -42,8 +81,7 @@ export class EventService {
   async joinEvent(publicId, participantData) {
     // Implementation for participant joining an event
   }
-
-  // Additional methods for event management can be added here
+  // Other methods for retrieving and joining events can be implemented similarly
 }
 
 export default EventService;

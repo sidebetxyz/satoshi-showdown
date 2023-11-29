@@ -2,27 +2,47 @@ import mongoose from "mongoose";
 import crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
 
-// Schema for event management in the application
+/**
+ * Event Schema
+ *
+ * The Event schema is designed to represent and manage gaming events within the application.
+ * It includes various fields to capture essential details about each event, including unique identifiers,
+ * event-specific information, participant data, and more.
+ */
 const eventSchema = new mongoose.Schema({
+  // A private, internal unique identifier for the event, generated using random bytes for enhanced security.
   privateSerialNumber: {
     type: String,
     required: true,
     unique: true,
-    default: () => crypto.randomBytes(16).toString("hex"), // Internal unique identifier for the event
+    default: () => crypto.randomBytes(16).toString("hex"),
   },
+  // A public identifier for external reference, generated using UUID v4.
   publicId: {
     type: String,
     required: true,
     unique: true,
-    default: uuidv4, // Publicly visible identifier, used for external references
+    default: uuidv4,
   },
-  name: { type: String, required: true }, // Name of the event
-  description: String, // Brief description of the event
-  type: { type: String, required: true }, // Type/category of the event
-  entryFee: { type: Number, required: true }, // Entry fee required for participation
-  maxParticipants: { type: Number, required: true }, // Maximum number of participants allowed in the event
-  startTime: { type: Date, default: Date.now }, // Scheduled start time of the event
-  endTime: Date, // Scheduled end time of the event
+  // The name of the event, providing a clear and descriptive title.
+  name: { type: String, required: true },
+  // An optional description of the event, offering further details about what participants can expect.
+  description: String,
+  // The type of event, categorizing the event for easier management and user understanding.
+  type: { type: String, required: true },
+  // The entry fee required for participation, essential for prize pool management.
+  entryFee: { type: Number, required: true },
+  // The maximum number of participants allowed, ensuring event scalability.
+  maxParticipants: { type: Number, required: true },
+  // The minimum number of participants required for the event to proceed.
+  minParticipants: { type: Number, default: 1 },
+  // The scheduled start time of the event, providing clarity on when the event will commence.
+  startTime: { type: Date, default: Date.now },
+  // The scheduled end time of the event, allowing for time-bound events.
+  endTime: Date,
+  // The duration of the event in minutes, providing flexibility in event timing.
+  eventLength: { type: Number },
+  // The current status of the event, tracking its lifecycle from creation to conclusion.
   status: {
     type: String,
     enum: [
@@ -34,12 +54,13 @@ const eventSchema = new mongoose.Schema({
       "cancelled",
     ],
     default: "awaitingDeposit",
-  }, // Current status of the event
+  },
+  // An array of participants, each with essential details like wallet and transaction information.
   participants: [
     {
-      depositAddress: String, // Address for the participant's deposit
-      transactionUniqueId: String, // Unique identifier for the transaction associated with the participant
-      wallet: { type: mongoose.Schema.Types.ObjectId, ref: "Wallet" }, // Reference to the participant's wallet
+      depositAddress: String, // Address for the participant's deposit.
+      transactionUniqueId: String, // Unique identifier for the related transaction.
+      wallet: { type: mongoose.Schema.Types.ObjectId, ref: "Wallet" }, // Reference to the participant's wallet.
     },
   ],
 });
