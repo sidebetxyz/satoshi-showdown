@@ -1,17 +1,23 @@
-const mongoose = require("mongoose");
-const log = require("./log"); // Assuming you have a logging utility
-
+// database.js
 /**
- * Database Utility
+ * Database Utility for Satoshi Showdown
  *
- * Handles the connection and disconnection processes with the MongoDB database.
- * Uses Mongoose for ORM (Object-Relational Mapping) functionalities, providing
- * a straightforward way to interact with MongoDB.
+ * Manages the MongoDB database connection lifecycle using Mongoose.
+ * Provides functions to connect and disconnect from the MongoDB database,
+ * ensuring robust and reliable database interactions throughout the application.
  */
 
+const mongoose = require("mongoose");
+const log = require("./log"); // Importing the logging utility
+
+// Connect to MongoDB Database
 /**
- * Connects to MongoDB using Mongoose.
- * This function will be invoked when the server starts.
+ * Establishes a connection to the MongoDB database using Mongoose.
+ * This function is invoked when the server starts to set up the database connection.
+ *
+ * @async
+ * @function connectToDB
+ * @throws {Error} - If the MongoDB URI is not set or the connection attempt fails.
  */
 const connectToDB = async () => {
   try {
@@ -23,13 +29,18 @@ const connectToDB = async () => {
     log.info("Connected to MongoDB Atlas via Mongoose");
   } catch (err) {
     log.error(`Failed to connect to MongoDB Atlas: ${err.message}`);
-    throw err; // Rethrow the error for further handling
+    throw err; // Propagating the error for further handling
   }
 };
 
+// Disconnect from MongoDB Database
 /**
- * Disconnects from MongoDB.
- * This function will be invoked when the server stops or when needed.
+ * Gracefully closes the connection to the MongoDB database.
+ * This function is generally invoked when the server is shutting down.
+ *
+ * @async
+ * @function disconnectDB
+ * @throws {Error} - If the disconnection attempt fails.
  */
 const disconnectDB = async () => {
   try {
@@ -37,8 +48,9 @@ const disconnectDB = async () => {
     log.info("Disconnected from MongoDB Atlas");
   } catch (err) {
     log.error(`Failed to disconnect from MongoDB Atlas: ${err.message}`);
-    throw err; // Rethrow the error for further handling
+    throw err; // Propagating the error for further handling
   }
 };
 
+// Exporting the database connection functions
 module.exports = { connectToDB, disconnectDB };

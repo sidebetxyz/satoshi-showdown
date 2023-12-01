@@ -1,73 +1,75 @@
+// server.js
 /**
  * Server Configuration for Satoshi Showdown
  *
- * This server setup includes configuring HTTPS, connecting to the MongoDB database,
- * and setting up essential middlewares for security and performance. The server
- * also handles graceful shutdown to ensure proper closure of database connections.
+ * Initializes and configures the Express server for the Satoshi Showdown application.
+ * Includes middleware setup for CORS, security, logging, and JSON parsing.
+ * Manages HTTPS server creation, database connections, and graceful shutdown procedures.
  */
 
-// Environment Variables: Load at the beginning for configuration settings
+// Environment Configuration
 require("dotenv").config();
 
-// Module Imports: Essential modules and utilities for server setup
-const express = require("express");
+// Core Node.js Modules
 const fs = require("fs");
 const https = require("https");
+
+// Express and Related Middleware
+const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
-const { connectToDB, disconnectDB } = require("./utils/database");
 
-// Express Application Initialization
+// Utilities and Custom Modules
+const { connectToDB, disconnectDB } = require("./utils/database");
+const log = require("./utils/log");
+
+// Initialize Express Application
 const app = express();
 
-// Middlewares Setup: Enhance security, enable CORS, and handle JSON requests
-app.use(cors()); // Enable CORS for cross-origin resource sharing
-app.use(helmet()); // Secure the app by setting various HTTP headers
-app.use(express.json()); // Parse incoming JSON payloads
-app.use(morgan("dev")); // HTTP request logging
+// Middleware Setup
+app.use(cors()); // Enable Cross-Origin Resource Sharing
+app.use(helmet()); // Enhance API Security with Helmet
+app.use(express.json()); // Body Parsing Middleware for JSON
+app.use(morgan("dev")); // HTTP Request Logging
 
-// Root Route: Basic health check endpoint
+// Establish Database Connection
+connectToDB();
+
+// Define Root Route for Basic Health Check
 app.get("/", (req, res) => {
   res.status(200).send("Server is running");
 });
 
-// Database Connection: Connect to MongoDB
-connectToDB();
-
-// SSL Configuration: Read SSL certificate files for HTTPS setup
+// HTTPS Server Setup
 const privateKey = fs.readFileSync(process.env.SSL_PRIVATE_KEY_PATH, "utf8");
 const certificate = fs.readFileSync(process.env.SSL_CERTIFICATE_PATH, "utf8");
 const credentials = { key: privateKey, cert: certificate };
-
-// HTTPS Server Initialization: Start the server with SSL credentials
-const httpsServer = https.createServer(credentials, app);
 const port = process.env.PORT || 3000;
+
+// Create and Start HTTPS Server
+const httpsServer = https.createServer(credentials, app);
 httpsServer.listen(port, () => {
-  console.log(`Server running on https://localhost:${port}`);
+  log.info(`Server running on https://localhost:${port}`);
 });
 
-// Graceful Shutdown Function: Ensures clean disconnection from the database
+// Graceful Shutdown Handling
 const gracefulShutdown = () => {
-  console.log("Shutting down gracefully.");
-  httpsServer.close(async () => {
-    console.log("Closed out remaining connections.");
-    await disconnectDB(); // Disconnect from database
-    process.exit(0);
-  });
-
-  // Force shutdown if graceful shutdown fails
-  setTimeout(() => {
-    console.error(
-      "Could not close connections in time, forcefully shutting down"
-    );
-    process.exit(1);
-  }, 10000);
+  log.info("Initiating graceful shutdown.");
+  disconnectDB()
+    .then(() => {
+      httpsServer.close(() => {
+        log.info("Server has been shut down.");
+      });
+    })
+    .catch((err) => {
+      log.error(`Error during shutdown: ${err.message}`);
+    });
 };
 
-// Process Signals Handling: Listen for termination signals for graceful shutdown
+// Signal Handling for Server Termination
 process.on("SIGTERM", gracefulShutdown);
 process.on("SIGINT", gracefulShutdown);
 
-// Export the Express app for testing purposes
+// Export Express App for Testing Purposes
 module.exports = app;
