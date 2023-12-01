@@ -23,6 +23,7 @@ const morgan = require("morgan");
 // Utilities and Custom Modules
 const { connectToDB, disconnectDB } = require("./utils/database");
 const log = require("./utils/log");
+const apiUtil = require("./utils/api"); // Importing the API utility
 
 // Initialize Express Application
 const app = express();
@@ -39,6 +40,18 @@ connectToDB();
 // Define Root Route for Basic Health Check
 app.get("/", (req, res) => {
   res.status(200).send("Server is running");
+});
+
+// Webhook Callback Endpoint
+app.post("/webhooks", (req, res) => {
+  try {
+    // Process the callback data using the API utility
+    apiUtil.processCallback(req.body);
+    res.status(200).send("Webhook callback processed successfully");
+  } catch (error) {
+    log.error(`Error processing webhook callback: ${error.message}`);
+    res.status(500).send("Error processing webhook callback");
+  }
 });
 
 // HTTPS Server Setup
