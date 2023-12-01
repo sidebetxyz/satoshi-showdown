@@ -8,7 +8,7 @@ yarn.lock
 *.log
 
 # Environment variables
-.env.*
+.env
 
 # SSL certificates
 *.pem

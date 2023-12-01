@@ -1,43 +1,44 @@
-import mongoose from "mongoose";
-import log from "./log.js"; // Import the log utility
+const mongoose = require("mongoose");
+const log = require("./log"); // Assuming you have a logging utility
 
 /**
- * Establishes and manages the connection to the MongoDB database.
- * This module uses Mongoose for Object Data Modeling (ODM) to interact with MongoDB.
- */
-
-/**
- * Establishes a connection to the MongoDB database using Mongoose.
- * Attempts to connect to the MongoDB Atlas cluster with the URI provided in the environment variables.
+ * Database Utility
  *
- * @async
- * @function connectToDB
- * @throws Will throw an error if the connection to the database fails.
+ * Handles the connection and disconnection processes with the MongoDB database.
+ * Uses Mongoose for ORM (Object-Relational Mapping) functionalities, providing
+ * a straightforward way to interact with MongoDB.
  */
-export async function connectToDB() {
-  try {
-    const uri = process.env.MONGODB_URI; // MongoDB connection URI
-    await mongoose.connect(uri); // Attempt to establish a connection
-    log.info("Connected to MongoDB Atlas via Mongoose"); // Log success message
-  } catch (err) {
-    log.error("Failed to connect to MongoDB Atlas", err); // Log error message
-    throw err; // Propagate the error
-  }
-}
 
 /**
- * Disconnects from the MongoDB database.
- * Ensures a graceful shutdown of the database connection when the application stops.
- *
- * @async
- * @function disconnectDB
+ * Connects to MongoDB using Mongoose.
+ * This function will be invoked when the server starts.
  */
-export async function disconnectDB() {
+const connectToDB = async () => {
   try {
-    await mongoose.disconnect(); // Attempt to close the MongoDB connection
-    log.info("Disconnected from MongoDB Atlas"); // Log success message
+    const dbURI = process.env.MONGODB_URI;
+    if (!dbURI) {
+      throw new Error("MongoDB URI is not defined in environment variables");
+    }
+    await mongoose.connect(dbURI);
+    log.info("Connected to MongoDB Atlas via Mongoose");
   } catch (err) {
-    log.error("Failed to disconnect from MongoDB Atlas", err); // Log error message
-    throw err; // Propagate the error
+    log.error(`Failed to connect to MongoDB Atlas: ${err.message}`);
+    throw err; // Rethrow the error for further handling
   }
-}
+};
+
+/**
+ * Disconnects from MongoDB.
+ * This function will be invoked when the server stops or when needed.
+ */
+const disconnectDB = async () => {
+  try {
+    await mongoose.disconnect();
+    log.info("Disconnected from MongoDB Atlas");
+  } catch (err) {
+    log.error(`Failed to disconnect from MongoDB Atlas: ${err.message}`);
+    throw err; // Rethrow the error for further handling
+  }
+};
+
+module.exports = { connectToDB, disconnectDB };

@@ -1,25 +1,82 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
-// Schema for blockchain transactions associated with wallets
+/**
+ * Transaction Model
+ *
+ * Manages financial transactions on the Satoshi Showdown platform, particularly focusing
+ * on cryptocurrency-based transactions. This model ensures the integrity and security of
+ * transactions by tracking amounts, status, and blockchain confirmations.
+ */
 const transactionSchema = new mongoose.Schema({
-  address: { type: String, required: true }, // Blockchain address involved in the transaction
-  uniqueId: { type: String, required: true, unique: true }, // Unique identifier for the transaction, used for user interaction without registration
-  wallet: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Wallet",
+  // Unique identifier for the transaction within the system
+  transactionId: {
+    type: String,
     required: true,
-  }, // Wallet associated with the transaction
-  expectedAmount: { type: Number, required: true }, // Expected amount of cryptocurrency for the transaction
-  receivedAmount: { type: Number, default: 0 }, // Actual received amount, used for validation
+    unique: true,
+  },
+
+  // Related user information for transaction tracking
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+
+  // The expected monetary amount for the transaction
+  expectedAmount: {
+    type: Number,
+    required: true,
+  },
+
+  // The actual received amount, which may differ from the expected amount
+  receivedAmount: {
+    type: Number,
+    default: 0,
+  },
+
+  // Cryptocurrency address associated with the transaction
+  address: {
+    type: String,
+    required: true,
+  },
+
+  // Transaction status to track its lifecycle (e.g., pending, completed)
   status: {
     type: String,
-    enum: ["waiting", "processing", "completed", "cancelled"],
-    default: "waiting",
-  }, // Status of the transaction, indicating its current phase
-  createdTimestamp: { type: Date, default: Date.now }, // Timestamp when the transaction was created
-  startedConfirmingTimestamp: Date, // Timestamp indicating when the transaction started confirming on the blockchain
-  completedAtTimestamp: Date, // Timestamp when the transaction reached the required number of confirmations
+    enum: ["pending", "completed", "failed"],
+    default: "pending",
+  },
+
+  // Number of confirmations from the blockchain, indicating transaction security
+  confirmations: {
+    type: Number,
+    default: 0,
+  },
+
+  // Optional confidence factor from services like BlockCypher for risk assessment
+  confidenceFactor: {
+    type: Number,
+    default: null,
+  },
+
+  // Timestamps for transaction creation and updates
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
+// Ensure updatedAt field is modified on document updates
+transactionSchema.pre("save", function (next) {
+  this.updatedAt = new Date();
+  next();
+});
+
+// Compile the schema into a model
 const Transaction = mongoose.model("Transaction", transactionSchema);
-export default Transaction;
+
+module.exports = Transaction;
