@@ -1,10 +1,9 @@
-// encryption.js
+// encryptionUtil.js
 /**
- * Encryption Utility
+ * Encryption Utility for Satoshi Showdown
  *
- * Implements AES-256-GCM encryption to secure sensitive data, particularly wallet private keys.
- * This utility ensures strong cryptographic practices, including the use of a secure key,
- * random IVs for each operation, and integrity checking with GCM mode.
+ * Implements AES-256-GCM encryption to secure sensitive data.
+ * Ensures strong cryptographic practices and integrity checking.
  */
 
 const crypto = require("crypto");

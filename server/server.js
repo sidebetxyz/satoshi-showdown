@@ -3,7 +3,7 @@
  * Server Configuration for Satoshi Showdown
  *
  * Initializes and configures the Express server for the Satoshi Showdown application.
- * Includes middleware setup for CORS, security, logging, and JSON parsing.
+ * Includes middleware setup for CORS, security, logging, JSON parsing, and global error handling.
  * Manages HTTPS server creation, database connections, and graceful shutdown procedures.
  */
 
@@ -21,9 +21,9 @@ const helmet = require("helmet");
 const morgan = require("morgan");
 
 // Utilities and Custom Modules
-const { connectToDB, disconnectDB } = require("./utils/database");
-const log = require("./utils/log");
-const apiUtil = require("./utils/api"); // Importing the API utility
+const { connectToDB, disconnectDB } = require("./utils/databaseUtil");
+const log = require("./utils/logUtil");
+const { errorHandler } = require("./utils/errorUtil");
 
 // Initialize Express Application
 const app = express();
@@ -32,7 +32,7 @@ const app = express();
 app.use(cors()); // Enable Cross-Origin Resource Sharing
 app.use(helmet()); // Enhance API Security with Helmet
 app.use(express.json()); // Body Parsing Middleware for JSON
-app.use(morgan("dev")); // HTTP Request Logging
+app.use(morgan("combined", { stream: log.stream })); // HTTP Request Logging
 
 // Establish Database Connection
 connectToDB();
@@ -43,16 +43,17 @@ app.get("/", (req, res) => {
 });
 
 // Webhook Callback Endpoint
-app.post("/webhooks", (req, res) => {
-  try {
-    // Process the callback data using the API utility
-    apiUtil.processCallback(req.body);
-    res.status(200).send("Webhook callback processed successfully");
-  } catch (error) {
-    log.error(`Error processing webhook callback: ${error.message}`);
-    res.status(500).send("Error processing webhook callback");
-  }
+app.post("/webhook", (req, res, next) => {
+  // Process webhook callback data here
+  // Placeholder for callback processing logic
+  // For any errors, pass them to next() to be handled by errorHandler
+  // res.status(200).send("Webhook callback processed successfully");
+  // In case of errors:
+  // next(new Error('Webhook processing failed'));
 });
+
+// Global Error Handling
+app.use(errorHandler); // Custom Error Handling Middleware
 
 // HTTPS Server Setup
 const privateKey = fs.readFileSync(process.env.SSL_PRIVATE_KEY_PATH, "utf8");
@@ -77,6 +78,7 @@ const gracefulShutdown = () => {
     })
     .catch((err) => {
       log.error(`Error during shutdown: ${err.message}`);
+      // Note: errorHandler is not used here as this is outside the scope of Express middleware
     });
 };
 

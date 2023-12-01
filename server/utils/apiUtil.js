@@ -1,12 +1,13 @@
-const axios = require("axios");
-const log = require("./log");
-
+// apiUtil.js
 /**
- * Generalized API Interaction Utility
+ * API Interaction Utility for Satoshi Showdown
  *
- * Facilitates communication with various external APIs. This utility abstracts the complexity
- * of API calls, error handling, and response processing, making it adaptable for different API services.
+ * Facilitates communication with external APIs, abstracting complexity and error handling.
+ * Supports various types of API requests and responses.
  */
+
+const axios = require("axios");
+const log = require("./logUtil");
 
 /**
  * Makes a GET request to the specified URL.

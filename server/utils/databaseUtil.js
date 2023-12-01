@@ -1,14 +1,13 @@
-// database.js
+// databaseUtil.js
 /**
  * Database Utility for Satoshi Showdown
  *
- * Manages the MongoDB database connection lifecycle using Mongoose.
- * Provides functions to connect and disconnect from the MongoDB database,
- * ensuring robust and reliable database interactions throughout the application.
+ * Manages MongoDB database connection using Mongoose.
+ * Handles connection and disconnection processes, ensuring robust database interactions.
  */
 
 const mongoose = require("mongoose");
-const log = require("./log"); // Importing the logging utility
+const log = require("./logUtil"); // Importing the logging utility
 
 // Connect to MongoDB Database
 /**
