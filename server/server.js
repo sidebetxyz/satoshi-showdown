@@ -22,8 +22,8 @@ const morgan = require("morgan");
 
 // Utilities and Custom Modules
 const { connectToDB, disconnectDB } = require("./utils/databaseUtil");
-const log = require("./utils/logUtil");
 const { errorHandler } = require("./utils/errorUtil");
+const log = require("./utils/logUtil");
 
 // Initialize Express Application
 const app = express();

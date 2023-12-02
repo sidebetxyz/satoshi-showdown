@@ -2,14 +2,14 @@
 /**
  * Logging Utility for Satoshi Showdown
  *
- * Provides a centralized logging mechanism. Supports different log levels and formats.
- * Integrates with Winston for advanced logging features.
+ * Manages application-wide logging with varying levels for effective monitoring and debugging.
+ * Utilizes Winston for comprehensive logging functionalities, including custom formats and transport mechanisms.
  */
 
 const winston = require("winston");
 
 // Define custom logging levels
-const levels = {
+const logLevels = {
   error: 0,
   warn: 1,
   info: 2,
@@ -17,35 +17,32 @@ const levels = {
   debug: 4,
 };
 
-// Format for log output
-const format = winston.format.combine(
+// Custom log format
+const logFormat = winston.format.combine(
   winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
   winston.format.printf(
     (info) => `[${info.timestamp}][${info.level.toUpperCase()}] ${info.message}`
   )
 );
 
-// Transports define where the log messages will be outputted
-const transports = [
-  new winston.transports.Console(),
-  // Additional transports (e.g., file) can be added here
+// Transport setup (e.g., console, file, etc.)
+const logTransports = [
+  new winston.transports.Console(), // Logs to console
+  // Additional transports can be added as needed (e.g., file transport)
 ];
 
-// Create the Winston logger
-const log = winston.createLogger({
+// Create a Winston logger instance
+const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || "debug",
-  levels,
-  format,
-  transports,
+  levels: logLevels,
+  format: logFormat,
+  transports: logTransports,
 });
 
-/**
- * Stream for morgan middleware, integrates with Winston.
- * Used for logging HTTP requests.
- */
-log.stream = {
-  write: (message) => log.http(message.trim()),
+// Stream for integrating with middleware like morgan
+logger.stream = {
+  write: (message) => logger.http(message.trim()),
 };
 
 // Export the logger
-module.exports = log;
+module.exports = logger;

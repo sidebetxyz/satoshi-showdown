@@ -9,49 +9,31 @@
 const axios = require("axios");
 const log = require("./logUtil");
 
-/**
- * Makes a GET request to the specified URL.
- *
- * @param {string} url - The URL to make the GET request to.
- * @param {Object} params - Query parameters for the request.
- * @returns {Promise<Object>} - The response from the API.
- */
+// GET Request Handler
 const get = async (url, params = {}) => {
   try {
     const response = await axios.get(url, { params });
     return response.data;
   } catch (error) {
     log.error(`GET request failed: ${error.message}`);
-    throw error; // Rethrow the error for further handling
+    throw error;
   }
 };
 
-/**
- * Makes a POST request to the specified URL.
- *
- * @param {string} url - The URL to make the POST request to.
- * @param {Object} data - The data to be sent in the request body.
- * @returns {Promise<Object>} - The response from the API.
- */
+// POST Request Handler
 const post = async (url, data) => {
   try {
     const response = await axios.post(url, data);
     return response.data;
   } catch (error) {
     log.error(`POST request failed: ${error.message}`);
-    throw error; // Rethrow the error for further handling
+    throw error;
   }
 };
 
-/**
- * Function to process API callbacks (if applicable).
- *
- * @param {Object} callbackData - The data received from the API callback.
- */
+// Callback Processing Handler
 const processCallback = (callbackData) => {
-  // Implementation of processing the callback data.
-  // This could involve updating records, notifying users, etc.
-  // Log and handle any errors that occur during processing.
+  // Implement callback processing logic here
 };
 
 module.exports = { get, post, processCallback };

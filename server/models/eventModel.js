@@ -1,12 +1,13 @@
-const mongoose = require("mongoose");
-
+// eventModel.js
 /**
  * Event Model
  *
- * Represents and manages events within the Satoshi Showdown platform. This model
- * includes all necessary details for event organization, participant management,
- * and specific features like participant-specific streaming links.
+ * Manages events within the Satoshi Showdown platform, encompassing details for
+ * event organization, participant management, and streaming/betting features.
  */
+
+const mongoose = require("mongoose");
+
 const eventSchema = new mongoose.Schema({
   // Basic event details
   name: { type: String, required: true },
@@ -22,52 +23,42 @@ const eventSchema = new mongoose.Schema({
   entryFee: Number,
   prizePool: Number,
 
-  // Event creator details
+  // Event creator and participants
   creator: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-
-  // Participant details along with their streaming links
   participants: [
     {
       user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-      streamingLink: String, // Link to participant's stream of the event
+      streamingLink: String,
     },
   ],
 
-  // Configurable settings for the event
+  // Event configuration settings
   config: {
     maxParticipants: Number,
-    // Other customizable settings
+    // Additional customizable settings
   },
 
-  // Transactions related to the event
+  // Related transactions
   transactions: [{ type: mongoose.Schema.Types.ObjectId, ref: "Transaction" }],
 
-  // Streaming and side betting
+  // Streaming and betting options
   streamingUrl: String,
-  streamingSchedule: {
-    start: Date,
-    end: Date,
-  },
+  streamingSchedule: { start: Date, end: Date },
   bettingOptions: [
     {
       type: String,
       description: String,
       odds: Number,
-      // Other betting-related fields
     },
   ],
 
-  // Engagement and analytics
+  // Engagement, feedback, and compliance
   viewCount: Number,
   feedback: [{ type: mongoose.Schema.Types.ObjectId, ref: "UserFeedback" }],
   socialSharingLinks: [String],
-
-  // Compliance and legal aspects
   ageRestriction: Number,
   geographicRestrictions: [String],
 });
 
-// Model creation
 const Event = mongoose.model("Event", eventSchema);
-
 module.exports = Event;

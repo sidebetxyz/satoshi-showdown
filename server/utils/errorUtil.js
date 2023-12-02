@@ -8,12 +8,11 @@
 
 const log = require("./logUtil");
 
-// Custom error classes
 class DatabaseError extends Error {}
 class ValidationError extends Error {}
 class NotFoundError extends Error {}
 
-// Error handling middleware
+// Error Handling Middleware
 const errorHandler = (err, req, res, next) => {
   let statusCode = 500;
   let message = "An unexpected error occurred";
@@ -29,10 +28,7 @@ const errorHandler = (err, req, res, next) => {
   }
 
   log.error(`[${err.name}] ${err.message}`);
-
-  res.status(statusCode).json({
-    error: message,
-  });
+  res.status(statusCode).json({ error: message });
 };
 
 module.exports = {

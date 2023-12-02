@@ -1,5 +1,4 @@
-const mongoose = require("mongoose");
-
+// userModel.js
 /**
  * User Model
  *
@@ -7,11 +6,14 @@ const mongoose = require("mongoose");
  * It accommodates both registered and guest users, integrating personal, social,
  * and gaming profiles for a comprehensive user experience.
  */
+
+const mongoose = require("mongoose");
+
 const userSchema = new mongoose.Schema({
   // Basic user information
   username: { type: String, required: true, unique: true },
-  email: { type: String, unique: true, sparse: true }, // Sparse index for optional unique field
-  passwordHash: { type: String }, // Only for registered users
+  email: { type: String, unique: true, sparse: true },
+  passwordHash: { type: String },
   registrationDate: { type: Date, default: Date.now },
   lastActive: { type: Date, default: Date.now },
 
@@ -32,17 +34,16 @@ const userSchema = new mongoose.Schema({
     instagram: String,
     personalWebsite: String,
     xboxLive: String,
-    nintendoOnline: String, // Nintendo's Online Service
-    playStationNetwork: String, // PlayStation Network
-    steam: String, // Steam
-    battleNet: String, // Blizzard's Battle.net
-    // Additional social and gaming profiles as needed
+    nintendoOnline: String,
+    playStationNetwork: String,
+    steam: String,
+    battleNet: String,
   },
 
-  // IP address tracking (especially for guest users)
+  // IP address tracking
   ipAddress: { type: String },
 
-  // Organizational Affiliation (if applicable)
+  // Organizational Affiliation
   organization: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Organization",
@@ -57,7 +58,5 @@ const userSchema = new mongoose.Schema({
   transactions: [{ type: mongoose.Schema.Types.ObjectId, ref: "Transaction" }],
 });
 
-// Model creation
 const User = mongoose.model("User", userSchema);
-
 module.exports = User;
