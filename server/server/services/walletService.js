@@ -1,9 +1,9 @@
 const Wallet = require('../models/walletModel');
-const walletUtil = require('../utils/walletUtil');
+const keyUtil = require('../utils/keyUtil');
 
 const WalletService = {
     async createWalletForEvent(eventId, userId) {
-        const { address, encryptedPrivateKey } = walletUtil.generateSegWitWallet();
+        const { address, encryptedPrivateKey } = keyUtil.generateSegWitWallet();
 
         // Create a new wallet with the provided details
         const wallet = new Wallet({

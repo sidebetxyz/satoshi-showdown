@@ -15,7 +15,7 @@ const ECPair = ECPairFactory(ecc);
 
 const network = bitcoin.networks.testnet; // Use bitcoin.networks.bitcoin for mainnet
 
-const walletUtil = {
+const keyUtil = {
     /**
      * Generates a new SegWit Bitcoin wallet.
      * Creates a P2WPKH address and encrypts the corresponding private key.
@@ -30,4 +30,4 @@ const walletUtil = {
     }
 };
 
-module.exports = walletUtil;
+module.exports = keyUtil;
