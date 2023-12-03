@@ -8,9 +8,27 @@
 
 const log = require("./logUtil");
 
-class DatabaseError extends Error {}
-class ValidationError extends Error {}
-class NotFoundError extends Error {}
+// Custom Error Classes
+class DatabaseError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'DatabaseError';
+  }
+}
+
+class ValidationError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'ValidationError';
+  }
+}
+
+class NotFoundError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'NotFoundError';
+  }
+}
 
 // Error Handling Middleware
 const errorHandler = (err, req, res, next) => {

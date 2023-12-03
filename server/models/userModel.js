@@ -1,13 +1,13 @@
 // userModel.js
 /**
- * User Model
+ * User Model for Satoshi Showdown
  *
- * Defines the schema for user profiles on the Satoshi Showdown platform.
- * It accommodates both registered and guest users, integrating personal, social,
- * and gaming profiles for a comprehensive user experience.
+ * Defines the schema for user profiles. Accommodates both registered and guest users, 
+ * each identified by a unique identifier.
  */
 
 const mongoose = require("mongoose");
+const { v4: uuidv4 } = require('uuid');
 
 const userSchema = new mongoose.Schema({
   // Basic user information
@@ -39,6 +39,9 @@ const userSchema = new mongoose.Schema({
     steam: String,
     battleNet: String,
   },
+
+  // Universal unique identifier for all users
+  uniqueIdentifier: { type: String, default: uuidv4, unique: true },
 
   // IP address tracking
   ipAddress: { type: String },

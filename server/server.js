@@ -25,6 +25,9 @@ const log = require("./utils/logUtil");
 const { errorHandler } = require("./utils/errorUtil");
 const { connectToDB, disconnectDB } = require("./utils/databaseUtil");
 
+// Route Modules
+const eventRoutes = require('./routes/eventRoutes'); // Require the event routes
+
 // Initialize Express Application
 const app = express();
 
@@ -42,15 +45,8 @@ app.get("/", (req, res) => {
   res.status(200).send("Server is running");
 });
 
-// Webhook Callback Endpoint
-app.post("/webhook", (req, res, next) => {
-  // Process webhook callback data here
-  // Placeholder for callback processing logic
-  // For any errors, pass them to next() to be handled by errorHandler
-  // res.status(200).send("Webhook callback processed successfully");
-  // In case of errors:
-  // next(new Error('Webhook processing failed'));
-});
+// Event Routes
+app.use('/event', eventRoutes); // Use event routes at /event path
 
 // Global Error Handling
 app.use(errorHandler); // Custom Error Handling Middleware

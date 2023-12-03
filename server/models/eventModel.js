@@ -1,58 +1,61 @@
-// eventModel.js
-/**
- * Event Model
- *
- * Manages events within the Satoshi Showdown platform, encompassing details for
- * event organization, participant management, and streaming/betting features.
- */
-
+// Importing Mongoose library for database interactions
 const mongoose = require("mongoose");
 
+/**
+ * Event Model for Satoshi Showdown
+ *
+ * Manages the lifecycle and properties of events within the platform.
+ * The schema defines the structure and constraints of event data, including details
+ * like organization, participant management, and streaming/betting features.
+ */
 const eventSchema = new mongoose.Schema({
-  // Basic event details
+  // Event name is mandatory
   name: { type: String, required: true },
+
+  // Optional fields for additional event details
   description: String,
   type: String,
-  startDate: { type: Date, required: true },
-  endDate: Date,
+  startTime: { type: Date, required: true },
+  endTime: Date,
   status: {
     type: String,
     enum: ["planning", "active", "completed"],
     default: "planning",
   },
-  entryFee: Number,
+  readyParticipants: { type: Number, default: 0 },
+  activeParticipants: { type: Number, default: 0 },
+  maxParticipants: Number,
+  entryFee: { type: Number, required: true },
   prizePool: Number,
 
-  // Event creator and participants
+  // Linking the event creator and participants
   creator: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  participants: [
-    {
-      user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-      streamingLink: String,
-    },
-  ],
+  participants: [{
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    streamingLink: String,
+  }],
 
-  // Event configuration settings
-  config: {
-    maxParticipants: Number,
-    // Additional customizable settings
-  },
-
-  // Related transactions
+  // Associating transactions with the event
   transactions: [{ type: mongoose.Schema.Types.ObjectId, ref: "Transaction" }],
 
-  // Streaming and betting options
+  // Recording event winners
+  winners: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+
+  // Customizable settings for the event
+  config: {
+    // Placeholder for future configuration settings
+  },
+
+  // Streaming and betting configurations
   streamingUrl: String,
   streamingSchedule: { start: Date, end: Date },
-  bettingOptions: [
-    {
-      type: String,
-      description: String,
-      odds: Number,
-    },
-  ],
+  bettingOptions: [{
+    type: String,
+    description: String,
+    odds: Number,
+  }],
 
-  // Engagement, feedback, and compliance
+  // Engagement metrics and compliance settings
   viewCount: Number,
   feedback: [{ type: mongoose.Schema.Types.ObjectId, ref: "UserFeedback" }],
   socialSharingLinks: [String],
@@ -60,5 +63,8 @@ const eventSchema = new mongoose.Schema({
   geographicRestrictions: [String],
 });
 
+// Compiling the schema into a Model
 const Event = mongoose.model("Event", eventSchema);
+
+// Exporting the Event model for use in other parts of the application
 module.exports = Event;
