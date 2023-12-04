@@ -1,16 +1,11 @@
-// transactionModel.js
 /**
- * Transaction Model
- *
- * Manages financial transactions on the Satoshi Showdown platform, particularly focusing
- * on cryptocurrency-based transactions. This model ensures the integrity and security of
- * transactions by tracking amounts, status, and blockchain confirmations.
+ * @fileoverview Transaction Model for Satoshi Showdown.
+ * Manages cryptocurrency transactions, tracking amounts, status, and confirmations.
  */
 
 const mongoose = require("mongoose");
 
 const transactionSchema = new mongoose.Schema({
-  // Transaction details
   transactionId: { type: String, required: true, unique: true },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   expectedAmount: { type: Number, required: true },
@@ -22,7 +17,6 @@ const transactionSchema = new mongoose.Schema({
     default: "pending",
   },
   confirmations: { type: Number, default: 0 },
-  confidenceFactor: { type: Number, default: null },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
