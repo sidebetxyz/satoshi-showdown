@@ -1,51 +1,68 @@
-// errorUtil.js
 /**
- * Error Handling Utility for Satoshi Showdown
- *
- * Centralizes error handling in the application.
- * Provides custom error classes and middleware for processing and logging errors.
+ * @fileoverview Error Handling Utility for Satoshi Showdown.
+ * Centralizes error handling in the application, providing custom error classes
+ * and middleware for processing and logging errors. Integrates with logging and
+ * format utilities for consistent error reporting.
  */
 
 const log = require("./logUtil");
+const { formatDate } = require("./formatUtil");
 
-// Custom Error Classes
+/**
+ * Represents an error related to database operations.
+ */
 class DatabaseError extends Error {
   constructor(message) {
-    super(message);
+    super(`Database error: ${message}`);
     this.name = 'DatabaseError';
+    this.timestamp = formatDate(new Date());
   }
 }
 
+/**
+ * Represents a validation error.
+ */
 class ValidationError extends Error {
   constructor(message) {
-    super(message);
+    super(`Validation error: ${message}`);
     this.name = 'ValidationError';
+    this.timestamp = formatDate(new Date());
   }
 }
 
+/**
+ * Represents an error when a resource is not found.
+ */
 class NotFoundError extends Error {
   constructor(message) {
-    super(message);
+    super(`Not Found: ${message}`);
     this.name = 'NotFoundError';
+    this.timestamp = formatDate(new Date());
   }
 }
 
-// Error Handling Middleware
+/**
+ * Middleware for handling errors in Express applications.
+ * 
+ * @param {Error} err - The error object.
+ * @param {Request} req - The express request object.
+ * @param {Response} res - The express response object.
+ * @param {NextFunction} next - The express next middleware function.
+ */
 const errorHandler = (err, req, res, next) => {
+  const { name, message, timestamp } = err;
   let statusCode = 500;
-  let message = "An unexpected error occurred";
+  let logMessage = `[${timestamp}][${name}] ${message}`;
 
   if (err instanceof ValidationError) {
     statusCode = 400;
-    message = err.message;
   } else if (err instanceof NotFoundError) {
     statusCode = 404;
-    message = err.message;
   } else if (err instanceof DatabaseError) {
-    message = "Database error";
+    logMessage = `[${timestamp}][${name}] Database operation failed`;
   }
 
-  log.error(`[${err.name}] ${err.message}`);
+  log.error(logMessage);
   res.status(statusCode).json({ error: message });
 };
 

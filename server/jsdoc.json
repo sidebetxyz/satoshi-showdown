@@ -1,0 +1,34 @@
+{
+    "source": {
+        "include": [
+            "server.js",
+            "controllers",
+            "models",
+            "routes",
+            "services",
+            "tests",
+            "utils"
+        ],
+        "exclude": [
+            "node_modules"
+        ],
+        "includePattern": ".+\\.js(doc|x)?$",
+        "excludePattern": "(^|\\/|\\\\)_"
+    },
+    "plugins": [
+        "plugins/markdown"
+    ],
+    "opts": {
+        "encoding": "utf8",
+        "destination": "./docs",
+        "recurse": true,
+        "verbose": true
+    },
+    "templates": {
+        "cleverLinks": false,
+        "monospaceLinks": false,
+        "default": {
+            "outputSourceFiles": true
+        }
+    }
+}

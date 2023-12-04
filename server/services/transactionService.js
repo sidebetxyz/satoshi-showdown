@@ -1,36 +1,66 @@
+/**
+ * @fileoverview Service for managing transactions in Satoshi Showdown.
+ * Handles creating, updating, retrieving, and deleting transaction records,
+ * ensuring data integrity and consistency.
+ */
+
 const Transaction = require('../models/transactionModel');
 const { NotFoundError } = require('../utils/errorUtil');
-const { v4: uuidv4 } = require('uuid');
 
-// Service for managing transactions
-const TransactionService = {
-    // Create a new transaction
-    async createTransaction({ eventId, userId, expectedAmount, address }) {
-        const transactionId = uuidv4();
-        const transaction = new Transaction({
-            transactionId,
-            event: eventId,
-            userId,
-            expectedAmount,
-            address,
-            status: "pending"
-        });
-        await transaction.save();
-        return transaction;
-    },
-
-    // Update an existing transaction
-    async updateTransaction(transactionId, updateData) {
-        const transaction = await Transaction.findById(transactionId);
-        if (!transaction) {
-            throw new NotFoundError(`Transaction with ID ${transactionId} not found`);
-        }
-        Object.assign(transaction, updateData);
-        await transaction.save();
-        return transaction;
-    },
-
-    // Additional methods for transaction management can be added here
+/**
+ * Creates a new transaction record.
+ * 
+ * @param {Object} transactionData - Data for the new transaction.
+ * @returns {Promise<Object>} The created transaction object.
+ */
+const createTransaction = async (transactionData) => {
+    const transaction = new Transaction({ ...transactionData, status: 'pending' });
+    await transaction.save();
+    return transaction;
 };
 
-module.exports = TransactionService;
+/**
+ * Retrieves a specific transaction by its ID.
+ * 
+ * @param {string} transactionId - ID of the transaction to retrieve.
+ * @returns {Promise<Object>} The found transaction object.
+ */
+const getTransaction = async (transactionId) => {
+    const transaction = await Transaction.findById(transactionId);
+    if (!transaction) {
+        throw new NotFoundError(`Transaction with ID ${transactionId} not found`);
+    }
+    return transaction;
+};
+
+/**
+ * Retrieves all transactions from the database.
+ * 
+ * @returns {Promise<Array>} An array of all transaction objects.
+ */
+const getAllTransactions = async () => {
+    return await Transaction.find({});
+};
+
+/**
+ * Updates an existing transaction record.
+ * 
+ * @param {string} transactionId - ID of the transaction to update.
+ * @param {Object} updateData - New data for the transaction.
+ * @returns {Promise<Object>} The updated transaction object.
+ */
+const updateTransaction = async (transactionId, updateData) => {
+    const transaction = await Transaction.findByIdAndUpdate(transactionId, updateData, { new: true });
+    if (!transaction) {
+        throw new NotFoundError(`Transaction with ID ${transactionId} not found`);
+    }
+    return transaction;
+};
+
+// Exporting the functions for use in other parts of the application
+module.exports = {
+    createTransaction,
+    getTransaction,
+    getAllTransactions,
+    updateTransaction
+};

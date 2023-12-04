@@ -1,23 +1,34 @@
+/**
+ * @fileoverview Service for managing wallets in Satoshi Showdown.
+ * Provides functionalities for creating and managing cryptocurrency wallets,
+ * specifically tailored for event-related transactions.
+ */
+
 const Wallet = require('../models/walletModel');
-const keyUtil = require('../utils/keyUtil');
+const { generateSegWitBitcoinWallet } = require('../utils/keyUtil');
 
-const WalletService = {
-    async createWalletForEvent(eventId, userId) {
-        const { address, encryptedPrivateKey } = keyUtil.generateSegWitWallet();
+/**
+ * Creates a wallet for a specific event and user.
+ * Generates a new SegWit Bitcoin wallet and stores it in the database.
+ *
+ * @param {string} eventId - The ID of the event for which the wallet is being created.
+ * @param {string} userId - The ID of the user to whom the wallet will belong.
+ * @returns {Promise<Object>} The created wallet object.
+ */
+const createWalletForEvent = async (eventId, userId) => {
+    const { address, encryptedPrivateKey } = generateSegWitBitcoinWallet();
 
-        // Create a new wallet with the provided details
-        const wallet = new Wallet({
-            publicAddress: address,
-            encryptedPrivateKey,
-            currencyType: "Bitcoin",
-            user: userId
-        });
+    const wallet = new Wallet({
+        publicAddress: address,
+        encryptedPrivateKey,
+        currencyType: "Bitcoin",
+        user: userId
+    });
 
-        // Save and return the new wallet
-        await wallet.save();
-        return wallet;
-    }
-    // Additional wallet management functions can be added here
+    await wallet.save();
+    return wallet;
 };
 
-module.exports = WalletService;
+module.exports = {
+    createWalletForEvent
+};

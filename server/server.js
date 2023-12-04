@@ -1,9 +1,7 @@
-// server.js
 /**
- * Server Configuration for Satoshi Showdown
- *
- * Initializes and configures the Express server for the Satoshi Showdown application.
- * Includes middleware setup for CORS, security, logging, JSON parsing, and global error handling.
+ * @fileoverview Server configuration for Satoshi Showdown.
+ * Sets up and configures the Express server, including middleware for CORS,
+ * security, logging, JSON parsing, and global error handling.
  * Manages HTTPS server creation, database connections, and graceful shutdown procedures.
  */
 
@@ -23,35 +21,39 @@ const morgan = require("morgan");
 // Utilities and Custom Modules
 const log = require("./utils/logUtil");
 const { errorHandler } = require("./utils/errorUtil");
-const { connectToDB, disconnectDB } = require("./utils/databaseUtil");
+const { connectDatabase, disconnectDatabase } = require("./utils/databaseUtil");
 
 // Route Modules
-const eventRoutes = require('./routes/eventRoutes'); // Require the event routes
+const eventRoutes = require('./routes/eventRoutes');
+const webhookRoutes = require('./routes/webhookRoutes');
 
 // Initialize Express Application
 const app = express();
 
 // Middleware Setup
-app.use(cors()); // Enable Cross-Origin Resource Sharing
-app.use(helmet()); // Enhance API Security with Helmet
-app.use(express.json()); // Body Parsing Middleware for JSON
-app.use(morgan("combined", { stream: log.stream })); // HTTP Request Logging
+app.use(cors()); // Enables Cross-Origin Resource Sharing (CORS)
+app.use(helmet()); // Applies various security headers to HTTP responses
+app.use(express.json()); // Parses incoming JSON payloads
+app.use(morgan("combined", { stream: log.stream })); // Logs HTTP requests
 
 // Establish Database Connection
-connectToDB();
+connectDatabase();
 
-// Define Root Route for Basic Health Check
-app.get("/", (req, res) => {
-  res.status(200).send("Server is running");
-});
+/**
+ * Root route for basic health check.
+ * @route GET /
+ * @returns {string} 200 - success response - "Server is running"
+ */
+app.get("/", (req, res) => res.status(200).send("Server is running"));
 
-// Event Routes
-app.use('/event', eventRoutes); // Use event routes at /event path
+// Routes Setup
+app.use('/event', eventRoutes); // Mount event routes
+app.use('/webhook', webhookRoutes); // Mount webhook routes
 
 // Global Error Handling
-app.use(errorHandler); // Custom Error Handling Middleware
+app.use(errorHandler); // Custom error handling middleware
 
-// HTTPS Server Setup
+// HTTPS Server Configuration
 const privateKey = fs.readFileSync(process.env.SSL_PRIVATE_KEY_PATH, "utf8");
 const certificate = fs.readFileSync(process.env.SSL_CERTIFICATE_PATH, "utf8");
 const credentials = { key: privateKey, cert: certificate };
@@ -59,23 +61,17 @@ const port = process.env.PORT || 3000;
 
 // Create and Start HTTPS Server
 const httpsServer = https.createServer(credentials, app);
-httpsServer.listen(port, () => {
-  log.info(`Server running on https://localhost:${port}`);
-});
+httpsServer.listen(port, () => log.info(`Server running on https://localhost:${port}`));
 
-// Graceful Shutdown Handling
+/**
+ * Graceful shutdown function for the server.
+ * Closes the database connection and shuts down the HTTPS server.
+ */
 const gracefulShutdown = () => {
   log.info("Initiating graceful shutdown.");
-  disconnectDB()
-    .then(() => {
-      httpsServer.close(() => {
-        log.info("Server has been shut down.");
-      });
-    })
-    .catch((err) => {
-      log.error(`Error during shutdown: ${err.message}`);
-      // Note: errorHandler is not used here as this is outside the scope of Express middleware
-    });
+  disconnectDatabase()
+    .then(() => httpsServer.close(() => log.info("Server has been shut down")))
+    .catch(err => log.error(`Error during shutdown: ${err.message}`));
 };
 
 // Signal Handling for Server Termination

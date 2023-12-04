@@ -1,7 +1,5 @@
-// databaseUtil.js
 /**
- * Database Utility for Satoshi Showdown
- *
+ * @fileoverview Database Utility for Satoshi Showdown.
  * Manages MongoDB database connection using Mongoose.
  * Handles connection and disconnection processes, ensuring robust database interactions.
  */
@@ -9,8 +7,12 @@
 const mongoose = require("mongoose");
 const log = require("./logUtil");
 
-// Connect to MongoDB Database
-const connectToDB = async () => {
+/**
+ * Connects to the MongoDB Database.
+ * @returns {Promise<void>}
+ * @throws {Error} If the MongoDB URI is not defined or connection fails.
+ */
+const connectDatabase = async () => {
   try {
     const dbURI = process.env.MONGODB_URI;
     if (!dbURI) {
@@ -24,8 +26,12 @@ const connectToDB = async () => {
   }
 };
 
-// Disconnect from MongoDB Database
-const disconnectDB = async () => {
+/**
+ * Disconnects from the MongoDB Database.
+ * @returns {Promise<void>}
+ * @throws {Error} If disconnection fails.
+ */
+const disconnectDatabase = async () => {
   try {
     await mongoose.disconnect();
     log.info("Disconnected from MongoDB Atlas");
@@ -35,4 +41,4 @@ const disconnectDB = async () => {
   }
 };
 
-module.exports = { connectToDB, disconnectDB };
+module.exports = { connectDatabase, disconnectDatabase };

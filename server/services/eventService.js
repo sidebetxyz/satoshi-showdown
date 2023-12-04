@@ -1,44 +1,129 @@
+/**
+ * @fileoverview Service for managing event-related operations in Satoshi Showdown.
+ * Provides functionalities for creating, updating, deleting, and retrieving events,
+ * as well as setting up financial transactions and managing webhooks associated with these events.
+ */
+
 const Event = require('../models/eventModel');
-const WalletService = require('./walletService');
-const TransactionService = require('./transactionService');
-const { ValidationError } = require('../utils/errorUtil');
-const { eventValidator } = require('../utils/validationUtil');
+const { createWalletForEvent } = require('./walletService');
+const { createTransaction } = require('./transactionService');
+const { createWebhook } = require('./webhookService');
+const { ValidationError, NotFoundError } = require('../utils/errorUtil');
+const { validateEvent } = require('../utils/validationUtil');
 
-const EventService = {
-    async createEvent(eventData, userId) {
-        // Set event start time to now if not provided or startNow flag is true
-        if (!eventData.startTime || eventData.startNow) {
-            eventData.startTime = new Date();
-        }
-
-        // Validate event data
-        const validation = eventValidator.validate(eventData);
-        if (validation.error) {
-            throw new ValidationError('Invalid event data: ' + validation.error.details[0].message);
-        }
-
-        // Create and save the new event
-        const newEvent = new Event({ ...eventData, creator: userId });
-        await newEvent.save();
-
-        // Handle wallet and transaction creation
-        await this.handleWalletAndTransaction(newEvent, userId);
-
-        return newEvent;
-    },
-
-    async handleWalletAndTransaction(newEvent, userId) {
-        // Create a wallet for the event
-        const wallet = await WalletService.createWalletForEvent(newEvent._id, userId);
-
-        // Create a transaction record for the event
-        await TransactionService.createTransaction({
-            eventId: newEvent._id,
-            userId,
-            expectedAmount: newEvent.entryFee,
-            address: wallet.publicAddress
-        });
+/**
+ * Creates a new event and manages associated financial transactions and webhooks.
+ * 
+ * @param {Object} eventData - Data for creating a new event.
+ * @param {string} userId - ID of the user creating the event.
+ * @returns {Promise<Object>} The created event object.
+ */
+const createEvent = async (eventData, userId) => {
+    const { error } = validateEvent(eventData);
+    if (error) {
+        throw new ValidationError('Invalid event data: ' + error.details[0].message);
     }
+
+    // Handle financial setup first
+    const { wallet, transaction } = await handleFinancialSetup(eventData, userId);
+
+    // Create the event with references to the wallet and transaction
+    const newEvent = new Event({ ...eventData, creator: userId, wallet: wallet._id, transaction: transaction._id });
+    await newEvent.save();
+
+    return newEvent;
 };
 
-module.exports = EventService;
+/**
+ * Updates an existing event.
+ * 
+ * @param {string} eventId - The ID of the event to update.
+ * @param {Object} updateData - Data for updating the event.
+ * @returns {Promise<Object>} The updated event object.
+ */
+const updateEvent = async (eventId, updateData) => {
+    const event = await Event.findById(eventId);
+    if (!event) {
+        throw new NotFoundError(`Event with ID ${eventId} not found`);
+    }
+
+    Object.assign(event, updateData);
+    await event.save();
+    return event;
+};
+
+/**
+ * Retrieves a specific event by ID.
+ * 
+ * @param {string} eventId - The ID of the event to retrieve.
+ * @returns {Promise<Object>} The retrieved event object.
+ */
+const getEvent = async (eventId) => {
+    const event = await Event.findById(eventId);
+    if (!event) {
+        throw new NotFoundError(`Event with ID ${eventId} not found`);
+    }
+
+    return event;
+};
+
+/**
+ * Retrieves all events.
+ * 
+ * @returns {Promise<Array>} An array of all events.
+ */
+const getAllEvents = async () => {
+    return await Event.find({});
+};
+
+/**
+ * Deletes an existing event.
+ * 
+ * @param {string} eventId - The ID of the event to delete.
+ * @returns {Promise<void>}
+ */
+const deleteEvent = async (eventId) => {
+    const event = await Event.findById(eventId);
+    if (!event) {
+        throw new NotFoundError(`Event with ID ${eventId} not found`);
+    }
+
+    await event.remove();
+};
+
+/**
+ * Handles the financial setup for an event, including wallet creation, transaction record,
+ * and webhook setup. This function is private to the eventService module.
+ * 
+ * @param {Object} eventData - Data for the event.
+ * @param {string} userId - ID of the user creating the event.
+ * @returns {Promise<Object>} An object containing the created wallet and transaction.
+ * @private
+ * @throws {Error} If any part of the financial setup fails.
+ */
+const handleFinancialSetup = async (eventData, userId) => {
+    try {
+        const wallet = await createWalletForEvent(eventData._id, userId);
+        const transaction = await createTransaction({
+            eventId: eventData._id,
+            userId,
+            expectedAmount: eventData.entryFee,
+            address: wallet.publicAddress
+        });
+
+        await createWebhook(transaction.address, transaction._id, eventData.requiredConfirmations);
+    } catch (err) {
+        log.error(`Error in handleFinancialSetup: ${err.message}`);
+        throw new Error(`Failed to set up financial aspects of the event: ${err.message}`);
+    }
+
+    return { wallet, transaction };
+};
+
+module.exports = {
+    createEvent,
+    updateEvent,
+    deleteEvent,
+    getEvent,
+    getAllEvents
+};

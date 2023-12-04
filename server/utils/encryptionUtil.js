@@ -1,26 +1,34 @@
-// encryptionUtil.js
 /**
- * Encryption Utility for Satoshi Showdown
- *
- * Implements AES-256-GCM encryption to secure sensitive data.
- * Ensures strong cryptographic practices and integrity checking.
+ * @fileoverview Encryption Utility for Satoshi Showdown.
+ * Provides key encryption and decryption functionalities using environment-configured settings.
+ * This abstraction enhances security by allowing encryption details to be managed and altered
+ * without affecting the core application logic.
  */
 
 const crypto = require("crypto");
 
-const algorithm = "aes-256-gcm";
-const secretKey = process.env.ENCRYPTION_KEY;
-const ivLength = 16;
+const algorithm = process.env.PRIVATE_KEY_ALGORITHM;
+const secretKey = process.env.PRIVATE_KEY_SECRET_KEY;
+const ivLength = parseInt(process.env.PRIVATE_KEY_IV_LENGTH, 10);
 
-// Encrypt Text
-exports.encrypt = (text) => {
+/**
+ * Encrypts a private key using AES encryption.
+ * 
+ * @param {string} key - The key to encrypt.
+ * @returns {Object} The encrypted key, including iv (initialization vector) and auth tag.
+ */
+const encryptPrivateKey = (key) => {
+  if (!algorithm || !secretKey || !ivLength) {
+    throw new Error("Encryption configuration is not properly set in .env");
+  }
+
   const iv = crypto.randomBytes(ivLength);
   const cipher = crypto.createCipheriv(
     algorithm,
     Buffer.from(secretKey, "hex"),
     iv
   );
-  let encrypted = cipher.update(text, "utf8", "hex");
+  let encrypted = cipher.update(key, "utf8", "hex");
   encrypted += cipher.final("hex");
   const tag = cipher.getAuthTag();
   return {
@@ -30,15 +38,26 @@ exports.encrypt = (text) => {
   };
 };
 
-// Decrypt Text
-exports.decrypt = (hash) => {
+/**
+ * Decrypts an encrypted private key.
+ * 
+ * @param {Object} encryptedKey - The encrypted private key object containing iv, content, and tag.
+ * @returns {string} The decrypted key.
+ */
+const decryptPrivateKey = (encryptedKey) => {
+  if (!algorithm || !secretKey || !ivLength) {
+    throw new Error("Encryption configuration is not properly set in .env");
+  }
+
   const decipher = crypto.createDecipheriv(
     algorithm,
     Buffer.from(secretKey, "hex"),
-    Buffer.from(hash.iv, "hex")
+    Buffer.from(encryptedKey.iv, "hex")
   );
-  decipher.setAuthTag(Buffer.from(hash.tag, "hex"));
-  let decrypted = decipher.update(hash.content, "hex", "utf8");
+  decipher.setAuthTag(Buffer.from(encryptedKey.tag, "hex"));
+  let decrypted = decipher.update(encryptedKey.content, "hex", "utf8");
   decrypted += decipher.final("utf8");
   return decrypted;
 };
+
+module.exports = { encryptPrivateKey, decryptPrivateKey };

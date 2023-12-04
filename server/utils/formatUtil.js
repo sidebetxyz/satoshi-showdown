@@ -1,7 +1,5 @@
-// formatUtil.js
 /**
- * Formatting Utility for Satoshi Showdown
- *
+ * @fileoverview Formatting Utility for Satoshi Showdown.
  * Provides functions for standardizing and formatting data across the application.
  * This includes formatting dates, currencies, and other domain-specific data to ensure
  * consistency and readability.
@@ -9,24 +7,36 @@
 
 const { DateTime } = require("luxon");
 
-// Common Formatting Functions
-const formatDate = (date, formatStr = "yyyy-MM-dd HH:mm:ss") => {
-  return DateTime.fromJSDate(date).toFormat(formatStr);
-};
+/**
+ * Formats a date into a specified string format.
+ * 
+ * @param {Date} date - The date to format.
+ * @param {string} [formatStr="yyyy-MM-dd HH:mm:ss"] - The string format to use.
+ * @returns {string} Formatted date string.
+ */
+const formatDate = (date, formatStr = "yyyy-MM-dd HH:mm:ss") =>
+  DateTime.fromJSDate(date).toFormat(formatStr);
 
-const formatCurrency = (amount, currency = "USD") => {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(
-    amount
-  );
-};
+/**
+ * Formats a number into a currency string.
+ * 
+ * @param {number} amount - The amount to format.
+ * @param {string} [currency="USD"] - The currency format to use.
+ * @returns {string} Formatted currency string.
+ */
+const formatCurrency = (amount, currency = "USD") =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency }).format(amount);
 
-// Domain-Specific Formatting
+/**
+ * Formats a cryptocurrency address. Placeholder for domain-specific implementation.
+ * 
+ * @param {string} address - The crypto address to format.
+ * @returns {string} Formatted crypto address.
+ */
 const formatCryptoAddress = (address) => {
   // Implement specific formatting for cryptocurrency addresses if needed
   return address;
 };
-
-// More domain-specific formatting functions can be added as required
 
 module.exports = {
   formatDate,
