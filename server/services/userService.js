@@ -6,8 +6,8 @@
 
 const User = require('../models/userModel');
 const bcrypt = require('bcrypt');
-const { ValidationError, NotFoundError } = require('../utils/errorUtil');
 const { v4: uuidv4 } = require('uuid');
+const { ValidationError } = require('../utils/errorUtil');
 
 /**
  * Registers a new user or creates a guest user profile.

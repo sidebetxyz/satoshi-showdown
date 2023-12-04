@@ -8,8 +8,9 @@ const Event = require('../models/eventModel');
 const { createWalletForEvent } = require('./walletService');
 const { createTransaction } = require('./transactionService');
 const { createWebhook } = require('./webhookService');
-const { ValidationError, NotFoundError } = require('../utils/errorUtil');
 const { validateEvent } = require('../utils/validationUtil');
+const { ValidationError, NotFoundError } = require('../utils/errorUtil');
+const log = require('../utils/logUtil');
 
 /**
  * Creates a new event and manages associated financial transactions and webhooks.
@@ -104,14 +105,18 @@ const deleteEvent = async (eventId) => {
 const handleFinancialSetup = async (eventData, userId) => {
     try {
         const wallet = await createWalletForEvent(eventData._id, userId);
+        log.info(`Created wallet with address: ${wallet.publicAddress}`);
+
         const transaction = await createTransaction({
             eventId: eventData._id,
             userId,
             expectedAmount: eventData.entryFee,
             address: wallet.publicAddress
         });
+        log.info(`Created transaction with ID: ${transaction._id}`);
 
-        await createWebhook(transaction.address, transaction._id, eventData.requiredConfirmations);
+        const webhook = await createWebhook(transaction.address, transaction._id, eventData.requiredConfirmations);
+        log.info(`Created webhook with ID: ${webhook.uniqueId}`);
     } catch (err) {
         log.error(`Error in handleFinancialSetup: ${err.message}`);
         throw new Error(`Failed to set up financial aspects of the event: ${err.message}`);

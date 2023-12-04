@@ -4,11 +4,11 @@
  * interfacing with both BlockCypher and the local database.
  */
 
-const { getAPI, postAPI } = require('../utils/apiUtil');
 const Webhook = require('../models/webhookModel');
 const { v4: uuidv4 } = require('uuid');
-const log = require('../utils/logUtil');
+const { getAPI, postAPI } = require('../utils/apiUtil');
 const { NotFoundError } = require('../utils/errorUtil');
+const log = require('../utils/logUtil');
 
 // Configuration constants
 const apiBaseUrl = process.env.BLOCKCYPHER_BASE_URL;
