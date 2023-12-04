@@ -109,8 +109,20 @@ const deleteWebhook = async (webhookId) => {
 const processWebhook = async (uniqueId, data) => {
     log.debug(`Received webhook data for uniqueId ${uniqueId}: ${JSON.stringify(data)}`);
     const webhook = await getWebhook(uniqueId);
-    // Add logic to process the webhook data
-    // This part of the code will vary depending on the specific application needs
+
+    if (!webhook) {
+        log.error(`Webhook with uniqueId ${uniqueId} not found`);
+        return;
+    }
+
+    try {
+        // Update database records based on the processed data
+        // ...
+
+        log.info(`Webhook with uniqueId ${uniqueId} processed successfully`);
+    } catch (error) {
+        log.error(`Error processing webhook with uniqueId ${uniqueId}: ${error.message}`);
+    }
 };
 
 module.exports = {
