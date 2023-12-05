@@ -7,7 +7,7 @@
 const Event = require('../models/eventModel');
 const { createUser, getUserById } = require('./userService');
 const { createWalletForEvent } = require('./walletService');
-const { createTransaction } = require('./transactionService');
+const { createTransactionRecord } = require('./transactionService');
 const { createWebhook } = require('./webhookService');
 const { validateEvent } = require('../utils/validationUtil');
 const { ValidationError, NotFoundError } = require('../utils/errorUtil');
@@ -136,13 +136,13 @@ const handleFinancialSetup = async (eventData, userId) => {
         const wallet = await createWalletForEvent(userId);
         log.info(`Created wallet with address: ${wallet.publicAddress}`);
 
-        const transaction = await createTransaction({
+        const transaction = await createTransactionRecord({
             eventId: eventData._id,
             userId,
             expectedAmount: eventData.entryFee,
             address: wallet.publicAddress
         });
-        log.info(`Created transaction with ID: ${transaction._id}`);
+        log.info(`Created transaction record with ID: ${transaction._id}`);
 
         const webhook = await createWebhook(transaction.address, transaction._id, eventData.requiredConfirmations);
         log.info(`Created webhook with ID: ${webhook.uniqueId}`);
