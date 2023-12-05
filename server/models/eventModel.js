@@ -18,8 +18,8 @@ const eventSchema = new mongoose.Schema({
   },
   entryFee: { type: Number, required: true },
   prizePool: Number,
-  creator: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  participants: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],  // Corrected field
+  creator: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  participants: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   transactions: [{ type: mongoose.Schema.Types.ObjectId, ref: "Transaction" }],
   winners: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   config: Object,
@@ -27,7 +27,7 @@ const eventSchema = new mongoose.Schema({
   streamingSchedule: { start: Date, end: Date },
   bettingOptions: [{ type: String, description: String, odds: Number }],
   viewCount: Number,
-  feedback: [{ type: mongoose.Schema.Types.ObjectId, ref: "UserFeedback" }],  // Re-added field
+  feedback: [{ type: mongoose.Schema.Types.ObjectId, ref: "UserFeedback" }],
   socialSharingLinks: [String],
   ageRestriction: Number,
   geographicRestrictions: [String],

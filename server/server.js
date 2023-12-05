@@ -45,7 +45,8 @@ app.use(session({
   resave: false, // Don't save session if unmodified
   saveUninitialized: false, // Don't create session until something stored
   cookie: {
-    httpOnly: true, // Prevents client-side JS from reading the cookie 
+    httpOnly: true, // Prevents client-side JS from reading the cookie
+    secure: true, // Ensures cookie is sent over HTTPS
     maxAge: 24 * 60 * 60 * 1000 // Set cookie expiration time (e.g., 1 day)
   }
 }));

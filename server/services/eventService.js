@@ -51,7 +51,6 @@ const createEvent = async (eventData, userId, guestUsername) => {
         const newEvent = new Event({
             ...eventData,
             creator: user._id,
-            // Optionally include wallet and transaction references if needed
             wallet: financialSetup.wallet._id,
             transactions: [financialSetup.transaction._id]
         });
