@@ -7,6 +7,7 @@ const mongoose = require("mongoose");
 const { v4: uuidv4 } = require('uuid');
 
 const userSchema = new mongoose.Schema({
+  secretKey: { type: String, default: uuidv4, unique: true },
   username: { type: String, required: true, unique: true },
   email: { type: String, unique: true, sparse: true },
   passwordHash: String,
@@ -18,7 +19,6 @@ const userSchema = new mongoose.Schema({
     default: "participant",
   },
   profileInfo: Object, // Placeholder for future profile fields
-  uniqueIdentifier: { type: String, default: uuidv4, unique: true },
   ipAddress: String,
   organization: { type: mongoose.Schema.Types.ObjectId, ref: "Organization" },
   eventsCreated: [{ type: mongoose.Schema.Types.ObjectId, ref: "Event" }],

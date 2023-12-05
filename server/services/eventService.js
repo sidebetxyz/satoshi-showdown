@@ -5,6 +5,7 @@
  */
 
 const Event = require('../models/eventModel');
+const { createUser, getUserById } = require('./userService');
 const { createWalletForEvent } = require('./walletService');
 const { createTransaction } = require('./transactionService');
 const { createWebhook } = require('./webhookService');
@@ -13,26 +14,54 @@ const { ValidationError, NotFoundError } = require('../utils/errorUtil');
 const log = require('../utils/logUtil');
 
 /**
- * Creates a new event and manages associated financial transactions and webhooks.
+ * Creates a new event. If a guest username is provided, a guest user is created.
+ * Validates event data before creation and sets up associated financial transactions and webhooks.
  * 
- * @param {Object} eventData - Data for creating a new event.
- * @param {string} userId - ID of the user creating the event.
- * @returns {Promise<Object>} The created event object.
+ * @param {Object} eventData - Data for creating the new event.
+ * @param {string} userId - ID of the user creating the event, if available.
+ * @param {string} [guestUsername] - Optional username for a guest user.
+ * @returns {Promise<Object>} A promise that resolves to the created event object.
+ * @throws {ValidationError} Thrown when event data validation fails.
+ * @throws {NotFoundError} Thrown when a user is not found.
  */
-const createEvent = async (eventData, userId) => {
-    const { error } = validateEvent(eventData);
-    if (error) {
-        throw new ValidationError('Invalid event data: ' + error.details[0].message);
+const createEvent = async (eventData, userId, guestUsername) => {
+    try {
+        const validation = validateEvent(eventData);
+        if (validation.error) {
+            throw new ValidationError('Invalid event data: ' + validation.error.details[0].message);
+        }
+
+        let user;
+        if (userId) {
+            user = await getUserById(userId);
+            if (!user) {
+                throw new NotFoundError(`User with ID ${userId} not found`);
+            }
+        } else if (guestUsername) {
+            user = await createUser({ username: guestUsername, isGuest: true });
+        }
+
+        if (!user) {
+            throw new NotFoundError('User not found or creation failed');
+        }
+
+        // Handle the financial setup before saving the event
+        const financialSetup = await handleFinancialSetup(eventData, user._id);
+
+        const newEvent = new Event({
+            ...eventData,
+            creator: user._id,
+            // Optionally include wallet and transaction references if needed
+            wallet: financialSetup.wallet._id,
+            transactions: [financialSetup.transaction._id]
+        });
+
+        await newEvent.save();
+        return newEvent;
+    } catch (err) {
+        log.error(`Error in createEvent: ${err.message}`);
+        throw err;
     }
-
-    // Handle financial setup first
-    const { wallet, transaction } = await handleFinancialSetup(eventData, userId);
-
-    // Create the event with references to the wallet and transaction
-    const newEvent = new Event({ ...eventData, creator: userId, wallet: wallet._id, transaction: transaction._id });
-    await newEvent.save();
-
-    return newEvent;
 };
 
 /**
@@ -93,14 +122,15 @@ const deleteEvent = async (eventId) => {
 };
 
 /**
- * Handles the financial setup for an event, including wallet creation, transaction record,
- * and webhook setup. This function is private to the eventService module.
+ * Handles the financial setup for an event, including wallet creation, 
+ * transaction record, and webhook setup. This function is private to the 
+ * eventService module.
  * 
  * @param {Object} eventData - Data for the event.
  * @param {string} userId - ID of the user creating the event.
  * @returns {Promise<Object>} An object containing the created wallet and transaction.
  * @private
- * @throws {Error} If any part of the financial setup fails.
+ * @throws {Error} Thrown when any part of the financial setup fails.
  */
 const handleFinancialSetup = async (eventData, userId) => {
     try {
