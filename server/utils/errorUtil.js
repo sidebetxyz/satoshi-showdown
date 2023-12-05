@@ -9,35 +9,40 @@ const log = require("./logUtil");
 const { formatDate } = require("./formatUtil");
 
 /**
+ * Base class for custom errors, including timestamp.
+ */
+class BaseError extends Error {
+  constructor(name, message) {
+    super(message);
+    this.name = name;
+    this.timestamp = formatDate(new Date());
+  }
+}
+
+/**
  * Represents an error related to database operations.
  */
-class DatabaseError extends Error {
+class DatabaseError extends BaseError {
   constructor(message) {
-    super(`Database error: ${message}`);
-    this.name = 'DatabaseError';
-    this.timestamp = formatDate(new Date());
+    super('DatabaseError', `Database error: ${message}`);
   }
 }
 
 /**
  * Represents a validation error.
  */
-class ValidationError extends Error {
+class ValidationError extends BaseError {
   constructor(message) {
-    super(`Validation error: ${message}`);
-    this.name = 'ValidationError';
-    this.timestamp = formatDate(new Date());
+    super('ValidationError', `Validation error: ${message}`);
   }
 }
 
 /**
  * Represents an error when a resource is not found.
  */
-class NotFoundError extends Error {
+class NotFoundError extends BaseError {
   constructor(message) {
-    super(`Not Found: ${message}`);
-    this.name = 'NotFoundError';
-    this.timestamp = formatDate(new Date());
+    super('NotFoundError', `Not Found: ${message}`);
   }
 }
 

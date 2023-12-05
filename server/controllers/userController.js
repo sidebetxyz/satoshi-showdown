@@ -17,7 +17,7 @@ const handleCreateUser = async (req, res, next) => {
     try {
         const userData = req.body;
         const isGuest = req.query.isGuest || false;
-        const newUser = await createUser(userData, isGuest);
+        const newUser = await createUser(userData, isGuest, req);
         res.status(201).json(newUser);
     } catch (err) {
         log.error(`Error in handleCreateUser: ${err.message}`);

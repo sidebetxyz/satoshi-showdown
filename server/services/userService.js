@@ -6,6 +6,7 @@
 
 const User = require('../models/userModel');
 const bcrypt = require('bcrypt');
+const { setUserSession } = require('../utils/sessionUtil');
 const { validateUser } = require('../utils/validationUtil');
 const { ValidationError, NotFoundError } = require('../utils/errorUtil');
 const log = require('../utils/logUtil');
@@ -18,7 +19,7 @@ const log = require('../utils/logUtil');
  * @returns {Promise<Object>} The created user object without sensitive data.
  * @throws {ValidationError} If the username or email already exists.
  */
-const createUser = async (userData, isGuest = false) => {
+const createUser = async (userData, isGuest = false, req) => {
     try {
         const { error } = validateUser(userData);
         if (error) {
@@ -29,12 +30,21 @@ const createUser = async (userData, isGuest = false) => {
             throw new ValidationError('Username or email already exists');
         }
 
-        if (!isGuest) {
+        if (!isGuest && userData.password) {
             userData.passwordHash = await bcrypt.hash(userData.password, 10);
         }
 
-        const newUser = new User({ ...userData, role: isGuest ? 'participant' : userData.role });
+        const newUser = new User({
+            ...userData,
+            role: isGuest ? 'participant' : userData.role,
+            passwordHash: isGuest ? undefined : userData.passwordHash
+        });
+
         await newUser.save();
+
+        if (newUser) {
+            setUserSession(req, newUser._id, newUser.role);
+        }
 
         const userDataWithoutSensitiveInfo = excludeSensitiveData(newUser);
         log.info(`User created: ${JSON.stringify(userDataWithoutSensitiveInfo)}`);

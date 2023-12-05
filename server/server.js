@@ -3,6 +3,7 @@
  * Sets up and configures the Express server, including middleware for CORS,
  * security, logging, JSON parsing, and global error handling.
  * Manages HTTPS server creation, database connections, and graceful shutdown procedures.
+ * Adds session management using express-session.
  */
 
 // Environment Configuration
@@ -17,6 +18,7 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
+const session = require("express-session");
 
 // Utilities and Custom Modules
 const log = require("./utils/logUtil");
@@ -36,6 +38,17 @@ app.use(cors()); // Enables Cross-Origin Resource Sharing (CORS)
 app.use(helmet()); // Applies various security headers to HTTP responses
 app.use(express.json()); // Parses incoming JSON payloads
 app.use(morgan("combined", { stream: log.stream })); // Logs HTTP requests
+
+// Session Middleware Setup
+app.use(session({
+  secret: process.env.SESSION_SECRET, // Secret key for session hashing
+  resave: false, // Don't save session if unmodified
+  saveUninitialized: false, // Don't create session until something stored
+  cookie: {
+    httpOnly: true, // Prevents client-side JS from reading the cookie 
+    maxAge: 24 * 60 * 60 * 1000 // Set cookie expiration time (e.g., 1 day)
+  }
+}));
 
 // Establish Database Connection
 connectDatabase();

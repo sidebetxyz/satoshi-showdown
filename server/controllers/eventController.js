@@ -1,7 +1,7 @@
 /**
  * @fileoverview Controller for event-related operations in Satoshi Showdown.
- * This module handles incoming HTTP requests for event management, delegating business logic
- * to the Event Service.
+ * This module handles incoming HTTP requests for event management, delegating
+ * business logic to the Event Service.
  */
 
 const {
@@ -14,7 +14,7 @@ const {
 
 /**
  * Handles the creation of a new event.
- * 
+ *
  * @param {Request} req - The express request object.
  * @param {Response} res - The express response object.
  * @param {NextFunction} next - The express next middleware function.
@@ -22,8 +22,12 @@ const {
 const handleCreateEvent = async (req, res, next) => {
     try {
         const eventData = req.body;
-        // The user ID should be retrieved from the request context or session
-        const userId = req.userId;  // Assuming req.userId is set earlier in the middleware
+        const userId = req.session.userId; // Assuming user ID is stored in session
+
+        if (!userId) {
+            throw new Error("User not authenticated");
+        }
+
         const newEvent = await createEvent(eventData, userId);
         res.status(201).json(newEvent);
     } catch (err) {
@@ -32,8 +36,41 @@ const handleCreateEvent = async (req, res, next) => {
 };
 
 /**
+ * Handles retrieving a specific event by ID.
+ *
+ * @param {Request} req - The express request object.
+ * @param {Response} res - The express response object.
+ * @param {NextFunction} next - The express next middleware function.
+ */
+const handleGetEvent = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const event = await getEvent(id);
+        res.json(event);
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
+ * Handles retrieving all events.
+ *
+ * @param {Request} req - The express request object.
+ * @param {Response} res - The express response object.
+ * @param {NextFunction} next - The express next middleware function.
+ */
+const handleGetAllEvents = async (req, res, next) => {
+    try {
+        const events = await getAllEvents();
+        res.json(events);
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
  * Handles updating an existing event.
- * 
+ *
  * @param {Request} req - The express request object.
  * @param {Response} res - The express response object.
  * @param {NextFunction} next - The express next middleware function.
@@ -51,7 +88,7 @@ const handleUpdateEvent = async (req, res, next) => {
 
 /**
  * Handles deleting an event.
- * 
+ *
  * @param {Request} req - The express request object.
  * @param {Response} res - The express response object.
  * @param {NextFunction} next - The express next middleware function.
@@ -66,43 +103,10 @@ const handleDeleteEvent = async (req, res, next) => {
     }
 };
 
-/**
- * Handles retrieving a specific event by ID.
- * 
- * @param {Request} req - The express request object.
- * @param {Response} res - The express response object.
- * @param {NextFunction} next - The express next middleware function.
- */
-const handleGetEvent = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        const event = await getEvent(id);
-        res.json(event);
-    } catch (err) {
-        next(err);
-    }
-};
-
-/**
- * Handles retrieving all events.
- * 
- * @param {Request} req - The express request object.
- * @param {Response} res - The express response object.
- * @param {NextFunction} next - The express next middleware function.
- */
-const handleGetAllEvents = async (req, res, next) => {
-    try {
-        const events = await getAllEvents();
-        res.json(events);
-    } catch (err) {
-        next(err);
-    }
-};
-
 module.exports = {
     handleCreateEvent,
     handleUpdateEvent,
-    handleDeleteEvent,
     handleGetEvent,
-    handleGetAllEvents
+    handleGetAllEvents,
+    handleDeleteEvent
 };
