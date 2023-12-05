@@ -14,11 +14,11 @@ const log = require("./logUtil");
  */
 const connectDatabase = async () => {
   try {
-    const dbURI = process.env.MONGODB_URI;
-    if (!dbURI) {
+    const databaseURI = process.env.MONGODB_URI;
+    if (!databaseURI) {
       throw new Error("MongoDB URI is not defined in environment variables");
     }
-    await mongoose.connect(dbURI);
+    await mongoose.connect(databaseURI);
     log.info("Connected to MongoDB Atlas via Mongoose");
   } catch (err) {
     log.error(`Failed to connect to MongoDB Atlas: ${err.message}`);
