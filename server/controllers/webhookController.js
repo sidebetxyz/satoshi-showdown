@@ -1,20 +1,28 @@
 /**
- * @fileoverview Routes for handling webhook callbacks in Satoshi Showdown.
- * Defines the route for receiving and processing incoming webhook callbacks.
+ * @fileoverview Controller for handling webhook callbacks in Satoshi Showdown.
+ * This module processes incoming webhook callbacks, delegating business logic to the Webhook Service.
  */
 
-const express = require('express');
-const { handleProcessWebhook } = require('../controllers/webhookController');
-
-const router = express.Router();
+const { processWebhook } = require('../services/webhookService');
 
 /**
- * Route to handle received webhook callbacks.
- * Expects to receive the webhook callback at '/webhook/receive/:uniqueId'.
+ * Handles the processing of received webhook callbacks.
  * 
- * @route POST /webhook/receive/:uniqueId
- * @access Public/Private (depending on your application's requirement)
+ * @param {Request} req - The express request object. Contains the webhook data and uniqueId.
+ * @param {Response} res - The express response object. Used to send back a response.
+ * @param {NextFunction} next - The express next middleware function for error handling.
  */
-router.post('/receive/:uniqueId', handleProcessWebhook);
+const handleProcessWebhook = async (req, res, next) => {
+    try {
+        const { uniqueId } = req.params;
+        const data = req.body;
+        await processWebhook(uniqueId, data);
+        res.status(200).send('Webhook processed successfully');
+    } catch (err) {
+        next(err);
+    }
+};
 
-module.exports = router;
+module.exports = {
+    handleProcessWebhook
+};

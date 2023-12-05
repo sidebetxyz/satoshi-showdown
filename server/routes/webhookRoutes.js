@@ -13,6 +13,7 @@ const router = express.Router();
  * Expects to receive the webhook callback at '/webhook/receive/:uniqueId'.
  * 
  * @route POST /webhook/receive/:uniqueId
+ * @access Public/Private (depending on your application's requirement)
  */
 router.post('/receive/:uniqueId', handleProcessWebhook);
 

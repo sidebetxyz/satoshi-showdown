@@ -11,7 +11,6 @@ const {
     getEvent,
     getAllEvents
 } = require('../services/eventService');
-const { getOrCreateUserId } = require('../services/userService');
 
 /**
  * Handles the creation of a new event.
@@ -23,7 +22,8 @@ const { getOrCreateUserId } = require('../services/userService');
 const handleCreateEvent = async (req, res, next) => {
     try {
         const eventData = req.body;
-        const userId = await getOrCreateUserId(req);
+        // The user ID should be retrieved from the request context or session
+        const userId = req.userId;  // Assuming req.userId is set earlier in the middleware
         const newEvent = await createEvent(eventData, userId);
         res.status(201).json(newEvent);
     } catch (err) {
