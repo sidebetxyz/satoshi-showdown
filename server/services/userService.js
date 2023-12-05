@@ -6,7 +6,7 @@
 
 const User = require('../models/userModel');
 const bcrypt = require('bcrypt');
-const { validateUser } = require('./validationUtil');
+const { validateUser } = require('../utils/validationUtil');
 const { ValidationError, NotFoundError } = require('../utils/errorUtil');
 const log = require('../utils/logUtil');
 

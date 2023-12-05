@@ -6,11 +6,11 @@
 
 const express = require('express');
 const {
-  handleEventCreate,
-  handleEventUpdate,
-  handleEventDelete,
-  handleEventGet,
-  handleEventGetAll
+  handleCreateEvent,
+  handleUpdateEvent,
+  handleDeleteEvent,
+  handleGetEvent,
+  handleGetAllEvents
 } = require('../controllers/eventController');
 
 const router = express.Router();
@@ -20,34 +20,34 @@ const router = express.Router();
  * @route POST /event/create
  * @access Public/Private (depending on your application's requirement)
  */
-router.post('/create', handleEventCreate);
+router.post('/create', handleCreateEvent);
 
 /**
  * Route to update an existing event.
  * @route PUT /event/update/:id
  * @access Public/Private (depending on your application's requirement)
  */
-router.put('/update/:id', handleEventUpdate);
+router.put('/update/:id', handleUpdateEvent);
 
 /**
  * Route to delete an event.
  * @route DELETE /event/delete/:id
  * @access Public/Private (depending on your application's requirement)
  */
-router.delete('/delete/:id', handleEventDelete);
+router.delete('/delete/:id', handleDeleteEvent);
 
 /**
  * Route to get a specific event by ID.
  * @route GET /event/get/:id
  * @access Public/Private (depending on your application's requirement)
  */
-router.get('/get/:id', handleEventGet);
+router.get('/get/:id', handleGetEvent);
 
 /**
  * Route to get all events.
  * @route GET /event/getAll
  * @access Public/Private (depending on your application's requirement)
  */
-router.get('/getAll', handleEventGetAll);
+router.get('/getAll', handleGetAllEvents);
 
 module.exports = router;
