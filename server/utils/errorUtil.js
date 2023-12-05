@@ -5,13 +5,19 @@
  * format utilities for consistent error reporting.
  */
 
-const log = require("./logUtil");
 const { formatDate } = require("./formatUtil");
+const log = require("./logUtil");
 
 /**
  * Base class for custom errors, including timestamp.
+ * @extends Error
  */
 class BaseError extends Error {
+  /**
+   * Creates an instance of BaseError.
+   * @param {string} name - The name of the error.
+   * @param {string} message - The message of the error.
+   */
   constructor(name, message) {
     super(message);
     this.name = name;
@@ -21,8 +27,13 @@ class BaseError extends Error {
 
 /**
  * Represents an error related to database operations.
+ * @extends BaseError
  */
 class DatabaseError extends BaseError {
+  /**
+   * Creates an instance of DatabaseError.
+   * @param {string} message - The error message.
+   */
   constructor(message) {
     super('DatabaseError', `Database error: ${message}`);
   }
@@ -30,8 +41,13 @@ class DatabaseError extends BaseError {
 
 /**
  * Represents a validation error.
+ * @extends BaseError
  */
 class ValidationError extends BaseError {
+  /**
+   * Creates an instance of ValidationError.
+   * @param {string} message - The error message.
+   */
   constructor(message) {
     super('ValidationError', `Validation error: ${message}`);
   }
@@ -39,8 +55,13 @@ class ValidationError extends BaseError {
 
 /**
  * Represents an error when a resource is not found.
+ * @extends BaseError
  */
 class NotFoundError extends BaseError {
+  /**
+   * Creates an instance of NotFoundError.
+   * @param {string} message - The error message.
+   */
   constructor(message) {
     super('NotFoundError', `Not Found: ${message}`);
   }
