@@ -6,45 +6,36 @@
 
 const User = require('../models/userModel');
 const bcrypt = require('bcrypt');
-const { setUserSession } = require('../utils/sessionUtil');
 const { validateUser } = require('../utils/validationUtil');
 const { ValidationError, NotFoundError } = require('../utils/errorUtil');
 const log = require('../utils/logUtil');
 
 /**
  * Registers a new user or creates a guest user profile.
- * 
- * @param {Object} userData - Data for creating a new user.
- * @param {boolean} [isGuest=false] - Indicates if the user is a guest.
+ * Expects a JSON object with user data, including a flag indicating if the user is a guest.
+ *
+ * @param {Object} userData - Data for creating a new user. Includes username, email, password, and isGuest flag.
  * @returns {Promise<Object>} The created user object without sensitive data.
- * @throws {ValidationError} If the username or email already exists.
+ * @throws {ValidationError} If user data validation fails or if username/email already exists.
  */
-const createUser = async (userData, isGuest = false, req) => {
+const createUser = async (userData) => {
     try {
         const { error } = validateUser(userData);
         if (error) {
             throw new ValidationError(error.details.map(d => d.message).join('; '));
         }
 
-        if (!isGuest && await checkUserExists(userData.username, userData.email)) {
+        if (!userData.isGuest && await checkUserExists(userData.username, userData.email)) {
             throw new ValidationError('Username or email already exists');
-        }
-
-        if (!isGuest && userData.password) {
-            userData.passwordHash = await bcrypt.hash(userData.password, 10);
         }
 
         const newUser = new User({
             ...userData,
-            role: isGuest ? 'participant' : userData.role,
-            passwordHash: isGuest ? undefined : userData.passwordHash
+            role: userData.isGuest ? 'participant' : userData.role,
+            passwordHash: userData.isGuest ? undefined : await bcrypt.hash(userData.password, 10)
         });
 
         await newUser.save();
-
-        if (newUser) {
-            setUserSession(req, newUser._id, newUser.role);
-        }
 
         const userDataWithoutSensitiveInfo = excludeSensitiveData(newUser);
         log.info(`User created: ${JSON.stringify(userDataWithoutSensitiveInfo)}`);

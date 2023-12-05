@@ -5,7 +5,7 @@
  */
 
 const Event = require('../models/eventModel');
-const { createUser, getUserById } = require('./userService');
+const { getUserById } = require('./userService');
 const { createWalletForEvent } = require('./walletService');
 const { createTransactionRecord } = require('./transactionService');
 const { createWebhook } = require('./webhookService');
@@ -14,39 +14,28 @@ const { ValidationError, NotFoundError } = require('../utils/errorUtil');
 const log = require('../utils/logUtil');
 
 /**
- * Creates a new event. If a guest username is provided, a guest user is created.
+ * Creates a new event.
  * Validates event data before creation and sets up associated financial transactions and webhooks.
  * 
  * @param {Object} eventData - Data for creating the new event.
- * @param {string} userId - ID of the user creating the event, if available.
- * @param {string} [guestUsername] - Optional username for a guest user.
+ * @param {string} userId - ID of the user creating the event.
  * @returns {Promise<Object>} A promise that resolves to the created event object.
  * @throws {ValidationError} Thrown when event data validation fails.
  * @throws {NotFoundError} Thrown when a user is not found.
  */
-const createEvent = async (eventData, userId, guestUsername) => {
+const createEvent = async (eventData, userId) => {
     try {
         const validation = validateEvent(eventData);
         if (validation.error) {
             throw new ValidationError('Invalid event data: ' + validation.error.details[0].message);
         }
 
-        let user;
-        if (userId) {
-            user = await getUserById(userId);
-            if (!user) {
-                throw new NotFoundError(`User with ID ${userId} not found`);
-            }
-        } else if (guestUsername) {
-            user = await createUser({ username: guestUsername, isGuest: true });
-        }
-
+        const user = await getUserById(userId);
         if (!user) {
-            throw new NotFoundError('User not found or creation failed');
+            throw new NotFoundError(`User with ID ${userId} not found`);
         }
 
-        // Handle the financial setup before saving the event
-        const financialSetup = await handleFinancialSetup(eventData, user._id);
+        const financialSetup = await handleFinancialSetup(eventData, userId);
 
         const newEvent = new Event({
             ...eventData,

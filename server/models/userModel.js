@@ -11,6 +11,7 @@ const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email: { type: String, unique: true, sparse: true },
   passwordHash: String,
+  isGuest: { type: Boolean, default: true },
   registrationDate: { type: Date, default: Date.now },
   lastActive: { type: Date, default: Date.now },
   role: {
