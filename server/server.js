@@ -24,6 +24,7 @@ const { errorHandler } = require("./utils/errorUtil");
 const { connectDatabase, disconnectDatabase } = require("./utils/databaseUtil");
 
 // Route Modules
+const userRoutes = require('./routes/userRoutes');
 const eventRoutes = require('./routes/eventRoutes');
 const webhookRoutes = require('./routes/webhookRoutes');
 
@@ -47,6 +48,7 @@ connectDatabase();
 app.get("/", (req, res) => res.status(200).send("Server is running"));
 
 // Routes Setup
+app.use('/user', userRoutes); // Mount user routes
 app.use('/event', eventRoutes); // Mount event routes
 app.use('/webhook', webhookRoutes); // Mount webhook routes
 

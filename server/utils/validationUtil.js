@@ -25,12 +25,12 @@ const validateObjectId = Joi.string().regex(/^[0-9a-fA-F]{24}$/).label('ObjectID
  */
 const validateUser = (data) => Joi.object({
   username: validateString.required(),
-  email: validateEmail,
-  password: validatePassword,
-  role: Joi.string().valid('participant', 'organizer', 'admin').label('Role'),
-  uniqueIdentifier: validateString,
-  ipAddress: validateString,
-  // Additional fields for user profile, etc.
+  email: validateEmail.optional(), // Email is optional for guest users
+  password: validatePassword.when('isGuest', { is: false, then: Joi.required() }), // Password is required for non-guest users
+  role: Joi.string().valid('participant', 'organizer', 'admin').default('participant'),
+  ipAddress: validateString.optional(),
+  isGuest: Joi.boolean().optional(),
+  // Add other fields from your user model if necessary
 }).validate(data, { abortEarly: false });
 
 /**
@@ -40,31 +40,31 @@ const validateUser = (data) => Joi.object({
  */
 const validateEvent = (data) => Joi.object({
   name: validateString.required(),
-  description: validateString,
-  type: validateString,
+  description: validateString.optional(),
+  type: validateString.optional(),
   startTime: validateDate.required(),
-  endTime: validateDate,
-  status: Joi.string().valid('planning', 'active', 'completed'),
-  entryFee: validateNumber,
-  prizePool: validateNumber,
-  maxParticipants: validateNumber,
-  // Include other fields from your JSON object as needed
-  streamingUrl: validateString,
+  endTime: validateDate.optional(),
+  status: Joi.string().valid('planning', 'active', 'completed').default('planning'),
+  entryFee: validateNumber.required(),
+  prizePool: validateNumber.optional(),
+  maxParticipants: validateNumber.optional(),
+  streamingUrl: validateString.optional(),
   streamingSchedule: Joi.object({
-    start: validateDate,
-    end: validateDate
-  }),
+    start: validateDate.optional(),
+    end: validateDate.optional()
+  }).optional(),
   bettingOptions: Joi.array().items(Joi.object({
     type: validateString,
     description: validateString,
     odds: validateNumber
-  })),
-  viewCount: validateNumber,
-  feedback: Joi.array().items(validateObjectId),
-  socialSharingLinks: Joi.array().items(validateString),
-  ageRestriction: validateNumber,
-  geographicRestrictions: Joi.array().items(validateString)
+  })).optional(),
+  viewCount: validateNumber.optional(),
+  feedback: Joi.array().items(validateObjectId).optional(),
+  socialSharingLinks: Joi.array().items(validateString).optional(),
+  ageRestriction: validateNumber.optional(),
+  geographicRestrictions: Joi.array().items(validateString).optional()
 }).validate(data, { abortEarly: false });
+
 
 // ... Similar validators for Transaction, Wallet, Webhook
 

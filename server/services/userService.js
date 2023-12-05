@@ -20,26 +20,26 @@ const log = require('../utils/logUtil');
  */
 const createUser = async (userData, isGuest = false) => {
     try {
-        // Validate user data
         const { error } = validateUser(userData);
         if (error) {
             throw new ValidationError(error.details.map(d => d.message).join('; '));
         }
 
-        // Check for existing username or email
         if (!isGuest && await checkUserExists(userData.username, userData.email)) {
             throw new ValidationError('Username or email already exists');
         }
 
-        // Hash password for non-guest users
         if (!isGuest) {
             userData.passwordHash = await bcrypt.hash(userData.password, 10);
         }
 
-        // Create and save the user
         const newUser = new User({ ...userData, role: isGuest ? 'participant' : userData.role });
         await newUser.save();
-        return excludeSensitiveData(newUser);
+
+        const userDataWithoutSensitiveInfo = excludeSensitiveData(newUser);
+        log.info(`User created: ${JSON.stringify(userDataWithoutSensitiveInfo)}`);
+
+        return userDataWithoutSensitiveInfo;
     } catch (err) {
         log.error(`Error in createUser: ${err.message}`);
         throw err;
@@ -61,34 +61,6 @@ const getUserById = async (userId) => {
     return excludeSensitiveData(user);
 };
 
-/**
- * Checks if a username or email already exists in the database.
- * This is a private function used internally by the user service.
- * 
- * @param {string} username - The username to check.
- * @param {string} email - The email to check.
- * @returns {Promise<boolean>} True if the username or email exists, false otherwise.
- * @private
- */
-async function checkUserExists(username, email) {
-    const userCount = await User.countDocuments({
-        $or: [{ username }, { email }]
-    });
-    return userCount > 0;
-}
-
-/**
- * Excludes sensitive data from the user object.
- * This is a private function used internally by the user service.
- * 
- * @param {User} user - The user object.
- * @returns {Object} The user object without sensitive data.
- * @private
- */
-const excludeSensitiveData = (user) => {
-    const { passwordHash, ...userData } = user.toObject();
-    return userData;
-};
 
 /**
  * Retrieves a user by their username.
@@ -161,6 +133,50 @@ const updateUser = async (userId, updateData) => {
     return excludeSensitiveData(user);
 };
 
+/**
+ * Deletes a user by their ID.
+ * 
+ * @param {string} userId - The ID of the user to delete.
+ * @returns {Promise<void>}
+ * @throws {NotFoundError} If the user is not found.
+ */
+const deleteUser = async (userId) => {
+    const user = await User.findById(userId);
+    if (!user) {
+        throw new NotFoundError(`User with ID ${userId} not found`);
+    }
+
+    await user.remove();
+    log.info(`User with ID ${userId} deleted successfully`);
+};
+
+/**
+ * Checks if a username or email already exists in the database.
+ * This is a private function used internally by the user service.
+ * 
+ * @param {string} username - The username to check.
+ * @param {string} email - The email to check.
+ * @returns {Promise<boolean>} True if the username or email exists, false otherwise.
+ * @private
+ */
+async function checkUserExists(username, email) {
+    const userCount = await User.countDocuments({ $or: [{ username }, { email }] });
+    return userCount > 0;
+}
+
+/**
+ * Excludes sensitive data from the user object.
+ * This is a private function used internally by the user service.
+ * 
+ * @param {User} user - The user object.
+ * @returns {Object} The user object without sensitive data.
+ * @private
+ */
+const excludeSensitiveData = (user) => {
+    const { passwordHash, ...userData } = user.toObject();
+    return userData;
+};
+
 module.exports = {
     createUser,
     getUserById,
@@ -168,5 +184,6 @@ module.exports = {
     getUserByEmail,
     getUserByIP,
     getAllUsers,
-    updateUser
+    updateUser,
+    deleteUser
 };
