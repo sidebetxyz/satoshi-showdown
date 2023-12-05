@@ -13,7 +13,7 @@ const { encryptPrivateKey } = require('./encryptionUtil');
 const ECPair = ECPairFactory(ecc);
 
 // Define the network for which to generate wallets (testnet or mainnet)
-const network = process.env.BITCOIN_NETWORK; // Dynamically set network based on environment variable
+const network = bitcoin.networks.testnet;
 
 /**
  * Generates a new SegWit Bitcoin wallet.
@@ -21,7 +21,7 @@ const network = process.env.BITCOIN_NETWORK; // Dynamically set network based on
  * 
  * @returns {Object} An object containing the generated address and the encrypted private key.
  */
-const generateSegWitBitcoinWallet = () => {
+const generateSegWitBitcoinKeys = () => {
     const keyPair = ECPair.makeRandom({ network });
     const { address } = bitcoin.payments.p2wpkh({ pubkey: keyPair.publicKey, network });
     const privateKey = keyPair.toWIF();
@@ -31,5 +31,5 @@ const generateSegWitBitcoinWallet = () => {
 };
 
 module.exports = {
-    generateSegWitBitcoinWallet
+    generateSegWitBitcoinKeys
 };

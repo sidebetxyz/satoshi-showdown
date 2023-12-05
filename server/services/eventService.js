@@ -133,7 +133,7 @@ const deleteEvent = async (eventId) => {
  */
 const handleFinancialSetup = async (eventData, userId) => {
     try {
-        const wallet = await createWalletForEvent(eventData._id, userId);
+        const wallet = await createWalletForEvent(userId);
         log.info(`Created wallet with address: ${wallet.publicAddress}`);
 
         const transaction = await createTransaction({

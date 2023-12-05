@@ -7,6 +7,9 @@ yarn.lock
 # Log Files
 *.log
 
+# Concatenated Code Files
+all_files.txt
+
 # Environment variables
 .env
 

@@ -33,12 +33,9 @@
     "morgan": "^1.10.0",
     "tiny-secp256k1": "^2.2.3",
     "uuid": "^9.0.1",
-    "winston": "^3.11.0",
-    "ws": "^8.14.2"
+    "winston": "^3.11.0"
   },
   "devDependencies": {
-    "jest": "^29.7.0",
-    "nodemon": "^3.0.1",
-    "supertest": "^6.3.3"
+    "nodemon": "^3.0.1"
   }
 }
