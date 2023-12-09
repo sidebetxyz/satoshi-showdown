@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: services/webhookService.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: services/webhookService.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @fileoverview Service for managing webhooks in Satoshi Showdown.
+ * Handles creating, updating, retrieving, and deleting webhooks,
+ * interfacing with both BlockCypher and the local database.
+ */
+
+const Webhook = require('../models/webhookModel');
+const { v4: uuidv4 } = require('uuid');
+const { getAPI, postAPI } = require('../utils/apiUtil');
+const { NotFoundError } = require('../utils/errorUtil');
+const log = require('../utils/logUtil');
+
+// Configuration constants
+const apiBaseUrl = process.env.BLOCKCYPHER_BASE_URL;
+const apiToken = process.env.BLOCKCYPHER_TOKEN;
+
+/**
+ * Creates and registers a new webhook with BlockCypher for event monitoring.
+ * 
+ * @param {string} address - Blockchain address to monitor.
+ * @param {string} transactionId - Associated transaction ID.
+ * @param {number} [confirmations=6] - Confirmation count threshold.
+ * @returns {Promise&lt;Object>} The created webhook object.
+ */
+const createWebhook = async (address, transactionId, confirmations = 6) => {
+    const uniqueId = uuidv4();
+    const callbackUrl = `${process.env.WEBHOOK_DOMAIN}/webhook/receive/${uniqueId}`;
+    const webhookData = { event: "tx-confirmation", address, url: callbackUrl, confirmations, token: apiToken };
+
+    try {
+        await postAPI(`${apiBaseUrl}/hooks?token=${apiToken}`, webhookData);
+        log.info(`Webhook for address ${address} created successfully.`);
+
+        const newWebhook = new Webhook({ uniqueId, address, transactionId, type: "tx-confirmation", status: "pending", url: callbackUrl });
+        await newWebhook.save();
+        return newWebhook;
+    } catch (err) {
+        log.error(`Error in createWebhook: ${err.message}`);
+        throw err;
+    }
+};
+
+/**
+ * Retrieves a specific webhook by its unique identifier.
+ * 
+ * @param {string} uniqueId - Unique identifier of the webhook.
+ * @returns {Promise&lt;Object>} The found webhook object.
+ */
+const getWebhook = async (uniqueId) => {
+    const webhook = await Webhook.findOne({ uniqueId });
+    if (!webhook) {
+        log.warn(`Webhook with uniqueId ${uniqueId} not found`);
+        throw new NotFoundError(`Webhook with uniqueId ${uniqueId} not found`);
+    }
+    return webhook;
+};
+
+/**
+ * Retrieves all webhooks from the database.
+ * 
+ * @returns {Promise&lt;Array>} An array of all webhooks.
+ */
+const getAllWebhooks = async () => {
+    return await Webhook.find({});
+};
+
+/**
+ * Updates a webhook in the database with new data.
+ * 
+ * @param {string} uniqueId - Unique identifier of the webhook.
+ * @param {Object} updateData - New data for the webhook.
+ * @returns {Promise&lt;Object>} The updated webhook object.
+ */
+const updateWebhook = async (uniqueId, updateData) => {
+    const webhook = await Webhook.findOneAndUpdate({ uniqueId }, updateData, { new: true });
+    if (!webhook) {
+        log.warn(`Webhook with uniqueId ${uniqueId} not found for update`);
+        throw new NotFoundError(`Webhook with uniqueId ${uniqueId} not found`);
+    }
+    return webhook;
+};
+
+/**
+ * Deletes a webhook from both BlockCypher and the local database.
+ * 
+ * @param {string} webhookId - ID of the webhook to delete.
+ * @returns {Promise&lt;void>}
+ */
+const deleteWebhook = async (webhookId) => {
+    const webhook = await getWebhook(webhookId);
+    try {
+        await getAPI(`${apiBaseUrl}/hooks/${webhookId}?token=${apiToken}`);
+        log.info(`Webhook with uniqueId ${webhookId} deleted from BlockCypher.`);
+        await Webhook.deleteOne({ uniqueId: webhookId });
+        log.info(`Webhook with uniqueId ${webhookId} deleted from local database.`);
+    } catch (err) {
+        log.error(`Error deleting webhook: ${err.message}`);
+        throw err;
+    }
+};
+
+/**
+ * Handles incoming webhook data, updating the related records in the database.
+ * 
+ * @param {string} uniqueId - Unique identifier of the webhook.
+ * @param {Object} data - Payload received from the webhook.
+ * @returns {Promise&lt;void>}
+ */
+const processWebhook = async (uniqueId, data) => {
+    log.debug(`Received webhook data for uniqueId ${uniqueId}: ${JSON.stringify(data)}`);
+    const webhook = await getWebhook(uniqueId);
+
+    if (!webhook) {
+        log.error(`Webhook with uniqueId ${uniqueId} not found`);
+        return;
+    }
+
+    try {
+        // Update database records based on the processed data
+        // ...
+
+        log.info(`Webhook with uniqueId ${uniqueId} processed successfully`);
+    } catch (error) {
+        log.error(`Error processing webhook with uniqueId ${uniqueId}: ${error.message}`);
+    }
+};
+
+module.exports = {
+    createWebhook,
+    getWebhook,
+    getAllWebhooks,
+    updateWebhook,
+    deleteWebhook,
+    processWebhook
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="BaseError.html">BaseError</a></li><li><a href="DatabaseError.html">DatabaseError</a></li><li><a href="NotFoundError.html">NotFoundError</a></li><li><a href="ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#connectDatabase">connectDatabase</a></li><li><a href="global.html#createEvent">createEvent</a></li><li><a href="global.html#createRawBitcoinTransaction">createRawBitcoinTransaction</a></li><li><a href="global.html#createTransactionRecord">createTransactionRecord</a></li><li><a href="global.html#createUser">createUser</a></li><li><a href="global.html#createWalletForEvent">createWalletForEvent</a></li><li><a href="global.html#createWebhook">createWebhook</a></li><li><a href="global.html#decryptPrivateKey">decryptPrivateKey</a></li><li><a href="global.html#deleteEvent">deleteEvent</a></li><li><a href="global.html#deleteUser">deleteUser</a></li><li><a href="global.html#deleteWebhook">deleteWebhook</a></li><li><a href="global.html#disconnectDatabase">disconnectDatabase</a></li><li><a href="global.html#encryptPrivateKey">encryptPrivateKey</a></li><li><a href="global.html#errorHandler">errorHandler</a></li><li><a href="global.html#formatCryptoAddress">formatCryptoAddress</a></li><li><a href="global.html#formatCurrency">formatCurrency</a></li><li><a href="global.html#formatDate">formatDate</a></li><li><a href="global.html#generateSegWitBitcoinKeys">generateSegWitBitcoinKeys</a></li><li><a href="global.html#getAPI">getAPI</a></li><li><a href="global.html#getAllEvents">getAllEvents</a></li><li><a href="global.html#getAllTransactionRecords">getAllTransactionRecords</a></li><li><a href="global.html#getAllUsers">getAllUsers</a></li><li><a href="global.html#getAllWebhooks">getAllWebhooks</a></li><li><a href="global.html#getEvent">getEvent</a></li><li><a href="global.html#getTransactionRecord">getTransactionRecord</a></li><li><a href="global.html#getUserByEmail">getUserByEmail</a></li><li><a href="global.html#getUserByIP">getUserByIP</a></li><li><a href="global.html#getUserById">getUserById</a></li><li><a href="global.html#getUserByUsername">getUserByUsername</a></li><li><a href="global.html#getWebhook">getWebhook</a></li><li><a href="global.html#gracefulShutdown">gracefulShutdown</a></li><li><a href="global.html#handleCreateEvent">handleCreateEvent</a></li><li><a href="global.html#handleCreateUser">handleCreateUser</a></li><li><a href="global.html#handleDeleteEvent">handleDeleteEvent</a></li><li><a href="global.html#handleGetAllEvents">handleGetAllEvents</a></li><li><a href="global.html#handleGetEvent">handleGetEvent</a></li><li><a href="global.html#handleProcessWebhook">handleProcessWebhook</a></li><li><a href="global.html#handleUpdateEvent">handleUpdateEvent</a></li><li><a href="global.html#log">log</a></li><li><a href="global.html#logFormat">logFormat</a></li><li><a href="global.html#logLevels">logLevels</a></li><li><a href="global.html#logTransports">logTransports</a></li><li><a href="global.html#postAPI">postAPI</a></li><li><a href="global.html#processCallback">processCallback</a></li><li><a href="global.html#processWebhook">processWebhook</a></li><li><a href="global.html#updateEvent">updateEvent</a></li><li><a href="global.html#updateTransactionRecord">updateTransactionRecord</a></li><li><a href="global.html#updateUser">updateUser</a></li><li><a href="global.html#updateWebhook">updateWebhook</a></li><li><a href="global.html#validateEvent">validateEvent</a></li><li><a href="global.html#validateUser">validateUser</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Sat Dec 09 2023 11:10:07 GMT-0500 (Eastern Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
