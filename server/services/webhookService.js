@@ -153,7 +153,7 @@ const processWebhook = async (urlId, headers, data) => {
             const updatedTransaction = await updateTransactionRecord(webhook.transaction, {
                 confirmations: data.confirmations,
                 status: transactionStatus,
-                amount: amountReceived,
+                receivedAmount: amountReceived,
                 // Additional fields to update can be added here
             });
 

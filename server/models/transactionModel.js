@@ -15,7 +15,8 @@ const transactionSchema = new mongoose.Schema({
     enum: ['incoming', 'outgoing'],
     required: true
   },
-  amount: { type: Number, required: true },
+  expectedAmount: { type: Number, required: true }, 
+  receivedAmount: { type: Number, default: null },
   walletAddress: { type: String, required: true },
   userAddress: { type: String, required: true },
   status: {

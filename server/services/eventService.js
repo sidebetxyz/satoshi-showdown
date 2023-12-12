@@ -24,7 +24,7 @@ const log = require('../utils/logUtil');
  * @throws {ValidationError} Thrown when event data validation fails.
  * @throws {NotFoundError} Thrown when a user is not found.
  */
-const createEvent = async (eventData, userId, userAddress) => {
+const createEvent = async (userAddress, userId, eventData) => {
     try {
         const validation = validateEvent(eventData);
         if (validation.error) {
@@ -36,7 +36,8 @@ const createEvent = async (eventData, userId, userAddress) => {
             throw new NotFoundError(`User with ID ${userId} not found`);
         }
 
-        const financialSetup = await handleFinancialSetup(eventData, user._id, userAddress);
+        console.log("eventData: ", eventData);
+        const financialSetup = await handleFinancialSetup(userAddress, user._id, eventData);
 
         const newEvent = new Event({
             ...eventData,
@@ -143,7 +144,7 @@ const deleteEvent = async (eventId) => {
  * @private
  * @throws {Error} Thrown when any part of the financial setup fails.
  */
-const handleFinancialSetup = async (eventData, userRef, userAddress) => {
+const handleFinancialSetup = async (userAddress, userRef, eventData) => {
     try {
         const wallet = await createSegWitWalletForEvent();
 
@@ -151,7 +152,7 @@ const handleFinancialSetup = async (eventData, userRef, userAddress) => {
             userId: userRef,
             walletId: wallet._id,
             transactionType: 'incoming',
-            amount: eventData.entryFee,
+            expectedAmount: eventData.entryFee,
             walletAddress: wallet.publicAddress,
             userAddress: userAddress
         };
