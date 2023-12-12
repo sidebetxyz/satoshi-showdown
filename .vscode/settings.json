@@ -2,17 +2,5 @@
   "eslint.run": "onSave",
   "eslint.codeActionsOnSave.mode": "all",
   "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "editor.formatOnSave": true,
-  "files.exclude": {
-    "**/.git": true,
-    "**/.svn": true,
-    "**/.hg": true,
-    "**/CVS": true,
-    "**/.DS_Store": true,
-    "**/Thumbs.db": true,
-    "**/node_modules": true,
-    "**/package-lock.json": true,
-    "**/.vscode": true
-  },
-  "explorerExclude.backup": {}
+  "editor.formatOnSave": true
 }
