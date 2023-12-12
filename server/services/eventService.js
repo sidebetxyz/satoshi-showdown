@@ -123,7 +123,6 @@ const deleteEvent = async (eventId) => {
 const handleFinancialSetup = async (eventData, userRef) => {
     try {
         const wallet = await createSegWitWalletForEvent();
-        log.info(`Created wallet with address: ${wallet.publicAddress}`);
 
         const transactionData = {
             userId: userRef,
@@ -134,10 +133,8 @@ const handleFinancialSetup = async (eventData, userRef) => {
         };
 
         const transaction = await createTransactionRecord(transactionData);
-        log.info(`Created transaction record with ID: ${transaction.transactionId}`);
 
         const webhook = await createWebhook(wallet.publicAddress, transaction._id);
-        log.info(`Created webhook with unique ID: ${webhook.urlId}`);
 
         return { wallet, transaction };
     } catch (err) {

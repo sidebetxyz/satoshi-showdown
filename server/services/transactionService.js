@@ -8,6 +8,7 @@ const Transaction = require('../models/transactionModel');
 const bitcoin = require('bitcoinjs-lib');
 const network = bitcoin.networks.testnet; // or bitcoin.networks.bitcoin for mainnet
 const { NotFoundError } = require('../utils/errorUtil');
+const log = require('../utils/logUtil');
 
 /**
  * Creates a new transaction record in the database.
@@ -20,6 +21,7 @@ const createTransactionRecord = async (transactionData) => {
     try {
         const transaction = new Transaction({ ...transactionData, status: 'pending' });
         await transaction.save();
+        log.info(`Transaction record created with ID: ${transaction._id}`);
         return transaction;
     } catch (error) {
         throw new Error(`Error creating transaction record: ${error.message}`);
@@ -80,6 +82,7 @@ const updateTransactionRecord = async (transactionId, updateData) => {
         if (!transaction) {
             throw new NotFoundError(`Transaction with ID ${transactionId} not found`);
         }
+        log.info(`Transaction record with ID ${transactionId} updated`);
         return transaction;
     } catch (error) {
         throw new Error(`Error updating transaction record: ${error.message}`);

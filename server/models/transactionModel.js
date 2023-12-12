@@ -19,7 +19,7 @@ const transactionSchema = new mongoose.Schema({
   address: { type: String, required: true }, // Address for incoming or outgoing transaction
   status: {
     type: String,
-    enum: ["pending", "completed", "failed"],
+    enum: ["pending", "confirming", "completed", "failed"],
     default: "pending",
   },
   confirmations: { type: Number, default: null },

@@ -6,12 +6,9 @@
             "models",
             "routes",
             "services",
-            "tests",
             "utils"
         ],
-        "exclude": [
-            "node_modules"
-        ],
+        "exclude": ["node_modules"],
         "includePattern": ".+\\.js(doc|x)?$",
         "excludePattern": "(^|\\/|\\\\)_"
     },
@@ -22,13 +19,15 @@
         "encoding": "utf8",
         "destination": "./docs",
         "recurse": true,
-        "verbose": true
+        "verbose": true,
+        "readme": "../README.md"
     },
     "templates": {
         "cleverLinks": false,
         "monospaceLinks": false,
         "default": {
-            "outputSourceFiles": true
+            "outputSourceFiles": true,
+            "includeDate": false
         }
     }
 }

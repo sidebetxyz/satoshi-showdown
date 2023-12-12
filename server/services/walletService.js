@@ -6,6 +6,7 @@
 
 const Wallet = require('../models/walletModel');
 const { generateSegWitBitcoinKeys } = require('../utils/keyUtil');
+const log = require('../utils/logUtil');
 
 /**
  * Creates a wallet for a specific event and user.
@@ -23,6 +24,7 @@ const createSegWitWalletForEvent = async () => {
     });
 
     await wallet.save();
+    log.info(`Wallet created with address: ${wallet.publicAddress}`);
     return wallet;
 };
 

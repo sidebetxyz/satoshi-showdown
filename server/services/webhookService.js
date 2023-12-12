@@ -5,6 +5,7 @@
  */
 
 const Webhook = require('../models/webhookModel');
+const { updateTransactionRecord } = require('./transactionService');
 const { postAPI, getAPI } = require('../utils/apiUtil');
 const { NotFoundError } = require('../utils/errorUtil');
 const log = require('../utils/logUtil');
@@ -38,9 +39,11 @@ const createWebhook = async (address, transactionRef) => {
         };
 
         const response = await postAPI(`${apiBaseUrl}/hooks?token=${apiToken}`, webhookData);
+
+        log.debug(`Response: ${JSON.stringify(response, null, 2)}`);
+
         await Webhook.findByIdAndUpdate(newWebhook._id, { response });
 
-        log.info(`Webhook for address ${address} created successfully with URL ID: ${newWebhook.urlId}. Response: ${JSON.stringify(response)}`);
         return newWebhook;
     } catch (err) {
         log.error(`Error in createWebhook: ${err.message}`);
@@ -105,37 +108,62 @@ const deleteWebhook = async (webhookId) => {
 };
 
 /**
- * Handles incoming webhook data, updating the related records in the database.
- * @param {string} urlId - URL identifier of the webhook.
- * @param {Object} headers - Headers of the webhook request.
- * @param {Object} data - Payload received from the webhook.
+ * Processes incoming webhook data, updating transaction records and other
+ * related entities in the database.
+ * 
+ * @param {string} urlId - The URL identifier of the webhook.
+ * @param {Object} headers - The headers of the incoming webhook request.
+ * @param {Object} data - The body of the webhook request, containing transaction details.
  * @returns {Promise<void>}
+ * @throws {NotFoundError} If the webhook or related transaction is not found.
  */
 const processWebhook = async (urlId, headers, data) => {
-    log.debug(`Received webhook data for URL ID ${urlId}`);
-    log.debug(`Headers: ${JSON.stringify(headers)}`);
-    log.debug(`Body: ${JSON.stringify(data)}`);
-
-    const webhook = await getWebhook(urlId);
-
-    if (!webhook) {
-        log.error(`Webhook with URL ID ${urlId} not found`);
-        return;
-    }
-
+    log.debug(`Received webhook data for URL ID: ${urlId}`);
     try {
-        // Convert headers to Map for Mongoose
+        const webhook = await Webhook.findOne({ urlId });
+
+        if (!webhook) {
+            log.error(`Webhook with URL ID ${urlId} not found`);
+            throw new NotFoundError(`Webhook with URL ID ${urlId} not found`);
+        }
+
+        // Convert headers to a Map for Mongoose and update the webhook record
         const headersMap = new Map(Object.entries(headers));
+        await Webhook.findByIdAndUpdate(webhook._id, { headers: headersMap, body: data });
 
-        // Update the webhook document with received headers and body
-        await updateWebhook(urlId, { headers: headersMap, body: data });
+        // Extract monitored address and amount from the webhook's response
+        const monitoredAddress = webhook.response.address;
+        let amountReceived = 0;
 
-        // Further processing based on the webhook data
-        // ...
+        // Check each output to find the amount sent to the monitored address
+        data.outputs.forEach(output => {
+            if (output.addresses.includes(monitoredAddress)) {
+                amountReceived += output.value;
+            }
+        });
 
-        log.info(`Webhook with URL ID ${urlId} processed successfully`);
+        if (amountReceived > 0) {
+            // Determine the transaction status based on the number of confirmations
+            let transactionStatus = 'confirming';
+            if (data.confirmations >= 6) {
+                transactionStatus = 'completed';
+            }
+
+            // Update the transaction record with new data
+            const updatedTransaction = await updateTransactionRecord(webhook.transaction, {
+                confirmations: data.confirmations,
+                status: transactionStatus,
+                amount: amountReceived,
+                // Additional fields to update can be added here
+            });
+
+            log.info(`Transaction with ID ${updatedTransaction._id} updated. Status: ${transactionStatus}, Amount received: ${amountReceived}`);
+        } else {
+            log.info(`No transaction amount for monitored address: ${monitoredAddress}`);
+        }
     } catch (error) {
         log.error(`Error processing webhook with URL ID ${urlId}: ${error.message}`);
+        throw error;
     }
 };
 
