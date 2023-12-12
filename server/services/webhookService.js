@@ -170,6 +170,13 @@ const processWebhook = async (urlId, headers, data) => {
         },
       );
 
+      // Retrieve the wallet by its public address
+      const wallet = await getWalletByAddress(monitoredAddress);
+
+      // Update the wallet's balance with the received amount
+      const newBalance = wallet.balance + amountReceived;
+      await updateWalletBalance(wallet._id, newBalance);
+
       log.info(
         `Transaction with ID ${updatedTransaction._id} updated. Status: ${transactionStatus}, Amount received: ${amountReceived}`,
       );

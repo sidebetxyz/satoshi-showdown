@@ -166,8 +166,12 @@ const handleFinancialSetup = async (userAddress, userRef, eventData) => {
 
     const transaction = await createTransactionRecord(transactionData);
 
-    wallet.transactionRefs.push(transaction._id);
-    await wallet.save();
+    // Update the wallet's balance
+    const newBalance = wallet.balance + eventData.entryFee;
+    await updateWalletBalance(wallet._id, newBalance);
+
+    // Add the transaction reference to the wallet
+    await addTransactionToWallet(wallet._id, transaction._id);
 
     await createWebhook(wallet.publicAddress, transaction._id);
 
