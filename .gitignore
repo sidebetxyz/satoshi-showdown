@@ -13,17 +13,6 @@ yarn.lock
 # SSL certificates
 *.pem
 
-# Editor directories and files
-.idea
-*.swp
-*.swo
-.vscode/
-*.sublime-workspace
-
 # Operating System Files
 .DS_Store
 Thumbs.db
-
-# Dist / build
-dist/
-build/
