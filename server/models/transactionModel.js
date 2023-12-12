@@ -28,9 +28,11 @@ const transactionSchema = new mongoose.Schema(
     receivedAmount: { type: Number, default: null },
     walletAddress: { type: String, required: true },
     userAddress: { type: String, required: true },
+    uncormimedAmount: { type: Number, default: null },
+    confirmedAmount: { type: Number, default: null },
     status: {
       type: String,
-      enum: ["pending", "confirming", "completed", "failed"],
+      enum: ["pending", "mempool", "confirming", "completed", "failed"],
       default: "pending",
     },
     confirmations: { type: Number, default: null },

@@ -5,7 +5,7 @@
  */
 
 const Event = require("../models/eventModel");
-const { createSegWitWalletForEvent } = require("./walletService");
+const { createSegWitWalletForEvent, addTransactionToWallet } = require("./walletService");
 const { createTransactionRecord } = require("./transactionService");
 const { createWebhook } = require("./webhookService");
 const { getUserById } = require("./userService");
@@ -166,11 +166,6 @@ const handleFinancialSetup = async (userAddress, userRef, eventData) => {
 
     const transaction = await createTransactionRecord(transactionData);
 
-    // Update the wallet's balance
-    const newBalance = wallet.balance + eventData.entryFee;
-    await updateWalletBalance(wallet._id, newBalance);
-
-    // Add the transaction reference to the wallet
     await addTransactionToWallet(wallet._id, transaction._id);
 
     await createWebhook(wallet.publicAddress, transaction._id);

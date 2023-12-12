@@ -6,6 +6,7 @@
 
 const Webhook = require("../models/webhookModel");
 const { updateTransactionRecord } = require("./transactionService");
+const { getWalletByAddress, updateWalletBalance } = require("./walletService");
 const { postAPI, getAPI } = require("../utils/apiUtil");
 const { NotFoundError } = require("../utils/errorUtil");
 const log = require("../utils/logUtil");
@@ -149,6 +150,8 @@ const processWebhook = async (urlId, headers, data) => {
     data.outputs.forEach((output) => {
       if (output.addresses.includes(monitoredAddress)) {
         amountReceived += output.value;
+
+        console.log("amountReceived: ", amountReceived); // deleteDebug
       }
     });
 

@@ -18,7 +18,8 @@ const walletSchema = new mongoose.Schema(
       enum: ["SegWit", "Taproot"],
       required: true,
     },
-    balance: { type: Number, default: 0 },
+    confirmedBalance: { type: Number, default: 0 },
+    unconfirmedBalance: { type: Number, default: 0 },
     transactionRefs: [
       { type: mongoose.Schema.Types.ObjectId, ref: "Transaction" },
     ],
