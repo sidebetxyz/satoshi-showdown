@@ -25,9 +25,9 @@ const { errorHandler } = require("./utils/errorUtil");
 const { connectDatabase, disconnectDatabase } = require("./utils/databaseUtil");
 
 // Route Modules
-const userRoutes = require('./routes/userRoutes');
-const eventRoutes = require('./routes/eventRoutes');
-const webhookRoutes = require('./routes/webhookRoutes');
+const userRoutes = require("./routes/userRoutes");
+const eventRoutes = require("./routes/eventRoutes");
+const webhookRoutes = require("./routes/webhookRoutes");
 
 // Initialize Express Application
 const app = express();
@@ -37,7 +37,6 @@ app.use(cors()); // Enables Cross-Origin Resource Sharing (CORS)
 app.use(helmet()); // Applies various security headers to HTTP responses
 app.use(express.json()); // Parses incoming JSON payloads
 app.use(morgan("combined", { stream: log.stream })); // Logs HTTP requests
-
 
 // Establish Database Connection
 connectDatabase();
@@ -50,9 +49,9 @@ connectDatabase();
 app.get("/", (req, res) => res.status(200).send("Server is running"));
 
 // Routes Setup
-app.use('/user', userRoutes); // Mount user routes
-app.use('/event', eventRoutes); // Mount event routes
-app.use('/webhook', webhookRoutes); // Mount webhook routes
+app.use("/user", userRoutes); // Mount user routes
+app.use("/event", eventRoutes); // Mount event routes
+app.use("/webhook", webhookRoutes); // Mount webhook routes
 
 // Global Error Handling
 app.use(errorHandler); // Custom error handling middleware
@@ -65,7 +64,9 @@ const port = process.env.PORT || 3000;
 
 // Create and Start HTTPS Server
 const httpsServer = https.createServer(credentials, app);
-httpsServer.listen(port, () => log.info(`Server running on https://localhost:${port}`));
+httpsServer.listen(port, () =>
+  log.info(`Server running on https://localhost:${port}`),
+);
 
 /**
  * Graceful shutdown function for the server.
@@ -75,7 +76,7 @@ const gracefulShutdown = () => {
   log.info("Initiating graceful shutdown.");
   disconnectDatabase()
     .then(() => httpsServer.close(() => log.info("Server has been shut down")))
-    .catch(err => log.error(`Error during shutdown: ${err.message}`));
+    .catch((err) => log.error(`Error during shutdown: ${err.message}`));
 };
 
 // Signal Handling for Server Termination

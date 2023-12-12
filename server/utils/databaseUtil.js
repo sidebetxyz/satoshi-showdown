@@ -9,7 +9,7 @@ const log = require("./logUtil");
 
 /**
  * Connects to the MongoDB Database.
- * @returns {Promise<void>}
+ * @return {Promise<void>}
  * @throws {Error} If the MongoDB URI is not defined or connection fails.
  */
 const connectDatabase = async () => {
@@ -28,7 +28,7 @@ const connectDatabase = async () => {
 
 /**
  * Disconnects from the MongoDB Database.
- * @returns {Promise<void>}
+ * @return {Promise<void>}
  * @throws {Error} If disconnection fails.
  */
 const disconnectDatabase = async () => {

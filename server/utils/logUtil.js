@@ -22,14 +22,17 @@ const logLevels = {
  */
 const logFormat = winston.format.combine(
   winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
-  winston.format.printf(info => `[${info.timestamp}][${info.level.toUpperCase()}] ${info.message}`)
+  winston.format.printf(
+    (info) =>
+      `[${info.timestamp}][${info.level.toUpperCase()}] ${info.message}`,
+  ),
 );
 
 /**
  * Sets up log transports for outputting logs (e.g., console, file, etc.)
  */
 const logTransports = [
-  new winston.transports.Console() // Logs to console
+  new winston.transports.Console(), // Logs to console
   // Additional transports can be added as needed (e.g., file transport)
 ];
 
@@ -48,7 +51,7 @@ const log = winston.createLogger({
  * @param {string} message - Log message to be written.
  */
 log.stream = {
-  write: message => log.http(message.trim()),
+  write: (message) => log.http(message.trim()),
 };
 
 module.exports = log;

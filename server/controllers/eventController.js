@@ -5,12 +5,12 @@
  */
 
 const {
-    createEvent,
-    updateEvent,
-    deleteEvent,
-    getEvent,
-    getAllEvents
-} = require('../services/eventService');
+  createEvent,
+  updateEvent,
+  deleteEvent,
+  getEvent,
+  getAllEvents,
+} = require("../services/eventService");
 
 /**
  * Handles the creation of a new event.
@@ -20,18 +20,18 @@ const {
  * @param {NextFunction} next - The express next middleware function.
  */
 const handleCreateEvent = async (req, res, next) => {
-    try {
-        const { userAddress, userId, eventData } = req.body;
+  try {
+    const { userAddress, userId, eventData } = req.body;
 
-        if (!userId) {
-            throw new Error("User not authenticated");
-        }
-
-        const newEvent = await createEvent(userAddress, userId, eventData);
-        res.status(201).json(newEvent);
-    } catch (err) {
-        next(err);
+    if (!userId) {
+      throw new Error("User not authenticated");
     }
+
+    const newEvent = await createEvent(userAddress, userId, eventData);
+    res.status(201).json(newEvent);
+  } catch (err) {
+    next(err);
+  }
 };
 
 /**
@@ -42,13 +42,13 @@ const handleCreateEvent = async (req, res, next) => {
  * @param {NextFunction} next - The express next middleware function.
  */
 const handleGetEvent = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        const event = await getEvent(id);
-        res.json(event);
-    } catch (err) {
-        next(err);
-    }
+  try {
+    const { id } = req.params;
+    const event = await getEvent(id);
+    res.json(event);
+  } catch (err) {
+    next(err);
+  }
 };
 
 /**
@@ -59,12 +59,12 @@ const handleGetEvent = async (req, res, next) => {
  * @param {NextFunction} next - The express next middleware function.
  */
 const handleGetAllEvents = async (req, res, next) => {
-    try {
-        const events = await getAllEvents();
-        res.json(events);
-    } catch (err) {
-        next(err);
-    }
+  try {
+    const events = await getAllEvents();
+    res.json(events);
+  } catch (err) {
+    next(err);
+  }
 };
 
 /**
@@ -75,14 +75,14 @@ const handleGetAllEvents = async (req, res, next) => {
  * @param {NextFunction} next - The express next middleware function.
  */
 const handleUpdateEvent = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        const updateData = req.body;
-        const updatedEvent = await updateEvent(id, updateData);
-        res.json(updatedEvent);
-    } catch (err) {
-        next(err);
-    }
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+    const updatedEvent = await updateEvent(id, updateData);
+    res.json(updatedEvent);
+  } catch (err) {
+    next(err);
+  }
 };
 
 /**
@@ -93,19 +93,19 @@ const handleUpdateEvent = async (req, res, next) => {
  * @param {NextFunction} next - The express next middleware function.
  */
 const handleDeleteEvent = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        await deleteEvent(id);
-        res.status(200).send(`Event with ID ${id} deleted successfully`);
-    } catch (err) {
-        next(err);
-    }
+  try {
+    const { id } = req.params;
+    await deleteEvent(id);
+    res.status(200).send(`Event with ID ${id} deleted successfully`);
+  } catch (err) {
+    next(err);
+  }
 };
 
 module.exports = {
-    handleCreateEvent,
-    handleUpdateEvent,
-    handleGetEvent,
-    handleGetAllEvents,
-    handleDeleteEvent
+  handleCreateEvent,
+  handleUpdateEvent,
+  handleGetEvent,
+  handleGetAllEvents,
+  handleDeleteEvent,
 };

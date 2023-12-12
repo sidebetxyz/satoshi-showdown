@@ -4,8 +4,8 @@
  * Implements error handling and request validation for user-related API endpoints.
  */
 
-const { createUser } = require('../services/userService');
-const log = require('../utils/logUtil');
+const { createUser } = require("../services/userService");
+const log = require("../utils/logUtil");
 
 /**
  * Handles the creation of a new user or a guest user.
@@ -17,16 +17,16 @@ const log = require('../utils/logUtil');
  * @param {NextFunction} next - The express next middleware function. Used for error handling.
  */
 const handleCreateUser = async (req, res, next) => {
-    try {
-        const userData = req.body;
-        const newUser = await createUser(userData);
-        res.status(201).json(newUser);
-    } catch (err) {
-        log.error(`Error in handleCreateUser: ${err.message}`);
-        next(err);
-    }
+  try {
+    const userData = req.body;
+    const newUser = await createUser(userData);
+    res.status(201).json(newUser);
+  } catch (err) {
+    log.error(`Error in handleCreateUser: ${err.message}`);
+    next(err);
+  }
 };
 
 module.exports = {
-    handleCreateUser
+  handleCreateUser,
 };

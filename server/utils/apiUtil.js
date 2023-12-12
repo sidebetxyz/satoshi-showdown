@@ -9,10 +9,10 @@ const log = require("./logUtil");
 
 /**
  * Performs a GET request to the specified URL.
- * 
+ *
  * @param {string} url - The URL to send the GET request to.
  * @param {Object} [params={}] - Query parameters for the GET request.
- * @returns {Promise<Object>} The data from the response.
+ * @return {Promise<Object>} The data from the response.
  * @throws {Error} If the GET request fails.
  */
 const getAPI = async (url, params = {}) => {
@@ -27,10 +27,10 @@ const getAPI = async (url, params = {}) => {
 
 /**
  * Performs a POST request to the specified URL.
- * 
+ *
  * @param {string} url - The URL to send the POST request to.
  * @param {Object} data - The payload for the POST request.
- * @returns {Promise<Object>} The data from the response.
+ * @return {Promise<Object>} The data from the response.
  * @throws {Error} If the POST request fails.
  */
 const postAPI = async (url, data) => {
@@ -46,7 +46,7 @@ const postAPI = async (url, data) => {
 /**
  * Processes callback data from an external API.
  * Placeholder for actual implementation.
- * 
+ *
  * @param {Object} callbackData - The data received from the callback.
  */
 const processCallback = (callbackData) => {

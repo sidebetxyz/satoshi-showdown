@@ -35,7 +35,7 @@ class DatabaseError extends BaseError {
    * @param {string} message - The error message.
    */
   constructor(message) {
-    super('DatabaseError', `Database error: ${message}`);
+    super("DatabaseError", `Database error: ${message}`);
   }
 }
 
@@ -49,7 +49,7 @@ class ValidationError extends BaseError {
    * @param {string} message - The error message.
    */
   constructor(message) {
-    super('ValidationError', `Validation error: ${message}`);
+    super("ValidationError", `Validation error: ${message}`);
   }
 }
 
@@ -63,13 +63,13 @@ class NotFoundError extends BaseError {
    * @param {string} message - The error message.
    */
   constructor(message) {
-    super('NotFoundError', `Not Found: ${message}`);
+    super("NotFoundError", `Not Found: ${message}`);
   }
 }
 
 /**
  * Middleware for handling errors in Express applications.
- * 
+ *
  * @param {Error} err - The error object.
  * @param {Request} req - The express request object.
  * @param {Response} res - The express response object.
