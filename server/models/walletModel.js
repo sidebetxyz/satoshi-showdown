@@ -7,14 +7,18 @@ const mongoose = require('mongoose');
 
 const walletSchema = new mongoose.Schema({
   publicAddress: { type: String, required: true, unique: true },
-  encryptedPrivateKey: Object, // Stores iv, content, and tag
-  currencyType: {
+  encryptedPrivateKey: {
+    iv: { type: String, required: true },
+    content: { type: String, required: true },
+    tag: { type: String, required: true }
+  },
+  walletType: {
     type: String,
-    required: true,
-    enum: ['Bitcoin', 'Ethereum', 'Others']
+    enum: ['SegWit', 'Taproot'],
+    required: true
   },
   balance: { type: Number, default: 0 },
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  transactions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Transaction' }],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });

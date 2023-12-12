@@ -5,10 +5,10 @@
  */
 
 const Event = require('../models/eventModel');
-const { getUserById } = require('./userService');
-const { createWalletForEvent } = require('./walletService');
+const { createSegWitWalletForEvent } = require('./walletService');
 const { createTransactionRecord } = require('./transactionService');
 const { createWebhook } = require('./webhookService');
+const { getUserById } = require('./userService');
 const { validateEvent } = require('../utils/validationUtil');
 const { ValidationError, NotFoundError } = require('../utils/errorUtil');
 const log = require('../utils/logUtil');
@@ -35,7 +35,7 @@ const createEvent = async (eventData, userId) => {
             throw new NotFoundError(`User with ID ${userId} not found`);
         }
 
-        const financialSetup = await handleFinancialSetup(eventData, userId);
+        const financialSetup = await handleFinancialSetup(eventData, user._id);
 
         const newEvent = new Event({
             ...eventData,
@@ -115,32 +115,35 @@ const deleteEvent = async (eventId) => {
  * eventService module.
  * 
  * @param {Object} eventData - Data for the event.
- * @param {string} userId - ID of the user creating the event.
+ * @param {string} userRef - Reference ID of the user creating the event.
  * @returns {Promise<Object>} An object containing the created wallet and transaction.
  * @private
  * @throws {Error} Thrown when any part of the financial setup fails.
  */
-const handleFinancialSetup = async (eventData, userId) => {
+const handleFinancialSetup = async (eventData, userRef) => {
     try {
-        const wallet = await createWalletForEvent(userId);
+        const wallet = await createSegWitWalletForEvent();
         log.info(`Created wallet with address: ${wallet.publicAddress}`);
 
-        const transaction = await createTransactionRecord({
-            eventId: eventData._id,
-            userId,
-            expectedAmount: eventData.entryFee,
+        const transactionData = {
+            userId: userRef,
+            walletId: wallet._id,
+            transactionType: 'incoming',
+            amount: eventData.entryFee,
             address: wallet.publicAddress
-        });
-        log.info(`Created transaction record with ID: ${transaction._id}`);
+        };
 
-        const webhook = await createWebhook(transaction.address, transaction._id, eventData.requiredConfirmations);
-        log.info(`Created webhook with ID: ${webhook.uniqueId}`);
+        const transaction = await createTransactionRecord(transactionData);
+        log.info(`Created transaction record with ID: ${transaction.transactionId}`);
+
+        const webhook = await createWebhook(wallet.publicAddress, transaction._id);
+        log.info(`Created webhook with unique ID: ${webhook.urlId}`);
+
+        return { wallet, transaction };
     } catch (err) {
         log.error(`Error in handleFinancialSetup: ${err.message}`);
         throw new Error(`Failed to set up financial aspects of the event: ${err.message}`);
     }
-
-    return { wallet, transaction };
 };
 
 module.exports = {

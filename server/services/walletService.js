@@ -11,17 +11,15 @@ const { generateSegWitBitcoinKeys } = require('../utils/keyUtil');
  * Creates a wallet for a specific event and user.
  * Generates a new SegWit Bitcoin wallet and stores it in the database.
  *
- * @param {string} userId - The ID of the user to whom the wallet will belong.
  * @returns {Promise<Object>} The created wallet object.
  */
-const createWalletForEvent = async (userId) => {
+const createSegWitWalletForEvent = async () => {
     const { address, encryptedPrivateKey } = generateSegWitBitcoinKeys();
 
     const wallet = new Wallet({
         publicAddress: address,
         encryptedPrivateKey,
-        currencyType: "Bitcoin",
-        user: userId
+        walletType: "SegWit",
     });
 
     await wallet.save();
@@ -29,5 +27,5 @@ const createWalletForEvent = async (userId) => {
 };
 
 module.exports = {
-    createWalletForEvent
+    createSegWitWalletForEvent
 };

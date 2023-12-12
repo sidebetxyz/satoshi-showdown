@@ -16,7 +16,8 @@ const handleProcessWebhook = async (req, res, next) => {
     try {
         const { uniqueId } = req.params;
         const data = req.body;
-        await processWebhook(uniqueId, data);
+        const headers = req.headers;
+        await processWebhook(uniqueId, headers, data);
         res.status(200).send('Webhook processed successfully');
     } catch (err) {
         next(err);

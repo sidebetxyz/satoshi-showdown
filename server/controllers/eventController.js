@@ -21,8 +21,7 @@ const {
  */
 const handleCreateEvent = async (req, res, next) => {
     try {
-        const eventData = req.body;
-        const userId = req.session.userId; // Assuming user ID is stored in session
+        const { userId, eventData } = req.body;
 
         if (!userId) {
             throw new Error("User not authenticated");

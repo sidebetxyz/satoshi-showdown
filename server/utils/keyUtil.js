@@ -16,9 +16,7 @@ const ECPair = ECPairFactory(ecc);
 const network = bitcoin.networks.testnet;
 
 /**
- * Generates a new SegWit Bitcoin wallet.
- * Creates a P2WPKH address and encrypts the corresponding private key.
- * 
+ * Generates a new SegWit Bitcoin wallet (P2WPKH).
  * @returns {Object} An object containing the generated address and the encrypted private key.
  */
 const generateSegWitBitcoinKeys = () => {
@@ -26,10 +24,22 @@ const generateSegWitBitcoinKeys = () => {
     const { address } = bitcoin.payments.p2wpkh({ pubkey: keyPair.publicKey, network });
     const privateKey = keyPair.toWIF();
     const encryptedPrivateKey = encryptPrivateKey(privateKey);
+    return { address, encryptedPrivateKey };
+};
 
+/**
+ * Generates a new Taproot Bitcoin wallet (P2TR).
+ * @returns {Object} An object containing the generated address and the encrypted private key.
+ */
+const generateTaprootBitcoinKeys = () => {
+    const keyPair = ECPair.makeRandom({ network, compressed: false });
+    const { address } = bitcoin.payments.p2tr({ pubkey: keyPair.publicKey, network });
+    const privateKey = keyPair.toWIF();
+    const encryptedPrivateKey = encryptPrivateKey(privateKey);
     return { address, encryptedPrivateKey };
 };
 
 module.exports = {
-    generateSegWitBitcoinKeys
+    generateSegWitBitcoinKeys,
+    generateTaprootBitcoinKeys
 };

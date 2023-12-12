@@ -14,7 +14,7 @@ const log = require('../utils/logUtil');
  * Registers a new user or creates a guest user profile.
  * Expects a JSON object with user data, including a flag indicating if the user is a guest.
  *
- * @param {Object} userData - Data for creating a new user. Includes username, email, password, and isGuest flag.
+ * @param {Object} userData - Data for creating a new user. Includes username, email, and password.
  * @returns {Promise<Object>} The created user object without sensitive data.
  * @throws {ValidationError} If user data validation fails or if username/email already exists.
  */
@@ -25,18 +25,23 @@ const createUser = async (userData) => {
             throw new ValidationError(error.details.map(d => d.message).join('; '));
         }
 
-        if (!userData.isGuest && await checkUserExists(userData.username, userData.email)) {
+        // Check if the user already exists
+        if (await checkUserExists(userData.username, userData.email)) {
             throw new ValidationError('Username or email already exists');
         }
 
+        // Hash password
+        const passwordHash = await bcrypt.hash(userData.password, 10);
+
+        // Create new user
         const newUser = new User({
             ...userData,
-            role: userData.isGuest ? 'participant' : userData.role,
-            passwordHash: userData.isGuest ? undefined : await bcrypt.hash(userData.password, 10)
+            passwordHash
         });
 
         await newUser.save();
 
+        // Exclude sensitive data before returning user data
         const userDataWithoutSensitiveInfo = excludeSensitiveData(newUser);
         log.info(`User created: ${JSON.stringify(userDataWithoutSensitiveInfo)}`);
 
@@ -55,13 +60,12 @@ const createUser = async (userData) => {
  * @throws {NotFoundError} If the user is not found.
  */
 const getUserById = async (userId) => {
-    const user = await User.findById(userId);
+    const user = await User.findOne({ userId });
     if (!user) {
         throw new NotFoundError(`User with ID ${userId} not found`);
     }
     return excludeSensitiveData(user);
 };
-
 
 /**
  * Retrieves a user by their username.

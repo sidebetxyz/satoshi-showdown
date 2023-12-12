@@ -1,62 +1,61 @@
 /**
  * @fileoverview Encryption Utility for Satoshi Showdown.
- * Provides key encryption and decryption functionalities using environment-configured settings.
- * This abstraction enhances security by allowing encryption details to be managed and altered
- * without affecting the core application logic.
+ * Provides functionalities for key encryption and decryption, focusing on securing private keys.
+ * Uses AES-256-GCM for robust encryption with authentication tags for additional security.
  */
 
-const crypto = require("crypto");
+const crypto = require('crypto');
 
-const algorithm = process.env.PRIVATE_KEY_ALGORITHM;
-const secretKey = process.env.PRIVATE_KEY_SECRET_KEY;
-const ivLength = parseInt(process.env.PRIVATE_KEY_IV_LENGTH, 10);
+// Default to AES-256-GCM for strong encryption
+const algorithm = 'aes-256-gcm';
+// Use a 32-byte key (256 bits) for AES-256
+const secretKey = process.env.ENCRYPTION_SECRET_KEY;
+// 12 bytes IV length for AES-GCM
+const ivLength = 12;
 
 /**
- * Encrypts a private key using AES encryption.
+ * Encrypts a private key using AES-256-GCM encryption.
  * 
- * @param {string} key - The key to encrypt.
- * @returns {Object} The encrypted key, including iv (initialization vector) and auth tag.
+ * @param {string} privateKey - The private key to encrypt.
+ * @returns {Object} Encrypted data with IV and authentication tag.
+ * @throws {Error} If encryption configuration is missing or invalid.
  */
-const encryptPrivateKey = (key) => {
-  if (!algorithm || !secretKey || !ivLength) {
-    throw new Error("Encryption configuration is not properly set in .env");
+const encryptPrivateKey = (privateKey) => {
+  if (!secretKey) {
+    throw new Error('Encryption secret key is not set in environment variables.');
   }
 
   const iv = crypto.randomBytes(ivLength);
-  const cipher = crypto.createCipheriv(
-    algorithm,
-    Buffer.from(secretKey, "hex"),
-    iv
-  );
-  let encrypted = cipher.update(key, "utf8", "hex");
-  encrypted += cipher.final("hex");
-  const tag = cipher.getAuthTag();
+  const cipher = crypto.createCipheriv(algorithm, Buffer.from(secretKey, 'hex'), iv);
+
+  let encrypted = cipher.update(privateKey, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+
   return {
-    iv: iv.toString("hex"),
+    iv: iv.toString('hex'),
     content: encrypted,
-    tag: tag.toString("hex"),
+    tag: cipher.getAuthTag().toString('hex')
   };
 };
 
 /**
  * Decrypts an encrypted private key.
  * 
- * @param {Object} encryptedKey - The encrypted private key object containing iv, content, and tag.
- * @returns {string} The decrypted key.
+ * @param {Object} encryptedKey - The encrypted private key object with IV, content, and tag.
+ * @returns {string} The decrypted private key.
+ * @throws {Error} If decryption process fails.
  */
-const decryptPrivateKey = (encryptedKey) => {
-  if (!algorithm || !secretKey || !ivLength) {
-    throw new Error("Encryption configuration is not properly set in .env");
+const decryptPrivateKey = (encryptedPrivateKey) => {
+  if (!secretKey) {
+    throw new Error('Encryption secret key is not set in environment variables.');
   }
 
-  const decipher = crypto.createDecipheriv(
-    algorithm,
-    Buffer.from(secretKey, "hex"),
-    Buffer.from(encryptedKey.iv, "hex")
-  );
-  decipher.setAuthTag(Buffer.from(encryptedKey.tag, "hex"));
-  let decrypted = decipher.update(encryptedKey.content, "hex", "utf8");
-  decrypted += decipher.final("utf8");
+  const decipher = crypto.createDecipheriv(algorithm, Buffer.from(secretKey, 'hex'), Buffer.from(encryptedPrivateKey.iv, 'hex'));
+  decipher.setAuthTag(Buffer.from(encryptedPrivateKey.tag, 'hex'));
+
+  let decrypted = decipher.update(encryptedPrivateKey.content, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+
   return decrypted;
 };
 

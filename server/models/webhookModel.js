@@ -4,17 +4,18 @@
  */
 
 const mongoose = require('mongoose');
+const { v4: uuidv4 } = require('uuid');
 
 const webhookSchema = new mongoose.Schema({
-  urlId: { type: String, required: true },
-  method: {
-    type: String,
-    enum: ['GET', 'POST', 'PUT', 'DELETE'],
-    default: 'POST'
-  },
+  urlId: { type: String, default: uuidv4, unique: true },
+  response: Object,
   headers: Map,
   body: mongoose.Schema.Types.Mixed,
-  event: { type: mongoose.Schema.Types.ObjectId, ref: 'Event', required: true },
+  type: { // New field for webhook type
+    type: String,
+    enum: ['tx-confirmation'],
+    required: true
+  },
   transaction: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Transaction',
@@ -26,7 +27,8 @@ const webhookSchema = new mongoose.Schema({
     default: 'pending'
   },
   lastAttempt: Date,
-  response: Object,
+  isDeleted: { type: Boolean, default: false }, // New field to track soft deletes
+  deletedAt: { type: Date } // Timestamp for when the record was soft-deleted
 });
 
 const Webhook = mongoose.model('Webhook', webhookSchema);

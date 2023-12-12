@@ -7,11 +7,10 @@ const mongoose = require("mongoose");
 const { v4: uuidv4 } = require('uuid');
 
 const userSchema = new mongoose.Schema({
-  secretKey: { type: String, default: uuidv4, unique: true },
+  userId: { type: String, default: uuidv4, unique: true },
   username: { type: String, required: true, unique: true },
   email: { type: String, unique: true, sparse: true },
-  passwordHash: String,
-  isGuest: { type: Boolean, default: true },
+  passwordHash: { type: String, required: true },
   registrationDate: { type: Date, default: Date.now },
   lastActive: { type: Date, default: Date.now },
   role: {
@@ -19,7 +18,7 @@ const userSchema = new mongoose.Schema({
     enum: ["participant", "organizer", "admin"],
     default: "participant",
   },
-  profileInfo: Object, // Placeholder for future profile fields
+  profileInfo: Object,
   ipAddress: String,
   organization: { type: mongoose.Schema.Types.ObjectId, ref: "Organization" },
   eventsCreated: [{ type: mongoose.Schema.Types.ObjectId, ref: "Event" }],
