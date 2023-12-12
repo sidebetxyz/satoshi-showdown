@@ -16,24 +16,17 @@ const transactionSchema = new mongoose.Schema({
     required: true
   },
   amount: { type: Number, required: true },
-  address: { type: String, required: true }, // Address for incoming or outgoing transaction
+  walletAddress: { type: String, required: true },
+  recipientAddress: { type: String, required: true },
   status: {
     type: String,
     enum: ["pending", "confirming", "completed", "failed"],
     default: "pending",
   },
   confirmations: { type: Number, default: null },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now },
-  // Additional fields for outgoing transactions
-  recipientAddress: { type: String }, // Optional, used for outgoing transactions
   transactionHash: { type: String }, // Optional, hash of the blockchain transaction
-});
-
-transactionSchema.pre("save", function (next) {
-  this.updatedAt = new Date();
-  next();
-});
+}, { timestamps: true }); // Enable automatic timestamps
 
 const Transaction = mongoose.model("Transaction", transactionSchema);
+
 module.exports = Transaction;

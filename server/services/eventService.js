@@ -129,7 +129,7 @@ const handleFinancialSetup = async (eventData, userRef) => {
             walletId: wallet._id,
             transactionType: 'incoming',
             amount: eventData.entryFee,
-            address: wallet.publicAddress
+            walletAddress: wallet.publicAddress
         };
 
         const transaction = await createTransactionRecord(transactionData);

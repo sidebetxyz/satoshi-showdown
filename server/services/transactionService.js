@@ -19,7 +19,7 @@ const log = require('../utils/logUtil');
  */
 const createTransactionRecord = async (transactionData) => {
     try {
-        const transaction = new Transaction({ ...transactionData, status: 'pending' });
+        const transaction = new Transaction(transactionData);
         await transaction.save();
         log.info(`Transaction record created with ID: ${transaction._id}`);
         return transaction;

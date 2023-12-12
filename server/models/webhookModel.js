@@ -11,7 +11,7 @@ const webhookSchema = new mongoose.Schema({
   response: Object,
   headers: Map,
   body: mongoose.Schema.Types.Mixed,
-  type: { // New field for webhook type
+  type: {
     type: String,
     enum: ['tx-confirmation'],
     required: true
@@ -27,9 +27,16 @@ const webhookSchema = new mongoose.Schema({
     default: 'pending'
   },
   lastAttempt: Date,
-  isDeleted: { type: Boolean, default: false }, // New field to track soft deletes
-  deletedAt: { type: Date } // Timestamp for when the record was soft-deleted
-});
+  isDeleted: { type: Boolean, default: false },
+  deletedAt: Date
+}, { timestamps: true }); // Enable automatic timestamps
+
+// Optional: Middleware for soft delete
+webhookSchema.methods.softDelete = function () {
+  this.isDeleted = true;
+  this.deletedAt = new Date();
+  return this.save();
+};
 
 const Webhook = mongoose.model('Webhook', webhookSchema);
 module.exports = Webhook;

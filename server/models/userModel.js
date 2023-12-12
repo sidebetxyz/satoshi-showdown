@@ -11,7 +11,6 @@ const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email: { type: String, unique: true, sparse: true },
   passwordHash: { type: String, required: true },
-  registrationDate: { type: Date, default: Date.now },
   lastActive: { type: Date, default: Date.now },
   role: {
     type: String,
@@ -24,7 +23,7 @@ const userSchema = new mongoose.Schema({
   eventsCreated: [{ type: mongoose.Schema.Types.ObjectId, ref: "Event" }],
   eventsParticipated: [{ type: mongoose.Schema.Types.ObjectId, ref: "Event" }],
   transactions: [{ type: mongoose.Schema.Types.ObjectId, ref: "Transaction" }],
-});
+}, { timestamps: true }); // Enable automatic timestamps
 
 const User = mongoose.model("User", userSchema);
 module.exports = User;

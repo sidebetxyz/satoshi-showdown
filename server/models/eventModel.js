@@ -33,7 +33,7 @@ const eventSchema = new mongoose.Schema({
   socialSharingLinks: [String],
   ageRestriction: Number,
   geographicRestrictions: [String],
-});
+}, { timestamps: true });
 
 const Event = mongoose.model("Event", eventSchema);
 module.exports = Event;

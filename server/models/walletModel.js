@@ -19,14 +19,7 @@ const walletSchema = new mongoose.Schema({
   },
   balance: { type: Number, default: 0 },
   transactions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Transaction' }],
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
-});
-
-walletSchema.pre('save', function (next) {
-  this.updatedAt = new Date();
-  next();
-});
+}, { timestamps: true }); // Enable automatic timestamps
 
 const Wallet = mongoose.model('Wallet', walletSchema);
 module.exports = Wallet;
