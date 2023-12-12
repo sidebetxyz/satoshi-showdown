@@ -42,7 +42,6 @@ const createEvent = async (userAddress, userId, eventData) => {
         const newEvent = new Event({
             ...eventData,
             creator: user._id,
-            wallet: financialSetup.wallet._id,
             transactions: [financialSetup.transaction._id]
         });
 
@@ -149,8 +148,8 @@ const handleFinancialSetup = async (userAddress, userRef, eventData) => {
         const wallet = await createSegWitWalletForEvent();
 
         const transactionData = {
-            userId: userRef,
-            walletId: wallet._id,
+            userRef: userRef,
+            walletRef: wallet._id,
             transactionType: 'incoming',
             expectedAmount: eventData.entryFee,
             walletAddress: wallet.publicAddress,
@@ -158,6 +157,9 @@ const handleFinancialSetup = async (userAddress, userRef, eventData) => {
         };
 
         const transaction = await createTransactionRecord(transactionData);
+
+        wallet.transactionRefs.push(transaction._id);
+        await wallet.save();
 
         const webhook = await createWebhook(wallet.publicAddress, transaction._id);
 

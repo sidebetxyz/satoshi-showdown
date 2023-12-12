@@ -18,8 +18,8 @@ const walletSchema = new mongoose.Schema({
     required: true
   },
   balance: { type: Number, default: 0 },
-  transactions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Transaction' }],
-}, { timestamps: true }); // Enable automatic timestamps
+  transactionRefs: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Transaction' }],
+}, { timestamps: true });
 
 const Wallet = mongoose.model('Wallet', walletSchema);
 module.exports = Wallet;
