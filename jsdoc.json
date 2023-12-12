@@ -1,14 +1,7 @@
 {
     "source": {
-        "include": [
-            "server.js",
-            "controllers",
-            "models",
-            "routes",
-            "services",
-            "utils"
-        ],
-        "exclude": ["node_modules"],
+        "include": ["server"],
+        "exclude": ["server/node_modules"],
         "includePattern": ".+\\.js(doc|x)?$",
         "excludePattern": "(^|\\/|\\\\)_"
     },
@@ -20,7 +13,7 @@
         "destination": "./docs",
         "recurse": true,
         "verbose": true,
-        "readme": "../README.md"
+        "readme": "./README.md"
     },
     "templates": {
         "cleverLinks": false,
