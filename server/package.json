@@ -6,11 +6,11 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "lint": "eslint '**/*.{js,jsx}' --quiet",
-    "lint:fix": "eslint '**/*.{js,jsx}' --fix",
-    "check-format": "prettier --check '**/*.{js,jsx,json,css,md}'",
-    "format": "prettier --write '**/*.{js,jsx,json,css,md}'",
-    "generate-docs": "jsdoc -c jsdoc.json"
+    "lint": "eslint --config ./configs/.eslintrc.js '**/*.{js,jsx}' --quiet",
+    "lint:fix": "eslint --config ./configs/.eslintrc.js '**/*.{js,jsx}' --fix",
+    "check-format": "prettier --check --config ./configs/.prettierrc '**/*.{js,jsx,json,css,md}'",
+    "format": "prettier --write --config ./configs/.prettierrc '**/*.{js,jsx,json,css,md}'",
+    "generate-docs": "jsdoc -c ./configs/jsdoc.json"
   },
   "keywords": [
     "bitcoin",

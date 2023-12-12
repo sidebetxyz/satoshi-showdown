@@ -1,23 +1,23 @@
 /**
  * @fileoverview Server configuration for Satoshi Showdown.
- * Sets up and configures the Express server, including middleware for CORS,
- * security, logging, JSON parsing, and global error handling.
- * Manages HTTPS server creation, database connections, and graceful shutdown procedures.
- * Adds session management using express-session.
+ * Configures the Express server, integrating middleware for CORS, security, logging,
+ * and JSON parsing. Manages HTTPS server creation, database connections, and graceful
+ * shutdown procedures. Ensures correct environment configuration is loaded.
  */
 
-// Environment Configuration
-require("dotenv").config();
+// Environment Configuration from Config Directory
+require("dotenv").config({ path: "../configs/.env" });
 
 // Core Node.js Modules
 const fs = require("fs");
 const https = require("https");
 
-// Express and Related Middleware
+// Express and Custom Middleware
 const express = require("express");
-const cors = require("cors");
-const helmet = require("helmet");
-const morgan = require("morgan");
+const corsSecurityMiddleware = require("./middlewares/corsSecurityMiddleware");
+const httpSecurityMiddleware = require("./middlewares/httpSecurityMiddleware");
+const jsonParserMiddleware = require("./middlewares/jsonParserMiddleware");
+const requestLoggingMiddleware = require("./middlewares/requestLoggingMiddleware");
 
 // Utilities and Custom Modules
 const log = require("./utils/logUtil");
@@ -33,10 +33,10 @@ const webhookRoutes = require("./routes/webhookRoutes");
 const app = express();
 
 // Middleware Setup
-app.use(cors()); // Enables Cross-Origin Resource Sharing (CORS)
-app.use(helmet()); // Applies various security headers to HTTP responses
-app.use(express.json()); // Parses incoming JSON payloads
-app.use(morgan("combined", { stream: log.stream })); // Logs HTTP requests
+app.use(corsSecurityMiddleware());
+app.use(httpSecurityMiddleware());
+app.use(jsonParserMiddleware());
+app.use(requestLoggingMiddleware());
 
 // Establish Database Connection
 connectDatabase();
@@ -44,17 +44,19 @@ connectDatabase();
 /**
  * Root route for basic health check.
  * @route GET /
- * @returns {string} 200 - success response - "Server is running"
+ * @returns {string} 200 - Success response - "Server is running"
  */
-app.get("/", (req, res) => res.status(200).send("Server is running"));
+app.get("/", (req, res) => {
+  res.status(200).send("Server is running");
+});
 
 // Routes Setup
-app.use("/user", userRoutes); // Mount user routes
-app.use("/event", eventRoutes); // Mount event routes
-app.use("/webhook", webhookRoutes); // Mount webhook routes
+app.use("/user", userRoutes);
+app.use("/event", eventRoutes);
+app.use("/webhook", webhookRoutes);
 
 // Global Error Handling
-app.use(errorHandler); // Custom error handling middleware
+app.use(errorHandler);
 
 // HTTPS Server Configuration
 const privateKey = fs.readFileSync(process.env.SSL_PRIVATE_KEY_PATH, "utf8");
@@ -64,9 +66,9 @@ const port = process.env.PORT || 3000;
 
 // Create and Start HTTPS Server
 const httpsServer = https.createServer(credentials, app);
-httpsServer.listen(port, () =>
-  log.info(`Server running on https://localhost:${port}`),
-);
+httpsServer.listen(port, () => {
+  log.info(`Server running on https://localhost:${port}`);
+});
 
 /**
  * Graceful shutdown function for the server.
