@@ -19,11 +19,12 @@ const log = require('../utils/logUtil');
  * 
  * @param {Object} eventData - Data for creating the new event.
  * @param {string} userId - ID of the user creating the event.
+ * @param {string} userAddress - Bitcoin address of the user creating the event.
  * @returns {Promise<Object>} A promise that resolves to the created event object.
  * @throws {ValidationError} Thrown when event data validation fails.
  * @throws {NotFoundError} Thrown when a user is not found.
  */
-const createEvent = async (eventData, userId) => {
+const createEvent = async (eventData, userId, userAddress) => {
     try {
         const validation = validateEvent(eventData);
         if (validation.error) {
@@ -35,7 +36,7 @@ const createEvent = async (eventData, userId) => {
             throw new NotFoundError(`User with ID ${userId} not found`);
         }
 
-        const financialSetup = await handleFinancialSetup(eventData, user._id);
+        const financialSetup = await handleFinancialSetup(eventData, user._id, userAddress);
 
         const newEvent = new Event({
             ...eventData,
@@ -45,6 +46,7 @@ const createEvent = async (eventData, userId) => {
         });
 
         await newEvent.save();
+        log.info(`New event created: ${newEvent._id}`);
         return newEvent;
     } catch (err) {
         log.error(`Error in createEvent: ${err.message}`);
@@ -58,16 +60,20 @@ const createEvent = async (eventData, userId) => {
  * @param {string} eventId - The ID of the event to update.
  * @param {Object} updateData - Data for updating the event.
  * @returns {Promise<Object>} The updated event object.
+ * @throws {NotFoundError} Thrown if the event is not found.
  */
 const updateEvent = async (eventId, updateData) => {
-    const event = await Event.findById(eventId);
-    if (!event) {
-        throw new NotFoundError(`Event with ID ${eventId} not found`);
+    try {
+        const event = await Event.findByIdAndUpdate(eventId, updateData, { new: true });
+        if (!event) {
+            throw new NotFoundError(`Event with ID ${eventId} not found`);
+        }
+        log.info(`Event updated: ${event._id}`);
+        return event;
+    } catch (err) {
+        log.error(`Error in updateEvent: ${err.message}`);
+        throw err;
     }
-
-    Object.assign(event, updateData);
-    await event.save();
-    return event;
 };
 
 /**
@@ -75,14 +81,19 @@ const updateEvent = async (eventId, updateData) => {
  * 
  * @param {string} eventId - The ID of the event to retrieve.
  * @returns {Promise<Object>} The retrieved event object.
+ * @throws {NotFoundError} Thrown if the event is not found.
  */
 const getEvent = async (eventId) => {
-    const event = await Event.findById(eventId);
-    if (!event) {
-        throw new NotFoundError(`Event with ID ${eventId} not found`);
+    try {
+        const event = await Event.findById(eventId);
+        if (!event) {
+            throw new NotFoundError(`Event with ID ${eventId} not found`);
+        }
+        return event;
+    } catch (err) {
+        log.error(`Error in getEvent: ${err.message}`);
+        throw err;
     }
-
-    return event;
 };
 
 /**
@@ -91,7 +102,12 @@ const getEvent = async (eventId) => {
  * @returns {Promise<Array>} An array of all events.
  */
 const getAllEvents = async () => {
-    return await Event.find({});
+    try {
+        return await Event.find({});
+    } catch (err) {
+        log.error(`Error in getAllEvents: ${err.message}`);
+        throw err;
+    }
 };
 
 /**
@@ -99,14 +115,20 @@ const getAllEvents = async () => {
  * 
  * @param {string} eventId - The ID of the event to delete.
  * @returns {Promise<void>}
+ * @throws {NotFoundError} Thrown if the event is not found.
  */
 const deleteEvent = async (eventId) => {
-    const event = await Event.findById(eventId);
-    if (!event) {
-        throw new NotFoundError(`Event with ID ${eventId} not found`);
+    try {
+        const event = await Event.findById(eventId);
+        if (!event) {
+            throw new NotFoundError(`Event with ID ${eventId} not found`);
+        }
+        await event.remove();
+        log.info(`Event deleted: ${event._id}`);
+    } catch (err) {
+        log.error(`Error in deleteEvent: ${err.message}`);
+        throw err;
     }
-
-    await event.remove();
 };
 
 /**
@@ -116,11 +138,12 @@ const deleteEvent = async (eventId) => {
  * 
  * @param {Object} eventData - Data for the event.
  * @param {string} userRef - Reference ID of the user creating the event.
+ * @param {string} userAddress - Bitcoin address of the user for the transaction.
  * @returns {Promise<Object>} An object containing the created wallet and transaction.
  * @private
  * @throws {Error} Thrown when any part of the financial setup fails.
  */
-const handleFinancialSetup = async (eventData, userRef) => {
+const handleFinancialSetup = async (eventData, userRef, userAddress) => {
     try {
         const wallet = await createSegWitWalletForEvent();
 
@@ -129,13 +152,15 @@ const handleFinancialSetup = async (eventData, userRef) => {
             walletId: wallet._id,
             transactionType: 'incoming',
             amount: eventData.entryFee,
-            walletAddress: wallet.publicAddress
+            walletAddress: wallet.publicAddress,
+            userAddress: userAddress
         };
 
         const transaction = await createTransactionRecord(transactionData);
 
         const webhook = await createWebhook(wallet.publicAddress, transaction._id);
 
+        log.info(`Financial setup completed for event: Wallet and transaction created`);
         return { wallet, transaction };
     } catch (err) {
         log.error(`Error in handleFinancialSetup: ${err.message}`);
