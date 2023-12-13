@@ -1,8 +1,11 @@
 /**
  * @fileoverview Validation Utility for Satoshi Showdown.
- * Provides a suite of validation functions for various data types and formats.
- * Leverages the Joi library for comprehensive and flexible validation schemes,
- * ensuring data integrity and conformity to application standards.
+ * Provides a comprehensive suite of validation functions for various data types and formats
+ * within the application, leveraging the Joi library. This ensures data integrity and
+ * conformity to application standards, particularly for user and event data.
+ *
+ * @module utils/validationUtil
+ * @requires joi - Joi library for data validation.
  */
 
 const Joi = require("joi");
@@ -21,33 +24,39 @@ const validateObjectId = Joi.string()
   .label("ObjectID");
 
 /**
- * Validates user data against a defined schema.
- * @param {Object} data - User data to validate.
- * @return {Joi.ValidationResult} Result of the validation.
+ * Validates user data against the defined schema.
+ *
+ * @function validateUser
+ * @param {Object} data - The user data to validate.
+ * @return {Joi.ValidationResult} The result of the validation.
  */
 const validateUser = (data) =>
   Joi.object({
     username: validateString.required(),
-    email: validateEmail.optional(), // Email is optional for guest users
-    password: validatePassword.when("isGuest", {
-      is: false,
-      then: Joi.required(),
-    }), // Password is required for non-guest users
+    email: validateEmail.optional(),
+    passwordHash: validateString.required(),
+    lastActive: validateDate.optional(),
     role: Joi.string()
       .valid("participant", "organizer", "admin")
       .default("participant"),
+    profileInfo: Joi.object().optional(),
     ipAddress: validateString.optional(),
-    isGuest: Joi.boolean().optional(),
-    // Add other fields from your user model if necessary
+    organization: validateObjectId.optional(),
+    eventsCreated: Joi.array().items(validateObjectId).optional(),
+    eventsParticipated: Joi.array().items(validateObjectId).optional(),
+    transactions: Joi.array().items(validateObjectId).optional(),
   }).validate(data, { abortEarly: false });
 
 /**
- * Validates event data against a defined schema.
- * @param {Object} data - Event data to validate.
- * @return {Joi.ValidationResult} Result of the validation.
+ * Validates event data against the defined schema.
+ *
+ * @function validateEvent
+ * @param {Object} data - The event data to validate.
+ * @return {Joi.ValidationResult} The result of the validation.
  */
 const validateEvent = (data) =>
   Joi.object({
+    eventId: validateString.optional(),
     name: validateString.required(),
     description: validateString.optional(),
     type: validateString.optional(),
@@ -58,7 +67,11 @@ const validateEvent = (data) =>
       .default("planning"),
     entryFee: validateNumber.required(),
     prizePool: validateNumber.optional(),
-    maxParticipants: validateNumber.optional(),
+    creator: validateObjectId.required(),
+    participants: Joi.array().items(validateObjectId).optional(),
+    transactions: Joi.array().items(validateObjectId).optional(),
+    winners: Joi.array().items(validateObjectId).optional(),
+    config: Joi.object().optional(),
     streamingUrl: validateString.optional(),
     streamingSchedule: Joi.object({
       start: validateDate.optional(),
@@ -80,8 +93,6 @@ const validateEvent = (data) =>
     geographicRestrictions: Joi.array().items(validateString).optional(),
   }).validate(data, { abortEarly: false });
 
-// ... Similar validators for Transaction, Wallet, Webhook
-
 module.exports = {
   validateEmail,
   validateString,
@@ -92,5 +103,4 @@ module.exports = {
   validateObjectId,
   validateUser,
   validateEvent,
-  // ... Export other validators
 };

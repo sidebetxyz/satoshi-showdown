@@ -1,18 +1,26 @@
 /**
  * @fileoverview API Interaction Utility for Satoshi Showdown.
- * Facilitates communication with external APIs, abstracting complexity and error handling.
- * Supports various types of API requests and responses.
+ * This module facilitates communication with external APIs by abstracting
+ * the complexity of making HTTP requests and handling responses and errors.
+ * It supports various types of API requests including GET and POST.
+ *
+ * @module utils/apiUtil
+ * @requires axios - Axios library for making HTTP requests.
+ * @requires utils/logUtil - Logging utility for application-wide logging.
  */
 
 const axios = require("axios");
 const log = require("./logUtil");
 
 /**
- * Performs a GET request to the specified URL.
+ * Performs a GET request to the specified URL and returns the response data.
+ * Logs an error message and throws an error if the request fails.
  *
+ * @async
+ * @function getAPI
  * @param {string} url - The URL to send the GET request to.
- * @param {Object} [params={}] - Query parameters for the GET request.
- * @return {Promise<Object>} The data from the response.
+ * @param {Object} [params={}] - Optional query parameters for the GET request.
+ * @return {Promise<Object>} A promise that resolves with the data from the response.
  * @throws {Error} If the GET request fails.
  */
 const getAPI = async (url, params = {}) => {
@@ -26,11 +34,14 @@ const getAPI = async (url, params = {}) => {
 };
 
 /**
- * Performs a POST request to the specified URL.
+ * Performs a POST request to the specified URL with the provided data and returns the response data.
+ * Logs an error message and throws an error if the request fails.
  *
+ * @async
+ * @function postAPI
  * @param {string} url - The URL to send the POST request to.
  * @param {Object} data - The payload for the POST request.
- * @return {Promise<Object>} The data from the response.
+ * @return {Promise<Object>} A promise that resolves with the data from the response.
  * @throws {Error} If the POST request fails.
  */
 const postAPI = async (url, data) => {
@@ -44,9 +55,10 @@ const postAPI = async (url, data) => {
 };
 
 /**
- * Processes callback data from an external API.
- * Placeholder for actual implementation.
+ * Placeholder function for processing callback data from an external API.
+ * This function should be implemented to handle specific callback logic.
  *
+ * @function processCallback
  * @param {Object} callbackData - The data received from the callback.
  */
 const processCallback = (callbackData) => {

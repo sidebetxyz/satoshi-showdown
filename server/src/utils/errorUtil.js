@@ -1,20 +1,22 @@
 /**
- * @fileoverview Error Handling Utility for Satoshi Showdown.
- * Centralizes error handling in the application, providing custom error classes
- * and middleware for processing and logging errors. Integrates with logging and
- * format utilities for consistent error reporting.
+ * @fileoverview Error Utility for Satoshi Showdown.
+ * Defines custom error classes for the application. These classes extend the standard Error class
+ * and provide additional context, such as specific error types like DatabaseError, ValidationError,
+ * and NotFoundError. This enhances error handling by allowing more specific error identification and handling.
+ *
+ * @module utils/errorUtil
  */
 
 const { formatDate } = require("./formatUtil");
-const log = require("./logUtil");
 
 /**
- * Base class for custom errors, including timestamp.
+ * Base class for custom errors. Enhances the standard Error by adding a timestamp.
+ * @class
  * @extends Error
  */
 class BaseError extends Error {
   /**
-   * Creates an instance of BaseError.
+   * Constructs the BaseError instance.
    * @param {string} name - The name of the error.
    * @param {string} message - The message of the error.
    */
@@ -26,12 +28,13 @@ class BaseError extends Error {
 }
 
 /**
- * Represents an error related to database operations.
+ * Error class for database operation errors.
+ * @class
  * @extends BaseError
  */
 class DatabaseError extends BaseError {
   /**
-   * Creates an instance of DatabaseError.
+   * Constructs the DatabaseError instance.
    * @param {string} message - The error message.
    */
   constructor(message) {
@@ -40,12 +43,13 @@ class DatabaseError extends BaseError {
 }
 
 /**
- * Represents a validation error.
+ * Error class for validation errors.
+ * @class
  * @extends BaseError
  */
 class ValidationError extends BaseError {
   /**
-   * Creates an instance of ValidationError.
+   * Constructs the ValidationError instance.
    * @param {string} message - The error message.
    */
   constructor(message) {
@@ -54,12 +58,13 @@ class ValidationError extends BaseError {
 }
 
 /**
- * Represents an error when a resource is not found.
+ * Error class for errors related to not found resources.
+ * @class
  * @extends BaseError
  */
 class NotFoundError extends BaseError {
   /**
-   * Creates an instance of NotFoundError.
+   * Constructs the NotFoundError instance.
    * @param {string} message - The error message.
    */
   constructor(message) {
@@ -67,33 +72,8 @@ class NotFoundError extends BaseError {
   }
 }
 
-/**
- * Middleware for handling errors in Express applications.
- *
- * @param {Error} err - The error object.
- * @param {Request} req - The express request object.
- * @param {Response} res - The express response object.
- * @param {NextFunction} next - The express next middleware function.
- */
-const errorHandler = (err, req, res, next) => {
-  const { name, message, timestamp } = err;
-  let statusCode = 500;
-  let logMessage = `[${timestamp}][${name}] ${message}`;
-
-  if (err instanceof ValidationError) {
-    statusCode = 400;
-  } else if (err instanceof NotFoundError) {
-    statusCode = 404;
-  } else if (err instanceof DatabaseError) {
-    logMessage = `[${timestamp}][${name}] Database operation failed`;
-  }
-
-  log.error(logMessage);
-  res.status(statusCode).json({ error: message });
-};
-
 module.exports = {
-  errorHandler,
+  BaseError,
   DatabaseError,
   ValidationError,
   NotFoundError,

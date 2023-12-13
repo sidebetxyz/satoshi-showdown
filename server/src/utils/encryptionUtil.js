@@ -1,24 +1,33 @@
 /**
  * @fileoverview Encryption Utility for Satoshi Showdown.
- * Provides functionalities for key encryption and decryption, focusing on securing private keys.
- * Uses AES-256-GCM for robust encryption with authentication tags for additional security.
+ * Provides functionality for encrypting and decrypting private keys,
+ * focusing on securing sensitive data. It uses AES-256-GCM encryption,
+ * which includes an authentication tag for additional security.
+ *
+ * @module utils/encryptionUtil
+ * @requires crypto - Node.js Crypto module for encryption.
  */
 
 const crypto = require("crypto");
 
-// Default to AES-256-GCM for strong encryption
+// Default encryption algorithm
 const algorithm = "aes-256-gcm";
-// Use a 32-byte key (256 bits) for AES-256
+
+// Secret key for AES-256, retrieved from environment variables
 const secretKey = process.env.ENCRYPTION_SECRET_KEY;
-// 12 bytes IV length for AES-GCM
+
+// Initialization Vector (IV) length for AES-GCM
 const ivLength = 12;
 
 /**
- * Encrypts a private key using AES-256-GCM encryption.
+ * Encrypts a private key using AES-256-GCM.
+ * Generates an IV for each encryption and includes an authentication tag.
+ * Throws an error if the secret key is not set in environment variables.
  *
+ * @function encryptPrivateKey
  * @param {string} privateKey - The private key to encrypt.
- * @return {Object} Encrypted data with IV and authentication tag.
- * @throws {Error} If encryption configuration is missing or invalid.
+ * @return {Object} An object containing the IV, encrypted content, and authentication tag.
+ * @throws {Error} If the encryption secret key is not set.
  */
 const encryptPrivateKey = (privateKey) => {
   if (!secretKey) {
@@ -45,11 +54,14 @@ const encryptPrivateKey = (privateKey) => {
 };
 
 /**
- * Decrypts an encrypted private key.
+ * Decrypts an encrypted private key using AES-256-GCM.
+ * Uses the provided IV and authentication tag for decryption.
+ * Throws an error if the decryption process fails.
  *
- * @param {Object} encryptedPrivateKey - The encrypted private key object with IV, content, and tag.
+ * @function decryptPrivateKey
+ * @param {Object} encryptedPrivateKey - The encrypted private key object containing the IV, content, and tag.
  * @return {string} The decrypted private key.
- * @throws {Error} If decryption process fails.
+ * @throws {Error} If the decryption process fails or the secret key is not set.
  */
 const decryptPrivateKey = (encryptedPrivateKey) => {
   if (!secretKey) {

@@ -1,7 +1,17 @@
 /**
  * @fileoverview Service for managing user operations in Satoshi Showdown.
- * Provides functionalities for user registration, profile retrieval and updates,
- * and accommodates both registered and guest users.
+ * This service provides comprehensive functionalities for user management, including
+ * registration, authentication, profile retrieval, and updates. It caters to both
+ * registered and guest users, playing a critical role in user data management and ensuring
+ * secure and efficient operations within the application. The service interacts with the
+ * user data model and utilizes various utilities for validation, encryption, and logging.
+ *
+ * @module services/userService
+ * @requires models/userModel - User data model for database interactions.
+ * @requires bcrypt - Library for hashing passwords.
+ * @requires utils/validationUtil - Utility for validating user data.
+ * @requires utils/errorUtil - Custom error classes for consistent error handling.
+ * @requires utils/logUtil - Logging utility for application-wide logging.
  */
 
 const User = require("../models/userModel");
@@ -11,16 +21,31 @@ const { ValidationError, NotFoundError } = require("../utils/errorUtil");
 const log = require("../utils/logUtil");
 
 /**
- * Registers a new user or creates a guest user profile.
- * Expects a JSON object with user data, including a flag indicating if the user is a guest.
+ * Creates a new user with the provided details.
+ * This function validates the user data, securely hashes the password,
+ * and then saves the new user to the database.
  *
- * @param {Object} userData - Data for creating a new user. Includes username, email, and password.
- * @return {Promise<Object>} The created user object without sensitive data.
- * @throws {ValidationError} If user data validation fails or if username/email already exists.
+ * @async
+ * @function createUser
+ * @param {Object} userData - Data for creating a new user.
+ * @param {string} userData.username - Username of the user.
+ * @param {string} userData.email - Email address of the user.
+ * @param {string} userData.password - Password of the user.
+ * @param {Date} userData.lastActive - Timestamp of the user's last activity.
+ * @param {string} userData.role - Role of the user within the platform.
+ * @param {Object} userData.profileInfo - Additional profile information (structure can vary).
+ * @param {string} userData.ipAddress - IP address of the user.
+ * @param {ObjectID} userData.organization - Reference to an Organization, if applicable.
+ * @param {Array} userData.eventsCreated - Events created by the user.
+ * @param {Array} userData.eventsParticipated - Events in which the user has participated.
+ * @param {Array} userData.transactions - Transactions associated with the user.
+ * @return {Promise<Object>} The created user object with sensitive data (e.g., password hash) excluded.
+ * @throws {ValidationError} When user data validation fails or if the username/email is already in use.
  */
 const createUser = async (userData) => {
   try {
     const { error } = validateUser(userData);
+
     if (error) {
       throw new ValidationError(error.details.map((d) => d.message).join("; "));
     }
@@ -53,69 +78,92 @@ const createUser = async (userData) => {
 };
 
 /**
- * Retrieves a user by their ID.
+ * Retrieves a user's data by their unique ID.
+ * Essential for profile management, authentication, and accessing user-specific data within the application.
  *
- * @param {string} userId - The ID of the user to retrieve.
- * @return {Promise<Object>} The user object.
- * @throws {NotFoundError} If the user is not found.
+ * @async
+ * @function getUserById
+ * @param {string} userId - The unique ID of the user to retrieve.
+ * @return {Promise<Object>} The user object with sensitive data excluded.
+ * @throws {NotFoundError} If no user is found with the provided ID.
  */
 const getUserById = async (userId) => {
   const user = await User.findOne({ userId });
+
   if (!user) {
     throw new NotFoundError(`User with ID ${userId} not found`);
   }
+
   return excludeSensitiveData(user);
 };
 
 /**
- * Retrieves a user by their username.
+ * Retrieves a user's data by their username.
+ * Used for operations like login, where the username is a key identifier.
  *
+ * @async
+ * @function getUserByUsername
  * @param {string} username - The username of the user to retrieve.
- * @return {Promise<Object>} The user object.
- * @throws {NotFoundError} If the user is not found.
+ * @return {Promise<Object>} The user object with sensitive data excluded.
+ * @throws {NotFoundError} If no user is found with the provided username.
  */
 const getUserByUsername = async (username) => {
   const user = await User.findOne({ username });
+
   if (!user) {
     throw new NotFoundError(`User with username ${username} not found`);
   }
+
   return excludeSensitiveData(user);
 };
 
 /**
- * Retrieves a user by their email.
+ * Retrieves a user's data by their email.
+ * Critical for processes like password recovery or email-based authentication.
  *
+ * @async
+ * @function getUserByEmail
  * @param {string} email - The email of the user to retrieve.
- * @return {Promise<Object>} The user object.
- * @throws {NotFoundError} If the user is not found.
+ * @return {Promise<Object>} The user object with sensitive data excluded.
+ * @throws {NotFoundError} If no user is found with the provided email.
  */
 const getUserByEmail = async (email) => {
   const user = await User.findOne({ email });
+
   if (!user) {
     throw new NotFoundError(`User with email ${email} not found`);
   }
+
   return excludeSensitiveData(user);
 };
 
 /**
- * Retrieves a user by their IP address.
+ * Retrieves a user's data by their IP address.
+ * Useful for tracking guest users or for security and auditing purposes.
  *
+ * @async
+ * @function getUserByIP
  * @param {string} ipAddress - The IP address of the user to retrieve.
- * @return {Promise<Object>} The user object.
- * @throws {NotFoundError} If the user is not found.
+ * @return {Promise<Object>} The user object with sensitive data excluded.
+ * @throws {NotFoundError} If no user is found with the provided IP address.
  */
 const getUserByIP = async (ipAddress) => {
   const user = await User.findOne({ ipAddress });
+
   if (!user) {
     throw new NotFoundError(`User with IP address ${ipAddress} not found`);
   }
+
   return excludeSensitiveData(user);
 };
 
 /**
- * Retrieves all users.
+ * Retrieves all users registered in the system.
+ * Typically used for administrative and reporting purposes, providing a comprehensive view of the user base.
  *
- * @return {Promise<Array<Object>>} An array of all user objects.
+ * @async
+ * @function getAllUsers
+ * @return {Promise<Array<Object>>} An array of user objects with sensitive data excluded.
  */
 const getAllUsers = async () => {
   const users = await User.find({});
@@ -123,30 +171,50 @@ const getAllUsers = async () => {
 };
 
 /**
- * Updates an existing user.
+ * Updates the details of an existing user based on their ID.
+ * Allows modification of user information like contact details, preferences, and other profile data.
  *
- * @param {string} userId - The ID of the user to update.
- * @param {Object} updateData - Data for updating the user.
- * @return {Promise<Object>} The updated user object.
- * @throws {NotFoundError} If the user is not found.
+ * @async
+ * @function updateUser
+ * @param {string} userId - The unique ID of the user to update.
+ * @param {Object} updateData - Data containing the updates for the user.
+ * @param {string} updateData.username - Updated username of the user.
+ * @param {string} updateData.email - Updated email address of the user.
+ * @param {string} updateData.password - Updated hashed password for security purposes.
+ * @param {Date} updateData.lastActive - Updated timestamp of the user's last activity.
+ * @param {string} updateData.role - Updated role of the user within the platform.
+ * @param {Object} updateData.profileInfo - Updated additional profile information (structure can vary).
+ * @param {string} updateData.ipAddress - Updated IP address of the user.
+ * @param {ObjectID} updateData.organization - Updated reference to an Organization, if applicable.
+ * @param {Array} updateData.eventsCreated - Updated events created by the user.
+ * @param {Array} updateData.eventsParticipated - Updated events in which the user has participated.
+ * @param {Array} updateData.transactions - Updated transactions associated with the user.
+ * @return {Promise<Object>} The updated user object with sensitive data (e.g., password hash) excluded.
+ * @throws {NotFoundError} If no user is found with the provided ID.
  */
 const updateUser = async (userId, updateData) => {
   const user = await User.findByIdAndUpdate(userId, updateData, { new: true });
+
   if (!user) {
     throw new NotFoundError(`User with ID ${userId} not found`);
   }
+
   return excludeSensitiveData(user);
 };
 
 /**
- * Deletes a user by their ID.
+ * Deletes a user from the system based on their unique ID.
+ * Essential for account management, data privacy compliance, and user-requested account deletion.
  *
- * @param {string} userId - The ID of the user to delete.
- * @return {Promise<void>}
- * @throws {NotFoundError} If the user is not found.
+ * @async
+ * @function deleteUser
+ * @param {string} userId - The unique ID of the user to delete.
+ * @return {Promise<void>} Indicates successful deletion of the user.
+ * @throws {NotFoundError} If no user is found with the provided ID.
  */
 const deleteUser = async (userId) => {
   const user = await User.findById(userId);
+
   if (!user) {
     throw new NotFoundError(`User with ID ${userId} not found`);
   }
@@ -157,27 +225,31 @@ const deleteUser = async (userId) => {
 
 /**
  * Checks if a username or email already exists in the database.
- * This is a private function used internally by the user service.
+ * Used internally to prevent duplicate user registrations.
  *
- * @param {string} username - The username to check.
- * @param {string} email - The email to check.
- * @return {Promise<boolean>} True if the username or email exists, false otherwise.
  * @private
+ * @async
+ * @function checkUserExists
+ * @param {string} username - The username to check for existence.
+ * @param {string} email - The email to check for existence.
+ * @return {Promise<boolean>} True if the username or email exists, false otherwise.
  */
 async function checkUserExists(username, email) {
   const userCount = await User.countDocuments({
     $or: [{ username }, { email }],
   });
+
   return userCount > 0;
 }
 
 /**
- * Excludes sensitive data from the user object.
- * This is a private function used internally by the user service.
+ * Excludes sensitive data from the user object before returning it.
+ * Ensures that information like password hashes is not exposed outside the service.
  *
- * @param {User} user - The user object.
- * @return {Object} The user object without sensitive data.
  * @private
+ * @function excludeSensitiveData
+ * @param {User} user - The user object to sanitize.
+ * @return {Object} The user object without sensitive data.
  */
 const excludeSensitiveData = (user) => {
   const userObject = user.toObject();

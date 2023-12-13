@@ -2,6 +2,12 @@
  * @fileoverview Service for managing transactions in Satoshi Showdown.
  * Handles creating, updating, retrieving, and deleting transaction records,
  * ensuring data integrity and consistency.
+ *
+ * @module services/transactionService
+ * @requires models/transactionModel - Transaction data model.
+ * @requires bitcoinjs-lib - Library for Bitcoin transaction handling.
+ * @requires utils/errorUtil - Custom error classes and error handling utilities.
+ * @requires utils/logUtil - Logging utility for application-wide logging.
  */
 
 const Transaction = require("../models/transactionModel");
@@ -13,7 +19,14 @@ const log = require("../utils/logUtil");
 /**
  * Creates a new transaction record in the database.
  *
+ * @async
  * @param {Object} transactionData - The data for the new transaction.
+ * @param {string} transactionData.userRef - ID of the user associated with the transaction.
+ * @param {string} transactionData.walletRef - ID of the wallet associated with the transaction.
+ * @param {string} transactionData.transactionType - The type of the transaction (e.g., "incoming", "outgoing").
+ * @param {number} transactionData.expectedAmount - The expected amount of the transaction in satoshis.
+ * @param {string} transactionData.walletAddress - The wallet address involved in the transaction.
+ * @param {string} transactionData.userAddress - The user's address involved in the transaction.
  * @return {Promise<Object>} A promise that resolves to the created transaction object.
  * @throws {Error} If an error occurs during the creation of the transaction record in the database.
  */
@@ -48,8 +61,10 @@ const createRawBitcoinTransaction = ({ utxos, recipientAddress, amount }) => {
 /**
  * Retrieves a specific transaction record by its ID.
  *
+ * @async
  * @param {string} transactionId - ID of the transaction to retrieve.
  * @return {Promise<Object>} The found transaction object.
+ * @throws {NotFoundError} Throws an error if the transaction is not found.
  */
 const getTransactionRecord = async (transactionId) => {
   const transaction = await Transaction.findById(transactionId);
@@ -62,6 +77,7 @@ const getTransactionRecord = async (transactionId) => {
 /**
  * Retrieves all transaction records from the database.
  *
+ * @async
  * @return {Promise<Array>} An array of all transaction objects.
  */
 const getAllTransactionRecords = async () => {
@@ -70,6 +86,8 @@ const getAllTransactionRecords = async () => {
 
 /**
  * Updates an existing transaction record.
+ *
+ * @async
  * @param {string} transactionId - ID of the transaction to update.
  * @param {Object} updateData - New data for the transaction.
  * @return {Promise<Object>} The updated transaction object.
@@ -93,7 +111,6 @@ const updateTransactionRecord = async (transactionId, updateData) => {
   }
 };
 
-// Exporting the functions for use in other parts of the application
 module.exports = {
   createTransactionRecord,
   createRawBitcoinTransaction,
