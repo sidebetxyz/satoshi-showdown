@@ -5,7 +5,7 @@ module.exports = {
     es2021: true,
     node: true,
   },
-  extends: ["google", "prettier"],
+  extends: ["eslint:recommended", "google", "prettier"],
   parserOptions: {
     ecmaVersion: 12,
   },

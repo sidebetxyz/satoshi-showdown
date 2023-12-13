@@ -1,18 +1,32 @@
 /**
  * @fileoverview Server configuration for Satoshi Showdown.
- * This module sets up the HTTPS server, establishes database connections,
- * implements graceful shutdown procedures, and ensures correct environment
- * configuration is loaded.
+ * This main server module is responsible for the initial setup and lifecycle management of the application.
+ * It involves setting up the HTTPS server, establishing database connections, implementing graceful shutdown procedures,
+ * and configuring the environment. The module ensures that the application is properly initialized, connected,
+ * and securely accessible.
  *
- * @requires utils/envUtil: Utility for environment variable management.
- * @requires utils/databaseUtil: Database connection utilities.
- * @requires utils/httpsUtil: HTTPS server creation utility.
- * @requires utils/signalUtil: Utility for setting up graceful shutdown handlers.
- * @requires utils/serverUtil: Utility for initializing the Express application.
- * @requires utils/logUtil: Logging utility for application-wide logging.
+ * @requires dotenv: Configuration loader for environment variables.
+ * @requires utils/databaseUtil: Utility for managing database connections.
+ * @requires utils/httpsUtil: Utility for creating and configuring the HTTPS server.
+ * @requires utils/signalUtil: Utility for handling OS signals and implementing graceful shutdown procedures.
+ * @requires utils/serverUtil: Utility for initializing and configuring the Express application.
+ * @requires utils/logUtil: Utility for logging application-wide messages and errors.
  */
 
-const { getEnv } = require("./utils/envUtil");
+require("dotenv").config({ path: "./configs/.env", debug: true });
+
+console.log('Environment Variables:', {
+  MONGODB_URI: process.env.MONGODB_URI,
+  ENCRYPTION_SECRET_KEY: process.env.ENCRYPTION_SECRET_KEY,
+  BLOCKCYPHER_TOKEN: process.env.BLOCKCYPHER_TOKEN,
+  BLOCKCYPHER_BASE_URL: process.env.BLOCKCYPHER_BASE_URL,
+  WEBHOOK_DOMAIN: process.env.WEBHOOK_DOMAIN,
+  SSL_PRIVATE_KEY_PATH: process.env.SSL_PRIVATE_KEY_PATH,
+  SSL_CERTIFICATE_PATH: process.env.SSL_CERTIFICATE_PATH,
+  SESSION_SECRET: process.env.SESSION_SECRET,
+  LOG_LEVEL: process.env.LOG_LEVEL
+});
+
 const { connectDatabase } = require("./utils/databaseUtil");
 const { createServer } = require("./utils/httpsUtil");
 const { setupShutdownHandlers } = require("./utils/signalUtil");
@@ -20,69 +34,53 @@ const { initializeServer } = require("./utils/serverUtil");
 const log = require("./utils/logUtil");
 
 /**
- * Initialize the Express server.
+ * Initializes the Express application by setting up middleware, routes, and other necessary configurations.
  *
- * @function
- * @returns {Express.Application} The configured Express application.
+ * @returns {Express.Application} The configured Express application ready to handle incoming requests.
  */
 const app = initializeServer();
 
 /**
- * Connect to the database and handle any connection errors.
- *
- * @async
+ * Initiates a connection to the database and handles any potential connection errors.
+ * On a failed connection, the application logs the error and exits.
  */
 connectDatabase().catch((err) => {
-  /**
-   * Database connection error handler.
-   *
-   * @callback
-   * @param {Error} err - The database connection error.
-   */
   log.error(`Database connection error: ${err.message}`);
   process.exit(1);
 });
 
 /**
- * Create and configure the HTTPS server.
+ * Creates and configures the HTTPS server using the initialized Express application.
+ * This server is responsible for handling all incoming HTTPS requests.
  *
  * @type {https.Server}
  */
 const httpsServer = createServer(app);
 
 /**
- * Retrieve the server port from environment variables.
+ * Retrieves the server port number from the environment variables, with a default value of 3000.
+ * This port number is used for the HTTPS server to listen for incoming requests.
  *
  * @type {string|number}
  */
-const port = getEnv("PORT", 3000);
+const port = process.env.PORT || 3000;
 
 /**
- * Start the HTTPS server and listen on the specified port.
- * Logs an error and exits if the server fails to start.
+ * Starts listening for incoming connections on the specified port.
+ * On successful startup, it logs the server running message; on failure, it logs the error and exits.
  */
 httpsServer
   .listen(port, () => {
-    /**
-     * HTTPS server listening event handler.
-     *
-     * @callback
-     */
     log.info(`Server running on https://localhost:${port}`);
   })
   .on("error", (err) => {
-    /**
-     * HTTPS server error event handler.
-     *
-     * @callback
-     * @param {Error} err - The server startup error.
-     */
     log.error(`Failed to start HTTPS server: ${err.message}`);
     process.exit(1);
   });
 
 /**
- * Set up handlers for graceful shutdown of the server.
+ * Sets up signal handlers for gracefully shutting down the server in response to operating system signals.
+ * This is crucial for handling scenarios like process termination and restarts in a controlled manner.
  */
 setupShutdownHandlers(httpsServer);
 

@@ -74,17 +74,12 @@ const webhookSchema = new mongoose.Schema(
  * @instance
  * @async
  * @return {Promise<module:models/Webhook~WebhookSchema>} The updated Webhook object after marking it as deleted.
- * @throws {Error} If an error occurs during the soft delete process.
  */
 webhookSchema.methods.softDelete = async function () {
-  try {
-    this.isDeleted = true;
-    this.deletedAt = new Date();
-    await this.save();
-    return this;
-  } catch (err) {
-    throw err;
-  }
+  this.isDeleted = true;
+  this.deletedAt = new Date();
+  await this.save();
+  return this;
 };
 
 /**
