@@ -25,6 +25,8 @@ const validateObjectId = Joi.string()
 
 /**
  * Validates user data against the defined schema.
+ * The password is validated as a plain text string before hashing, ensuring it meets the defined criteria
+ * (like minimum length). After validation, the password should be hashed before storing it in the database.
  *
  * @function validateUser
  * @param {Object} data - The user data to validate.
@@ -34,7 +36,7 @@ const validateUser = (data) =>
   Joi.object({
     username: validateString.required(),
     email: validateEmail.optional(),
-    passwordHash: validateString.required(),
+    password: validatePassword.required(), // Validate plain text password
     lastActive: validateDate.optional(),
     role: Joi.string()
       .valid("participant", "organizer", "admin")
