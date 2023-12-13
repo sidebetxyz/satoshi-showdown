@@ -13,20 +13,7 @@
  * @requires utils/logUtil: Utility for logging application-wide messages and errors.
  */
 
-require("dotenv").config({ path: "./configs/.env", debug: true });
-
-console.log('Environment Variables:', {
-  MONGODB_URI: process.env.MONGODB_URI,
-  ENCRYPTION_SECRET_KEY: process.env.ENCRYPTION_SECRET_KEY,
-  BLOCKCYPHER_TOKEN: process.env.BLOCKCYPHER_TOKEN,
-  BLOCKCYPHER_BASE_URL: process.env.BLOCKCYPHER_BASE_URL,
-  WEBHOOK_DOMAIN: process.env.WEBHOOK_DOMAIN,
-  SSL_PRIVATE_KEY_PATH: process.env.SSL_PRIVATE_KEY_PATH,
-  SSL_CERTIFICATE_PATH: process.env.SSL_CERTIFICATE_PATH,
-  SESSION_SECRET: process.env.SESSION_SECRET,
-  LOG_LEVEL: process.env.LOG_LEVEL
-});
-
+require("dotenv").config({ path: "./configs/.env" });
 const { connectDatabase } = require("./utils/databaseUtil");
 const { createServer } = require("./utils/httpsUtil");
 const { setupShutdownHandlers } = require("./utils/signalUtil");
