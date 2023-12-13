@@ -1,89 +1,36 @@
 /**
  * @fileoverview Server configuration for Satoshi Showdown.
- * Configures the Express server, integrating middleware for CORS, security, logging,
- * and JSON parsing. Manages HTTPS server creation, database connections, and graceful
- * shutdown procedures. Ensures correct environment configuration is loaded.
+ * Sets up HTTPS server, database connections, graceful shutdown procedures,
+ * and ensures correct environment configuration is loaded.
+ *
+ * @requires utils/envUtil: Utility for environment variable management.
+ * @requires utils/logUtil: Logging utility for application-wide logging.
+ * @requires utils/databaseUtil: Database connection utilities.
+ * @requires utils/httpsUtil: HTTPS server creation utility.
+ * @requires utils/signalUtil: Utility for setting up graceful shutdown handlers.
+ * @requires utils/serverUtil: Utility for initializing the Express application.
  */
 
-// Environment Configuration from Config Directory
-require("dotenv").config({ path: "../configs/.env" });
-
-// Core Node.js Modules
-const fs = require("fs");
-const https = require("https");
-
-// Express and Custom Middleware
-const express = require("express");
-const corsSecurityMiddleware = require("./middlewares/corsSecurityMiddleware");
-const httpSecurityMiddleware = require("./middlewares/httpSecurityMiddleware");
-const jsonParserMiddleware = require("./middlewares/jsonParserMiddleware");
-const requestLoggingMiddleware = require("./middlewares/requestLoggingMiddleware");
-
-// Utilities and Custom Modules
 const log = require("./utils/logUtil");
-const { errorHandler } = require("./utils/errorUtil");
-const { connectDatabase, disconnectDatabase } = require("./utils/databaseUtil");
+const { getEnv } = require("./utils/envUtil");
+const { connectDatabase } = require("./utils/databaseUtil");
+const { createServer } = require("./utils/httpsUtil");
+const { setupShutdownHandlers } = require("./utils/signalUtil");
+const { initializeServer } = require("./utils/serverUtil");
 
-// Route Modules
-const userRoutes = require("./routes/userRoutes");
-const eventRoutes = require("./routes/eventRoutes");
-const webhookRoutes = require("./routes/webhookRoutes");
+const app = initializeServer();
 
-// Initialize Express Application
-const app = express();
-
-// Middleware Setup
-app.use(corsSecurityMiddleware());
-app.use(httpSecurityMiddleware());
-app.use(jsonParserMiddleware());
-app.use(requestLoggingMiddleware());
-
-// Establish Database Connection
-connectDatabase();
-
-/**
- * Root route for basic health check.
- * @route GET /
- * @returns {string} 200 - Success response - "Server is running"
- */
-app.get("/", (req, res) => {
-  res.status(200).send("Server is running");
+connectDatabase().catch((err) => {
+  log.error(`Database connection error: ${err.message}`);
+  process.exit(1);
 });
 
-// Routes Setup
-app.use("/user", userRoutes);
-app.use("/event", eventRoutes);
-app.use("/webhook", webhookRoutes);
-
-// Global Error Handling
-app.use(errorHandler);
-
-// HTTPS Server Configuration
-const privateKey = fs.readFileSync(process.env.SSL_PRIVATE_KEY_PATH, "utf8");
-const certificate = fs.readFileSync(process.env.SSL_CERTIFICATE_PATH, "utf8");
-const credentials = { key: privateKey, cert: certificate };
-const port = process.env.PORT || 3000;
-
-// Create and Start HTTPS Server
-const httpsServer = https.createServer(credentials, app);
+const httpsServer = createServer(app);
+const port = getEnv("PORT", 3000);
 httpsServer.listen(port, () => {
   log.info(`Server running on https://localhost:${port}`);
 });
 
-/**
- * Graceful shutdown function for the server.
- * Closes the database connection and shuts down the HTTPS server.
- */
-const gracefulShutdown = () => {
-  log.info("Initiating graceful shutdown.");
-  disconnectDatabase()
-    .then(() => httpsServer.close(() => log.info("Server has been shut down")))
-    .catch((err) => log.error(`Error during shutdown: ${err.message}`));
-};
+setupShutdownHandlers(httpsServer);
 
-// Signal Handling for Server Termination
-process.on("SIGTERM", gracefulShutdown);
-process.on("SIGINT", gracefulShutdown);
-
-// Export Express App for Testing Purposes
 module.exports = app;

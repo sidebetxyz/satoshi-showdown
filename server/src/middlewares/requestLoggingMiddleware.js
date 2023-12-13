@@ -5,8 +5,8 @@
  * @see {@link https://github.com/expressjs/morgan} for more information on Morgan.
  */
 
-const morgan = require('morgan');
-const logUtil = require('../utils/logUtil'); // Adjust path as necessary
+const morgan = require("morgan");
+const logUtil = require("../utils/logUtil"); // Adjust path as necessary
 
 /**
  * Configures and returns the Morgan middleware for request logging.
@@ -15,7 +15,7 @@ const logUtil = require('../utils/logUtil'); // Adjust path as necessary
  */
 const requestLoggingMiddleware = () => {
   // Customize format and options as needed
-  return morgan('combined', { stream: logUtil.stream });
+  return morgan("combined", { stream: logUtil.stream });
 };
 
 module.exports = requestLoggingMiddleware;

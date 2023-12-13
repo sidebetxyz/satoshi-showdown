@@ -5,7 +5,10 @@
  */
 
 const Event = require("../models/eventModel");
-const { createSegWitWalletForEvent, addTransactionToWallet } = require("./walletService");
+const {
+  createSegWitWalletForEvent,
+  addTransactionToWallet,
+} = require("./walletService");
 const { createTransactionRecord } = require("./transactionService");
 const { createWebhook } = require("./webhookService");
 const { getUserById } = require("./userService");
