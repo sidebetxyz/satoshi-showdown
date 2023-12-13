@@ -33,13 +33,13 @@ const {
  */
 const handleCreateEvent = async (req, res, next) => {
   try {
-    const { userAddress, userId, eventData } = req.body;
+    const { userId, userAddress, eventData } = req.body;
 
     if (!userId) {
       throw new Error("User not authenticated");
     }
 
-    const newEvent = await createEvent(userAddress, userId, eventData);
+    const newEvent = await createEvent(userId, userAddress, eventData);
     res.status(201).json(newEvent);
   } catch (err) {
     next(err);

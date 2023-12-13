@@ -67,43 +67,54 @@ const log = require("../utils/logUtil");
  */
 const createEvent = async (userId, userAddress, eventData) => {
   try {
-    // Simulate fetching user from authenticated session (future implementation with JWT or session cookie)
+    // Retrieve the user from the database using the provided userId.
     const user = await getUserById(userId);
     if (!user) {
+      // Throw an error if the user is not found.
       throw new NotFoundError(`User with ID ${userId} not found`);
     }
 
-    // Assign the authenticated user's ID as the creator of the event
+    // Set the creator of the event to the authenticated user's ID.
     eventData.creator = user._id;
 
-    // Validate the event data, including the creator field
+    // Validate the event data using Joi validation.
     const validation = validateEvent(eventData);
     if (validation.error) {
+      // If validation fails, throw a ValidationError with details.
       throw new ValidationError(
-        "Invalid event data: " +
-          validation.error.details.map((d) => d.message).join("; "),
+        `Invalid event data: ${validation.error.details
+          .map((d) => d.message)
+          .join("; ")}`
       );
     }
 
-    // Handle financial setup for the event (e.g., creating wallet, transactions)
+    // Handle the financial setup for the event (creating wallet and transactions).
     const financialSetup = await handleFinancialSetup(
       userAddress,
       user._id,
       eventData.entryFee,
-      eventData.prizePool,
+      eventData.prizePool
     );
 
-    // Create the event with validated data and financial setup information
+    // Create the event object with the provided data and financial setup information.
     const newEvent = new Event({
       ...eventData,
-      transactions: [financialSetup.transaction._id], // Assuming handleFinancialSetup returns transaction details
+      transactions: [financialSetup.transaction._id], // Store the transaction ID from financial setup.
     });
 
+    // Save the new event to the database.
     await newEvent.save();
+
+    // Log the successful creation of the event.
     log.info(`New event created: ${newEvent._id}`);
+
+    // Return the newly created event object.
     return newEvent;
   } catch (err) {
+    // Log any errors that occur during the event creation process.
     log.error(`Error in createEvent: ${err.message}`);
+
+    // Rethrow the error for further handling.
     throw err;
   }
 };
@@ -155,6 +166,54 @@ const updateEvent = async (eventId, updateData) => {
     log.error(`Error in updateEvent: ${err.message}`);
     throw err;
   }
+};
+
+/**
+ * Adds a user to an event if there is space available. Manages the event's status based on participant count.
+ * Throws an error if the event is full or closed, or if the event or user does not exist.
+ *
+ * @async
+ * @function joinEvent
+ * @param {string} eventId - The unique identifier of the event to join.
+ * @param {string} userId - The unique identifier of the user attempting to join the event.
+ * @returns {Promise<Object>} The updated event object reflecting the new participant.
+ * @throws {NotFoundError} If the specified event or user is not found.
+ * @throws {Error} If the event is already full or closed for new participants.
+ */
+const joinEvent = async (eventId, userId) => {
+  // Find the event by its ID.
+  const event = await Event.findById(eventId);
+  if (!event) {
+    // If the event does not exist, throw an error.
+    throw new NotFoundError(`Event with ID ${eventId} not found`);
+  }
+
+  // Check if the event is open for new participants and not already full.
+  if (!event.isOpen || event.participants.length >= event.maxParticipants) {
+    throw new Error("Event is full or closed for new participants");
+  }
+
+  // Retrieve the user based on the provided userId.
+  const user = await getUserById(userId);
+  if (!user) {
+    // If the user does not exist, throw an error.
+    throw new NotFoundError(`User with ID ${userId} not found`);
+  }
+
+  // Add the user to the event's participants list with the current timestamp.
+  event.participants.push({ userId: user._id, joinedAt: new Date() });
+
+  // Update event status to 'ready' if it reaches the maximum number of participants.
+  if (event.participants.length === event.maxParticipants) {
+    event.isOpen = false;
+    event.status = "ready";
+  }
+
+  // Save the updated event information to the database.
+  await event.save();
+
+  // Return the updated event object.
+  return event;
 };
 
 /**
@@ -242,7 +301,7 @@ const handleFinancialSetup = async (
   userAddress,
   userRef,
   entryFee,
-  prizePoolContribution,
+  prizePoolContribution
 ) => {
   try {
     // Calculate the total amount the user needs to send in
@@ -277,7 +336,7 @@ const handleFinancialSetup = async (
     await createWebhook(wallet.publicAddress, transaction._id);
 
     log.info(
-      `Financial setup completed for event: Wallet and transaction created`,
+      `Financial setup completed for event: Wallet and transaction created`
     );
 
     // Return an object containing wallet and transaction details
@@ -285,15 +344,16 @@ const handleFinancialSetup = async (
   } catch (err) {
     log.error(`Error in handleFinancialSetup: ${err.message}`);
     throw new Error(
-      `Failed to set up financial aspects of the event: ${err.message}`,
+      `Failed to set up financial aspects of the event: ${err.message}`
     );
   }
 };
 
 module.exports = {
   createEvent,
-  updateEvent,
-  deleteEvent,
   getEvent,
   getAllEvents,
+  updateEvent,
+  joinEvent,
+  deleteEvent,
 };

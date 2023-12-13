@@ -51,6 +51,9 @@ const validateUser = (data) =>
 
 /**
  * Validates event data against the defined schema.
+ * Ensures that the provided event data conforms to the structure and rules set in the Event model.
+ * Includes validation for new fields like maxParticipants, minParticipants, isOpen, and closedAt.
+ * This validation is crucial for maintaining data integrity and consistency in the application.
  *
  * @function validateEvent
  * @param {Object} data - The event data to validate.
@@ -62,15 +65,26 @@ const validateEvent = (data) =>
     name: validateString.required(),
     description: validateString.optional(),
     type: validateString.optional(),
-    startTime: validateDate.required(),
+    startTime: validateDate.optional(),
     endTime: validateDate.optional(),
     status: Joi.string()
-      .valid("planning", "active", "completed")
+      .valid("planning", "ready", "active", "completed", "cancelled")
       .default("planning"),
-    entryFee: validateNumber.required(),
+    entryFee: validateNumber.optional(),
     prizePool: validateNumber.optional(),
     creator: validateObjectId.required(),
-    participants: Joi.array().items(validateObjectId).optional(),
+    participants: Joi.array()
+      .items(
+        Joi.object({
+          userId: validateObjectId.required(),
+          joinedAt: validateDate.optional(),
+        }),
+      )
+      .optional(),
+    maxParticipants: validateNumber.required(),
+    minParticipants: validateNumber.required(),
+    isOpen: Joi.boolean().optional(),
+    closedAt: validateDate.optional(),
     transactions: Joi.array().items(validateObjectId).optional(),
     winners: Joi.array().items(validateObjectId).optional(),
     config: Joi.object().optional(),
@@ -82,9 +96,9 @@ const validateEvent = (data) =>
     bettingOptions: Joi.array()
       .items(
         Joi.object({
-          type: validateString,
-          description: validateString,
-          odds: validateNumber,
+          type: validateString.required(),
+          description: validateString.optional(),
+          odds: validateNumber.optional(),
         }),
       )
       .optional(),
