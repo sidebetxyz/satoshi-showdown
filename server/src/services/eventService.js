@@ -37,8 +37,8 @@ const log = require("../utils/logUtil");
  *
  * @async
  * @function createEvent
- * @param {string} userAddress - Bitcoin address of the user creating the event.
  * @param {string} userId - ID of the user creating the event.
+ * @param {string} userAddress - Bitcoin address of the user creating the event.
  * @param {Object} eventData - Data for creating the new event.
  * @param {string} eventData.name - Name of the event.
  * @param {string} eventData.description - Detailed description of the event.
@@ -65,31 +65,38 @@ const log = require("../utils/logUtil");
  * @throws {ValidationError} When event data validation fails, indicating invalid or incomplete input.
  * @throws {NotFoundError} When the user specified by userId is not found in the database.
  */
-const createEvent = async (userAddress, userId, eventData) => {
+const createEvent = async (userId, userAddress, eventData) => {
   try {
-    const validation = validateEvent(eventData);
-    if (validation.error) {
-      throw new ValidationError(
-        "Invalid event data: " + validation.error.details[0].message,
-      );
-    }
-
+    // Simulate fetching user from authenticated session (future implementation with JWT or session cookie)
     const user = await getUserById(userId);
     if (!user) {
       throw new NotFoundError(`User with ID ${userId} not found`);
     }
 
-    console.log("eventData: ", eventData);
+    // Assign the authenticated user's ID as the creator of the event
+    eventData.creator = user._id;
+
+    // Validate the event data, including the creator field
+    const validation = validateEvent(eventData);
+    if (validation.error) {
+      throw new ValidationError(
+        "Invalid event data: " +
+          validation.error.details.map((d) => d.message).join("; "),
+      );
+    }
+
+    // Handle financial setup for the event (e.g., creating wallet, transactions)
     const financialSetup = await handleFinancialSetup(
       userAddress,
       user._id,
-      eventData,
+      eventData.entryFee,
+      eventData.prizePool,
     );
 
+    // Create the event with validated data and financial setup information
     const newEvent = new Event({
       ...eventData,
-      creator: user._id,
-      transactions: [financialSetup.transaction._id],
+      transactions: [financialSetup.transaction._id], // Assuming handleFinancialSetup returns transaction details
     });
 
     await newEvent.save();
