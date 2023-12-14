@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Module: utils/signalUtil</title>
+    <title>JSDoc: Module: middlewares/errorMiddleware</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Module: utils/signalUtil</h1>
+    <h1 class="page-title">Module: middlewares/errorMiddleware</h1>
 
     
 
@@ -34,10 +34,12 @@
     <div class="container-overview">
     
         
-            <div class="description"><p>Signal Utility for Satoshi Showdown.
-This module provides a utility function for setting up signal handlers for graceful shutdown
-of the Node.js process. It specifically handles SIGTERM and SIGINT signals to ensure that
-the application shuts down gracefully, including closing database connections and the server.</p></div>
+            <div class="description"><p>Error Middleware for Satoshi Showdown.
+This middleware handles errors that occur in the Express application. It is responsible for
+logging errors using the application's logging utility and sending appropriately formatted
+error responses to the client. It integrates with custom error classes to provide detailed
+error information, ensuring a consistent error handling strategy throughout the application.
+This middleware enhances application robustness and aids in debugging and error tracking.</p></div>
         
 
         
@@ -72,7 +74,7 @@ the application shuts down gracefully, including closing database connections an
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utils_signalUtil.js.html">utils/signalUtil.js</a>, <a href="utils_signalUtil.js.html#line1">line 1</a>
+        <a href="middlewares_errorHandlerMiddleware.js.html">middlewares/errorHandlerMiddleware.js</a>, <a href="middlewares_errorHandlerMiddleware.js.html#line1">line 1</a>
     </li></ul></dd>
     
 
@@ -94,9 +96,9 @@ the application shuts down gracefully, including closing database connections an
         <h3 class="subsection-title">Requires</h3>
 
         <ul>
-            <li><a href="module-utils_logUtil.html">module:utils/logUtil</a></li>
+            <li><a href="module-utils_errorUtil.html">module:utils/errorUtil</a></li>
         
-            <li><a href="module-utils_databaseUtil.html">module:utils/databaseUtil</a></li>
+            <li><a href="module-utils_logUtil.html">module:utils/logUtil</a></li>
         </ul>
     
 
@@ -119,7 +121,7 @@ the application shuts down gracefully, including closing database connections an
     
 
     
-    <h4 class="name" id="~setupShutdownHandlers"><span class="type-signature">(inner) </span>setupShutdownHandlers<span class="signature">(server)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="~errorHandlerMiddleware"><span class="type-signature">(inner) </span>errorHandlerMiddleware<span class="signature">(err, req, res, next)</span><span class="type-signature"></span></h4>
     
 
     
@@ -127,9 +129,12 @@ the application shuts down gracefully, including closing database connections an
 
 
 <div class="description">
-    <p>Sets up handlers for system signals for graceful shutdown of the server.
-Registers handlers for SIGTERM and SIGINT signals, ensuring that the application
-can close database connections and the server itself gracefully.</p>
+    <p>Middleware function for handling errors in Express applications.
+It intercepts errors thrown in the application, logs them for administrative purposes,
+and sends a structured response back to the client. This middleware differentiates
+between types of errors (validation, not found, database, etc.) and sets appropriate
+HTTP status codes and messages in the response, ensuring that the client receives
+understandable and useful error information.</p>
 </div>
 
 
@@ -165,16 +170,13 @@ can close database connections and the server itself gracefully.</p>
 
         <tr>
             
-                <td class="name"><code>server</code></td>
+                <td class="name"><code>err</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">http.Server</span>
-|
-
-<span class="param-type">https.Server</span>
+<span class="param-type">Error</span>
 
 
             
@@ -184,7 +186,76 @@ can close database connections and the server itself gracefully.</p>
 
             
 
-            <td class="description last"><p>The HTTP or HTTPS server instance to be shut down.</p></td>
+            <td class="description last"><p>The error object encountered in the application.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>req</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">express.Request</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The Express request object, providing context about the HTTP request.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>res</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">express.Response</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The Express response object, used to send back the error response.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>next</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">express.NextFunction</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The Express next middleware function, not used here as this is an error handling middleware.</p></td>
         </tr>
 
     
@@ -225,7 +296,7 @@ can close database connections and the server itself gracefully.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utils_signalUtil.js.html">utils/signalUtil.js</a>, <a href="utils_signalUtil.js.html#line15">line 15</a>
+        <a href="middlewares_errorHandlerMiddleware.js.html">middlewares/errorHandlerMiddleware.js</a>, <a href="middlewares_errorHandlerMiddleware.js.html#line21">line 21</a>
     </li></ul></dd>
     
 

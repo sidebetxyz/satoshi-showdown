@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Module: utils/signalUtil</title>
+    <title>JSDoc: Source: middlewares/corsSecurityMiddleware.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,253 +17,59 @@
 
 <div id="main">
 
-    <h1 class="page-title">Module: utils/signalUtil</h1>
+    <h1 class="page-title">Source: middlewares/corsSecurityMiddleware.js</h1>
 
     
 
 
 
-
-<section>
-
-<header>
     
-</header>
-
-<article>
-    <div class="container-overview">
-    
-        
-            <div class="description"><p>Signal Utility for Satoshi Showdown.
-This module provides a utility function for setting up signal handlers for graceful shutdown
-of the Node.js process. It specifically handles SIGTERM and SIGINT signals to ensure that
-the application shuts down gracefully, including closing database connections and the server.</p></div>
-        
-
-        
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utils_signalUtil.js.html">utils/signalUtil.js</a>, <a href="utils_signalUtil.js.html#line1">line 1</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-        
-    
-    </div>
-
-    
-
-    
-        <h3 class="subsection-title">Requires</h3>
-
-        <ul>
-            <li><a href="module-utils_logUtil.html">module:utils/logUtil</a></li>
-        
-            <li><a href="module-utils_databaseUtil.html">module:utils/databaseUtil</a></li>
-        </ul>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-        <h3 class="subsection-title">Methods</h3>
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="~setupShutdownHandlers"><span class="type-signature">(inner) </span>setupShutdownHandlers<span class="signature">(server)</span><span class="type-signature"></span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Sets up handlers for system signals for graceful shutdown of the server.
-Registers handlers for SIGTERM and SIGINT signals, ensuring that the application
-can close database connections and the server itself gracefully.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>server</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">http.Server</span>
-|
-
-<span class="param-type">https.Server</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>The HTTP or HTTPS server instance to be shut down.</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utils_signalUtil.js.html">utils/signalUtil.js</a>, <a href="utils_signalUtil.js.html#line15">line 15</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-    
-
-    
-
-    
-</article>
-
-</section>
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @fileoverview CORS Security Middleware for Satoshi Showdown.
+ * This middleware configures Cross-Origin Resource Sharing (CORS) policies for the application.
+ * It is crucial for controlling how resources are shared between different origins, enhancing
+ * security and preventing unwanted cross-origin access. By specifying allowed origins, methods,
+ * headers, and credentials, this middleware helps define and enforce rules for how external sources
+ * can interact with the server. Proper configuration of CORS is important for web applications that
+ * interact with APIs or resources from different domains.
+ *
+ * @module middlewares/corsSecurityMiddleware
+ * @requires cors - Middleware package for enabling and configuring CORS in Express applications.
+ * @see {@link https://expressjs.com/en/resources/middleware/cors.html} for detailed usage and options of CORS middleware.
+ */
+
+const cors = require("cors");
+
+/**
+ * Configures and returns CORS middleware with custom options.
+ * This function initializes the CORS middleware with specific settings tailored to the application's
+ * security needs. These settings can include configurations like whitelisted origins, allowed HTTP methods,
+ * support for credentials, and headers. Adjusting the `corsOptions` allows the application to fine-tune
+ * cross-origin access controls, balancing security with functionality. This is especially important for
+ * applications that are accessed by various clients from different domains or for APIs that are consumed
+ * publicly or by specific external entities.
+ *
+ * @function corsSecurityMiddleware
+ * @return {Function} Configured CORS middleware function with specified access control policies.
+ *                    The options can be customized based on the application's cross-origin interaction requirements.
+ */
+const corsSecurityMiddleware = () => {
+  const corsOptions = {
+    // Example CORS options:
+    // origin: "https://example.com",
+    // methods: "GET,POST,PUT,DELETE",
+    // allowedHeaders: "Content-Type,Authorization"
+  };
+
+  return cors(corsOptions);
+};
+
+module.exports = corsSecurityMiddleware;
+</code></pre>
+        </article>
+    </section>
 
 
 

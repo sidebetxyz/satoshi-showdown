@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Module: utils/signalUtil</title>
+    <title>JSDoc: Source: middlewares/httpSecurityMiddleware.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,253 +17,58 @@
 
 <div id="main">
 
-    <h1 class="page-title">Module: utils/signalUtil</h1>
+    <h1 class="page-title">Source: middlewares/httpSecurityMiddleware.js</h1>
 
     
 
 
 
-
-<section>
-
-<header>
     
-</header>
-
-<article>
-    <div class="container-overview">
-    
-        
-            <div class="description"><p>Signal Utility for Satoshi Showdown.
-This module provides a utility function for setting up signal handlers for graceful shutdown
-of the Node.js process. It specifically handles SIGTERM and SIGINT signals to ensure that
-the application shuts down gracefully, including closing database connections and the server.</p></div>
-        
-
-        
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utils_signalUtil.js.html">utils/signalUtil.js</a>, <a href="utils_signalUtil.js.html#line1">line 1</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-        
-    
-    </div>
-
-    
-
-    
-        <h3 class="subsection-title">Requires</h3>
-
-        <ul>
-            <li><a href="module-utils_logUtil.html">module:utils/logUtil</a></li>
-        
-            <li><a href="module-utils_databaseUtil.html">module:utils/databaseUtil</a></li>
-        </ul>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-        <h3 class="subsection-title">Methods</h3>
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="~setupShutdownHandlers"><span class="type-signature">(inner) </span>setupShutdownHandlers<span class="signature">(server)</span><span class="type-signature"></span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Sets up handlers for system signals for graceful shutdown of the server.
-Registers handlers for SIGTERM and SIGINT signals, ensuring that the application
-can close database connections and the server itself gracefully.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>server</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">http.Server</span>
-|
-
-<span class="param-type">https.Server</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>The HTTP or HTTPS server instance to be shut down.</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utils_signalUtil.js.html">utils/signalUtil.js</a>, <a href="utils_signalUtil.js.html#line15">line 15</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-    
-
-    
-
-    
-</article>
-
-</section>
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @fileoverview HTTP Security Middleware for Satoshi Showdown.
+ * This middleware leverages Helmet, a collection of middleware functions,
+ * to set a variety of HTTP headers that enhance the security of the application.
+ * Helmet helps protect against common web vulnerabilities and security issues by
+ * appropriately configuring headers like Content-Security-Policy, X-Frame-Options,
+ * X-Content-Type-Options, and others. Integrating Helmet is a best practice in Express
+ * applications for improving defense against well-known security vulnerabilities.
+ *
+ * @module middlewares/httpSecurityMiddleware
+ * @requires helmet - A middleware package that sets HTTP headers for security enhancements.
+ * @see {@link https://helmetjs.github.io/} for detailed documentation and customization options of Helmet.
+ */
+
+const helmet = require("helmet");
+
+/**
+ * Configures and returns the Helmet middleware for enhanced HTTP security.
+ * This function initializes Helmet with optional custom options, allowing the application
+ * to define specific security policies and header configurations. The use of Helmet
+ * significantly improves the application's security posture by mitigating risks such
+ * as clickjacking, sniffing attacks, and cross-site scripting (XSS). It is recommended
+ * to fine-tune the Helmet options according to the specific security needs and traffic
+ * characteristics of the application.
+ *
+ * @function httpSecurityMiddleware
+ * @return {Function} Configured Helmet middleware function for setting various HTTP security headers.
+ *                    By default, Helmet sets sensible defaults for various headers, but these can be
+ *                    customized to fit the application's security requirements.
+ */
+const httpSecurityMiddleware = () => {
+  const helmetOptions = {
+    // Optionally customize Helmet options here
+    // Example: frameguard: { action: "deny" }
+  };
+
+  return helmet(helmetOptions);
+};
+
+module.exports = httpSecurityMiddleware;
+</code></pre>
+        </article>
+    </section>
 
 
 

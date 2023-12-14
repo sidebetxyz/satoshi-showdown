@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Module: utils/signalUtil</title>
+    <title>JSDoc: Module: middlewares/corsSecurityMiddleware</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Module: utils/signalUtil</h1>
+    <h1 class="page-title">Module: middlewares/corsSecurityMiddleware</h1>
 
     
 
@@ -34,10 +34,13 @@
     <div class="container-overview">
     
         
-            <div class="description"><p>Signal Utility for Satoshi Showdown.
-This module provides a utility function for setting up signal handlers for graceful shutdown
-of the Node.js process. It specifically handles SIGTERM and SIGINT signals to ensure that
-the application shuts down gracefully, including closing database connections and the server.</p></div>
+            <div class="description"><p>CORS Security Middleware for Satoshi Showdown.
+This middleware configures Cross-Origin Resource Sharing (CORS) policies for the application.
+It is crucial for controlling how resources are shared between different origins, enhancing
+security and preventing unwanted cross-origin access. By specifying allowed origins, methods,
+headers, and credentials, this middleware helps define and enforce rules for how external sources
+can interact with the server. Proper configuration of CORS is important for web applications that
+interact with APIs or resources from different domains.</p></div>
         
 
         
@@ -72,12 +75,19 @@ the application shuts down gracefully, including closing database connections an
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utils_signalUtil.js.html">utils/signalUtil.js</a>, <a href="utils_signalUtil.js.html#line1">line 1</a>
+        <a href="middlewares_corsSecurityMiddleware.js.html">middlewares/corsSecurityMiddleware.js</a>, <a href="middlewares_corsSecurityMiddleware.js.html#line1">line 1</a>
     </li></ul></dd>
     
 
     
 
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><a href="https://expressjs.com/en/resources/middleware/cors.html">https://expressjs.com/en/resources/middleware/cors.html</a> for detailed usage and options of CORS middleware.</li>
+        </ul>
+    </dd>
     
 
     
@@ -94,9 +104,7 @@ the application shuts down gracefully, including closing database connections an
         <h3 class="subsection-title">Requires</h3>
 
         <ul>
-            <li><a href="module-utils_logUtil.html">module:utils/logUtil</a></li>
-        
-            <li><a href="module-utils_databaseUtil.html">module:utils/databaseUtil</a></li>
+            <li>module:cors</li>
         </ul>
     
 
@@ -119,7 +127,7 @@ the application shuts down gracefully, including closing database connections an
     
 
     
-    <h4 class="name" id="~setupShutdownHandlers"><span class="type-signature">(inner) </span>setupShutdownHandlers<span class="signature">(server)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="~corsSecurityMiddleware"><span class="type-signature">(inner) </span>corsSecurityMiddleware<span class="signature">()</span><span class="type-signature"> &rarr; {function}</span></h4>
     
 
     
@@ -127,9 +135,13 @@ the application shuts down gracefully, including closing database connections an
 
 
 <div class="description">
-    <p>Sets up handlers for system signals for graceful shutdown of the server.
-Registers handlers for SIGTERM and SIGINT signals, ensuring that the application
-can close database connections and the server itself gracefully.</p>
+    <p>Configures and returns CORS middleware with custom options.
+This function initializes the CORS middleware with specific settings tailored to the application's
+security needs. These settings can include configurations like whitelisted origins, allowed HTTP methods,
+support for credentials, and headers. Adjusting the <code>corsOptions</code> allows the application to fine-tune
+cross-origin access controls, balancing security with functionality. This is especially important for
+applications that are accessed by various clients from different domains or for APIs that are consumed
+publicly or by specific external entities.</p>
 </div>
 
 
@@ -138,58 +150,6 @@ can close database connections and the server itself gracefully.</p>
 
 
 
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>server</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">http.Server</span>
-|
-
-<span class="param-type">https.Server</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>The HTTP or HTTPS server instance to be shut down.</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
 
 
 
@@ -225,7 +185,7 @@ can close database connections and the server itself gracefully.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utils_signalUtil.js.html">utils/signalUtil.js</a>, <a href="utils_signalUtil.js.html#line15">line 15</a>
+        <a href="middlewares_corsSecurityMiddleware.js.html">middlewares/corsSecurityMiddleware.js</a>, <a href="middlewares_corsSecurityMiddleware.js.html#line17">line 17</a>
     </li></ul></dd>
     
 
@@ -250,6 +210,29 @@ can close database connections and the server itself gracefully.</p>
 
 
 
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Configured CORS middleware function with specified access control policies.
+The options can be customized based on the application's cross-origin interaction requirements.</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">function</span>
+
+
+    </dd>
+</dl>
+
+    
 
 
 

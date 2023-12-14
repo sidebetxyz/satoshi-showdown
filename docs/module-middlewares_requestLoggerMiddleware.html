@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Module: utils/signalUtil</title>
+    <title>JSDoc: Module: middlewares/requestLoggerMiddleware</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Module: utils/signalUtil</h1>
+    <h1 class="page-title">Module: middlewares/requestLoggerMiddleware</h1>
 
     
 
@@ -34,10 +34,11 @@
     <div class="container-overview">
     
         
-            <div class="description"><p>Signal Utility for Satoshi Showdown.
-This module provides a utility function for setting up signal handlers for graceful shutdown
-of the Node.js process. It specifically handles SIGTERM and SIGINT signals to ensure that
-the application shuts down gracefully, including closing database connections and the server.</p></div>
+            <div class="description"><p>Request Logger Middleware for Satoshi Showdown.
+This middleware integrates Morgan, a popular HTTP request logger, to log detailed information
+about incoming HTTP requests. It is instrumental for monitoring, debugging, and analyzing
+network activity within the application. By logging request data, this middleware assists
+in identifying issues, understanding traffic patterns, and maintaining robust network security.</p></div>
         
 
         
@@ -72,12 +73,19 @@ the application shuts down gracefully, including closing database connections an
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utils_signalUtil.js.html">utils/signalUtil.js</a>, <a href="utils_signalUtil.js.html#line1">line 1</a>
+        <a href="middlewares_requestLoggerMiddleware.js.html">middlewares/requestLoggerMiddleware.js</a>, <a href="middlewares_requestLoggerMiddleware.js.html#line1">line 1</a>
     </li></ul></dd>
     
 
     
 
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><a href="https://github.com/expressjs/morgan">https://github.com/expressjs/morgan</a> for Morgan's official documentation and usage examples.</li>
+        </ul>
+    </dd>
     
 
     
@@ -94,9 +102,9 @@ the application shuts down gracefully, including closing database connections an
         <h3 class="subsection-title">Requires</h3>
 
         <ul>
-            <li><a href="module-utils_logUtil.html">module:utils/logUtil</a></li>
+            <li>module:morgan</li>
         
-            <li><a href="module-utils_databaseUtil.html">module:utils/databaseUtil</a></li>
+            <li><a href="module-utils_logUtil.html">module:utils/logUtil</a></li>
         </ul>
     
 
@@ -119,7 +127,7 @@ the application shuts down gracefully, including closing database connections an
     
 
     
-    <h4 class="name" id="~setupShutdownHandlers"><span class="type-signature">(inner) </span>setupShutdownHandlers<span class="signature">(server)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="~requestLoggerMiddleware"><span class="type-signature">(inner) </span>requestLoggerMiddleware<span class="signature">()</span><span class="type-signature"> &rarr; {function}</span></h4>
     
 
     
@@ -127,9 +135,11 @@ the application shuts down gracefully, including closing database connections an
 
 
 <div class="description">
-    <p>Sets up handlers for system signals for graceful shutdown of the server.
-Registers handlers for SIGTERM and SIGINT signals, ensuring that the application
-can close database connections and the server itself gracefully.</p>
+    <p>Configures and returns Morgan middleware for detailed HTTP request logging.
+Utilizes a pre-defined 'combined' format that includes essential request details like method, URL, status, response time, etc.
+The logging output is directed to the application's central logging system via logUtil's stream interface, ensuring
+consistent log formatting and management. This middleware can be customized further to suit specific logging needs
+or preferences, such as different formats or conditional logging.</p>
 </div>
 
 
@@ -138,58 +148,6 @@ can close database connections and the server itself gracefully.</p>
 
 
 
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>server</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">http.Server</span>
-|
-
-<span class="param-type">https.Server</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>The HTTP or HTTPS server instance to be shut down.</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
 
 
 
@@ -225,7 +183,7 @@ can close database connections and the server itself gracefully.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utils_signalUtil.js.html">utils/signalUtil.js</a>, <a href="utils_signalUtil.js.html#line15">line 15</a>
+        <a href="middlewares_requestLoggerMiddleware.js.html">middlewares/requestLoggerMiddleware.js</a>, <a href="middlewares_requestLoggerMiddleware.js.html#line17">line 17</a>
     </li></ul></dd>
     
 
@@ -250,6 +208,28 @@ can close database connections and the server itself gracefully.</p>
 
 
 
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Middleware function for HTTP request logging. Configured to use the 'combined' log format and the application's log stream.</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">function</span>
+
+
+    </dd>
+</dl>
+
+    
 
 
 

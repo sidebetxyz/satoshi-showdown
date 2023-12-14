@@ -3,6 +3,7 @@
     "include": [
       "../server/src/server.js",
       "../server/src/controllers",
+      "../server/src/middlewares",
       "../server/src/models",
       "../server/src/routes",
       "../server/src/services",

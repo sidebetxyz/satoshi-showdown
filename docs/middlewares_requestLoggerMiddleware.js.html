@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Module: utils/signalUtil</title>
+    <title>JSDoc: Source: middlewares/requestLoggerMiddleware.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,253 +17,50 @@
 
 <div id="main">
 
-    <h1 class="page-title">Module: utils/signalUtil</h1>
+    <h1 class="page-title">Source: middlewares/requestLoggerMiddleware.js</h1>
 
     
 
 
 
-
-<section>
-
-<header>
     
-</header>
-
-<article>
-    <div class="container-overview">
-    
-        
-            <div class="description"><p>Signal Utility for Satoshi Showdown.
-This module provides a utility function for setting up signal handlers for graceful shutdown
-of the Node.js process. It specifically handles SIGTERM and SIGINT signals to ensure that
-the application shuts down gracefully, including closing database connections and the server.</p></div>
-        
-
-        
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utils_signalUtil.js.html">utils/signalUtil.js</a>, <a href="utils_signalUtil.js.html#line1">line 1</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-        
-    
-    </div>
-
-    
-
-    
-        <h3 class="subsection-title">Requires</h3>
-
-        <ul>
-            <li><a href="module-utils_logUtil.html">module:utils/logUtil</a></li>
-        
-            <li><a href="module-utils_databaseUtil.html">module:utils/databaseUtil</a></li>
-        </ul>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-        <h3 class="subsection-title">Methods</h3>
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="~setupShutdownHandlers"><span class="type-signature">(inner) </span>setupShutdownHandlers<span class="signature">(server)</span><span class="type-signature"></span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Sets up handlers for system signals for graceful shutdown of the server.
-Registers handlers for SIGTERM and SIGINT signals, ensuring that the application
-can close database connections and the server itself gracefully.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>server</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">http.Server</span>
-|
-
-<span class="param-type">https.Server</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>The HTTP or HTTPS server instance to be shut down.</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utils_signalUtil.js.html">utils/signalUtil.js</a>, <a href="utils_signalUtil.js.html#line15">line 15</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-    
-
-    
-
-    
-</article>
-
-</section>
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @fileoverview Request Logger Middleware for Satoshi Showdown.
+ * This middleware integrates Morgan, a popular HTTP request logger, to log detailed information
+ * about incoming HTTP requests. It is instrumental for monitoring, debugging, and analyzing
+ * network activity within the application. By logging request data, this middleware assists
+ * in identifying issues, understanding traffic patterns, and maintaining robust network security.
+ *
+ * @module middlewares/requestLoggerMiddleware
+ * @requires morgan - HTTP request logger middleware for Node.js, used for logging request details.
+ * @requires utils/logUtil - Logging utility that provides a stream interface for Morgan, enabling it to log via the application's centralized logger.
+ * @see {@link https://github.com/expressjs/morgan} for Morgan's official documentation and usage examples.
+ */
+
+const morgan = require("morgan");
+const logUtil = require("../utils/logUtil");
+
+/**
+ * Configures and returns Morgan middleware for detailed HTTP request logging.
+ * Utilizes a pre-defined 'combined' format that includes essential request details like method, URL, status, response time, etc.
+ * The logging output is directed to the application's central logging system via logUtil's stream interface, ensuring
+ * consistent log formatting and management. This middleware can be customized further to suit specific logging needs
+ * or preferences, such as different formats or conditional logging.
+ *
+ * @function requestLoggerMiddleware
+ * @return {Function} Middleware function for HTTP request logging. Configured to use the 'combined' log format and the application's log stream.
+ */
+const requestLoggerMiddleware = () => {
+  // Morgan setup with 'combined' format and application's log stream
+  return morgan("combined", { stream: logUtil.stream });
+};
+
+module.exports = requestLoggerMiddleware;
+</code></pre>
+        </article>
+    </section>
 
 
 
