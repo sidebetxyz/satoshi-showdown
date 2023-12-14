@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Module: controllers/userController</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Module: controllers/userController</h1>
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>User Controller for Satoshi Showdown.
+This controller manages HTTP requests related to user operations, primarily focusing on user creation.
+It handles incoming requests on user-related endpoints, ensuring proper validation, error handling,
+and interaction with the User Service for processing user data. The controller plays a pivotal role
+in maintaining the integrity and security of user information while facilitating user account management
+functionalities such as registration and data retrieval.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="controllers_userController.js.html">controllers/userController.js</a>, <a href="controllers_userController.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+        <h3 class="subsection-title">Requires</h3>
+
+        <ul>
+            <li><a href="module-services_userService.html">module:services/userService</a></li>
+        
+            <li><a href="module-utils_logUtil.html">module:utils/logUtil</a></li>
+        </ul>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="~handleCreateUser"><span class="type-signature">(async, inner) </span>handleCreateUser<span class="signature">(req, res, next)</span><span class="type-signature"> &rarr; {Promise.&lt;void>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Handles the creation of a new user on the Satoshi Showdown platform.
+Extracts user data from the request body and utilizes the User Service to create a new user account.
+Ensures that the response sent back to the client includes the newly created user data, while
+maintaining data security by excluding sensitive information like passwords. This function is essential
+for user registration processes, providing a secure and efficient way to add new users to the platform.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>req</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">express.Request</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The Express request object, containing user data for account creation.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>res</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">express.Response</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The Express response object, used to send back the created user data.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>next</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">express.NextFunction</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The Express next middleware function, for error handling and propagation.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="controllers_userController.js.html">controllers/userController.js</a>, <a href="controllers_userController.js.html#line17">line 17</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Throws:</h5>
+
+        
+
+<dl>
+    <dt>
+        <div class="param-desc">
+        <p>Propagates any errors encountered during user creation to the error handling middleware.</p>
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl>
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type">Error</span>
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+
+    
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>No explicit return value; the function sends a response to the client.</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;void></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_Transaction.html">models/Transaction</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#port">port</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: services/webhookService.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: services/webhookService.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @fileoverview Service for managing webhooks in Satoshi Showdown.
+ * This service is responsible for creating, updating, retrieving, and managing
+ * the deletion of webhooks. It interfaces with external services like BlockCypher
+ * for blockchain event monitoring and interacts with the local database for webhook
+ * data management. The service plays a crucial role in event-driven processes within
+ * the application, especially for transaction and blockchain event monitoring.
+ *
+ * @module services/webhookService
+ * @requires models/webhookModel - Webhook data model for database interactions.
+ * @requires services/transactionService - Service for updating transaction records.
+ * @requires services/walletService - Service for wallet-related operations.
+ * @requires utils/apiUtil - Utility functions for API interactions.
+ * @requires utils/errorUtil - Custom error classes and error handling utilities.
+ * @requires utils/logUtil - Logging utility for application-wide logging.
+ */
+
+const Webhook = require("../models/webhookModel");
+const { updateTransactionRecord } = require("./transactionService");
+const { getWalletByAddress, updateWalletBalance } = require("./walletService");
+const { postAPI, getAPI } = require("../utils/apiUtil");
+const { NotFoundError } = require("../utils/errorUtil");
+const log = require("../utils/logUtil");
+
+// Configuration constants for external API
+const apiBaseUrl = process.env.BLOCKCYPHER_BASE_URL;
+const apiToken = process.env.BLOCKCYPHER_TOKEN;
+
+/**
+ * Creates and registers a new webhook with BlockCypher for event monitoring.
+ * It sets up a webhook to monitor specific blockchain events related to a given address.
+ * The webhook is stored in the local database and registered with BlockCypher.
+ *
+ * @async
+ * @function createWebhook
+ * @param {string} address - Blockchain address to monitor for transactions.
+ * @param {string} transactionRef - Associated transaction reference ID.
+ * @param {number} [confirmations=6] - Number of confirmations for transaction finality (default is 6).
+ * @return {Promise&lt;Object>} The created webhook object containing its configuration and response data.
+ * @throws {Error} Thrown if there is an issue creating the webhook in the database or with BlockCypher.
+ */
+const createWebhook = async (address, transactionRef) => {
+  try {
+    // Create a new webhook in the local database
+    const newWebhook = new Webhook({
+      type: "tx-confirmation",
+      transaction: transactionRef,
+    });
+    await newWebhook.save();
+
+    // Generate a callback URL for the webhook
+    const callbackUrl = `${process.env.WEBHOOK_DOMAIN}/webhook/receive/${newWebhook.urlId}`;
+    const webhookData = {
+      event: "tx-confirmation",
+      address,
+      url: callbackUrl,
+      confirmations: 6,
+      token: apiToken,
+    };
+
+    // Register the webhook with BlockCypher and get the response
+    const response = await postAPI(
+      `${apiBaseUrl}/hooks?token=${apiToken}`,
+      webhookData,
+    );
+
+    log.debug(`Response: ${JSON.stringify(response, null, 2)}`);
+
+    // Update the webhook document in the local database with the response data
+    await Webhook.findByIdAndUpdate(newWebhook._id, { response });
+
+    return newWebhook;
+  } catch (err) {
+    log.error(`Error in createWebhook: ${err.message}`);
+    throw err;
+  }
+};
+
+/**
+ * Retrieves a specific webhook by its URL identifier.
+ * This is primarily used for fetching webhook details for processing incoming requests or for updates.
+ *
+ * @async
+ * @function getWebhook
+ * @param {string} urlId - URL identifier of the webhook to retrieve.
+ * @return {Promise&lt;Object>} The retrieved webhook object, if found.
+ * @throws {NotFoundError} If the webhook with the specified URL ID is not found.
+ */
+const getWebhook = async (urlId) => {
+  const webhook = await Webhook.findOne({ urlId });
+  if (!webhook) {
+    log.warn(`Webhook with URL ID ${urlId} not found`);
+    throw new NotFoundError(`Webhook with URL ID ${urlId} not found`);
+  }
+  return webhook;
+};
+
+/**
+ * Retrieves all webhooks currently stored in the database.
+ * This can be used for administrative purposes such as monitoring or auditing webhook activities.
+ *
+ * @async
+ * @function getAllWebhooks
+ * @return {Promise&lt;Array>} An array of all webhook objects in the database.
+ */
+const getAllWebhooks = async () => {
+  return await Webhook.find({});
+};
+
+/**
+ * Updates a webhook's configuration in the database.
+ * This is used for modifying webhook details, like changing its monitoring conditions or callback URL.
+ *
+ * @async
+ * @function updateWebhook
+ * @param {string} urlId - URL identifier of the webhook to update.
+ * @param {Object} updateData - New data to update the webhook with.
+ * @return {Promise&lt;Object>} The updated webhook object.
+ * @throws {NotFoundError} If the webhook with the specified URL ID is not found for updating.
+ */
+const updateWebhook = async (urlId, updateData) => {
+  const webhook = await Webhook.findOneAndUpdate({ urlId }, updateData, {
+    new: true,
+  });
+  if (!webhook) {
+    log.warn(`Webhook with URL ID ${urlId} not found for update`);
+    throw new NotFoundError(`Webhook with URL ID ${urlId} not found`);
+  }
+  return webhook;
+};
+
+/**
+ * Soft deletes a webhook in the local database and removes its registration from BlockCypher.
+ * This helps in maintaining a record of the webhook while ensuring it's no longer active.
+ *
+ * @async
+ * @function deleteWebhook
+ * @param {string} webhookId - ID of the webhook to soft delete.
+ * @return {Promise&lt;void>}
+ * @throws {Error} If there's an issue in removing the webhook from BlockCypher or updating the database.
+ */
+const deleteWebhook = async (webhookId) => {
+  const webhook = await getWebhook(webhookId);
+  try {
+    // Remove the webhook registration from BlockCypher
+    await getAPI(`${apiBaseUrl}/hooks/${webhookId}?token=${apiToken}`);
+    log.info(`Webhook with uniqueId ${webhookId} removed from BlockCypher.`);
+
+    // Soft delete the webhook in the local database
+    await Webhook.findByIdAndUpdate(webhook._id, { isDeleted: true });
+    log.info(
+      `Webhook with URL ID ${webhookId} soft deleted in the local database.`,
+    );
+  } catch (err) {
+    log.error(`Error in soft deleting webhook: ${err.message}`);
+    throw err;
+  }
+};
+
+/**
+ * Processes incoming webhook data, performing necessary updates on transaction records and wallets.
+ * This function is a key component in the webhook lifecycle, handling the business logic triggered by webhook events.
+ *
+ * @async
+ * @function processWebhook
+ * @param {string} urlId - The URL identifier of the webhook.
+ * @param {Object} headers - The headers of the incoming webhook request.
+ * @param {Object} data - The payload of the webhook request, containing transaction details.
+ * @return {Promise&lt;void>}
+ * @throws {NotFoundError} If the webhook or related transaction is not found for processing.
+ */
+const processWebhook = async (urlId, headers, data) => {
+  log.debug(`Received webhook data for URL ID: ${urlId}`);
+  try {
+    const webhook = await Webhook.findOne({ urlId });
+
+    if (!webhook) {
+      log.error(`Webhook with URL ID ${urlId} not found`);
+      throw new NotFoundError(`Webhook with URL ID ${urlId} not found`);
+    }
+
+    // Convert headers to a Map for Mongoose and update the webhook record
+    const headersMap = new Map(Object.entries(headers));
+    await Webhook.findByIdAndUpdate(webhook._id, {
+      headers: headersMap,
+      body: data,
+    });
+
+    // Extract monitored address and amount from the webhook's response
+    const monitoredAddress = webhook.response.address;
+    let amountReceived = 0;
+
+    // Check each output to find the amount sent to the monitored address
+    data.outputs.forEach((output) => {
+      if (output.addresses.includes(monitoredAddress)) {
+        amountReceived += output.value;
+      }
+    });
+
+    if (amountReceived > 0) {
+      // Determine the transaction status based on the number of confirmations
+      let transactionStatus = "confirming";
+      if (data.confirmations >= 6) {
+        transactionStatus = "completed";
+      }
+
+      // Update the transaction record with new data
+      const updatedTransaction = await updateTransactionRecord(
+        webhook.transaction,
+        {
+          confirmations: data.confirmations,
+          status: transactionStatus,
+          receivedAmount: amountReceived,
+          // Additional fields to update can be added here
+        },
+      );
+
+      // Retrieve the wallet by its public address
+      const wallet = await getWalletByAddress(monitoredAddress);
+
+      // Update the wallet's balance with the received amount
+      const newBalance = wallet.balance + amountReceived;
+      await updateWalletBalance(wallet._id, newBalance);
+
+      log.info(
+        `Transaction with ID ${updatedTransaction._id} updated. Status: ${transactionStatus}, Amount received: ${amountReceived}`,
+      );
+    } else {
+      log.info(
+        `No transaction amount for monitored address: ${monitoredAddress}`,
+      );
+    }
+  } catch (error) {
+    log.error(
+      `Error processing webhook with URL ID ${urlId}: ${error.message}`,
+    );
+    throw error;
+  }
+};
+
+module.exports = {
+  createWebhook,
+  getWebhook,
+  getAllWebhooks,
+  updateWebhook,
+  deleteWebhook,
+  processWebhook,
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_Transaction.html">models/Transaction</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#port">port</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

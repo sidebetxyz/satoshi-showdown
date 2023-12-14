@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Module: utils/logUtil</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Module: utils/logUtil</h1>
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Logging Utility for Satoshi Showdown.
+This module configures and provides a logging utility for the application,
+utilizing the Winston library. It defines custom logging levels, formats,
+and sets up transports for outputting logs. The custom format combines timestamps
+and message content for clarity. The logger also provides a stream for integrating
+with middleware like morgan to facilitate logging HTTP requests and responses.</p>
+<p>The logger can be easily extended by adding additional transports, such as file transport,
+for different log output needs. The utility is designed to be modular and flexible,
+suitable for use across different parts of the application.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="utils_logUtil.js.html">utils/logUtil.js</a>, <a href="utils_logUtil.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+        <h3 class="subsection-title">Requires</h3>
+
+        <ul>
+            <li>module:winston</li>
+        </ul>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Members</h3>
+
+        
+            
+<h4 class="name" id="~log"><span class="type-signature">(inner, constant) </span>log<span class="type-signature"> :winston.Logger</span></h4>
+
+
+
+
+<div class="description">
+    <p>Creates and configures a Winston logger instance.
+The logger is configured with the specified levels, format, and transports to ensure
+consistent and effective logging across the application. The log level can be dynamically
+set using environment variables, allowing for easy adjustment in different environments.</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">winston.Logger</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="utils_logUtil.js.html">utils/logUtil.js</a>, <a href="utils_logUtil.js.html#line64">line 64</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="~logFormat"><span class="type-signature">(inner, constant) </span>logFormat<span class="type-signature"> :winston.Logform.Format</span></h4>
+
+
+
+
+<div class="description">
+    <p>Custom log format.
+This format enhances log readability by combining a timestamp indicating the time of log generation
+and a printf format for displaying the log level and message content.</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">winston.Logform.Format</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="utils_logUtil.js.html">utils/logUtil.js</a>, <a href="utils_logUtil.js.html#line40">line 40</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="~logLevels"><span class="type-signature">(inner, constant) </span>logLevels<span class="type-signature"> :Object</span></h4>
+
+
+
+
+<div class="description">
+    <p>Custom logging levels for the application.
+These levels define the severity of log messages and allow for filtering
+based on importance and type. The structure follows a hierarchy where
+each level includes the levels above it (error includes warn, info includes http, etc.).</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Object</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="utils_logUtil.js.html">utils/logUtil.js</a>, <a href="utils_logUtil.js.html#line26">line 26</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="~logTransports"><span class="type-signature">(inner, constant) </span>logTransports<span class="type-signature"> :Array.&lt;winston.transport></span></h4>
+
+
+
+
+<div class="description">
+    <p>Transport mechanisms for logging.
+Defines how logs are outputted. By default, logs are written to the console,
+but this array can be expanded to include file transports or other means of logging,
+catering to various environments and requirements.</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Array.&lt;winston.transport></span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="utils_logUtil.js.html">utils/logUtil.js</a>, <a href="utils_logUtil.js.html#line55">line 55</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_Transaction.html">models/Transaction</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#port">port</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

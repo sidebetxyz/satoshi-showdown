@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: services/transactionService.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: services/transactionService.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @fileoverview Service for managing transactions in Satoshi Showdown.
+ * Handles creating, updating, retrieving, and deleting transaction records,
+ * ensuring data integrity and consistency.
+ *
+ * @module services/transactionService
+ * @requires models/transactionModel - Transaction data model.
+ * @requires bitcoinjs-lib - Library for Bitcoin transaction handling.
+ * @requires utils/errorUtil - Custom error classes and error handling utilities.
+ * @requires utils/logUtil - Logging utility for application-wide logging.
+ */
+
+const Transaction = require("../models/transactionModel");
+const bitcoin = require("bitcoinjs-lib");
+const network = bitcoin.networks.testnet; // or bitcoin.networks.bitcoin for mainnet
+const { NotFoundError } = require("../utils/errorUtil");
+const log = require("../utils/logUtil");
+
+/**
+ * Creates a new transaction record in the database.
+ *
+ * @async
+ * @param {Object} transactionData - The data for the new transaction.
+ * @param {string} transactionData.userRef - ID of the user associated with the transaction.
+ * @param {string} transactionData.walletRef - ID of the wallet associated with the transaction.
+ * @param {string} transactionData.transactionType - The type of the transaction (e.g., "incoming", "outgoing").
+ * @param {number} transactionData.expectedAmount - The expected amount of the transaction in satoshis.
+ * @param {string} transactionData.walletAddress - The wallet address involved in the transaction.
+ * @param {string} transactionData.userAddress - The user's address involved in the transaction.
+ * @return {Promise&lt;Object>} A promise that resolves to the created transaction object.
+ * @throws {Error} If an error occurs during the creation of the transaction record in the database.
+ */
+const createTransactionRecord = async (transactionData) => {
+  try {
+    const transaction = new Transaction(transactionData);
+    await transaction.save();
+    log.info(`Transaction record created with ID: ${transaction._id}`);
+    return transaction;
+  } catch (error) {
+    throw new Error(`Error creating transaction record: ${error.message}`);
+  }
+};
+
+/**
+ * Creates a raw Bitcoin transaction.
+ *
+ * @param {Object} details - Details for the raw Bitcoin transaction.
+ * @param {Array} details.utxos - Unspent transaction outputs to be used.
+ * @param {string} details.recipientAddress - The recipient's Bitcoin address.
+ * @param {number} details.amount - Amount to send in satoshis.
+ * @return {string} The raw Bitcoin transaction in hex format.
+ */
+const createRawBitcoinTransaction = ({ utxos, recipientAddress, amount }) => {
+  const tx = new bitcoin.TransactionBuilder(network);
+  utxos.forEach((utxo) => tx.addInput(utxo.txId, utxo.vout));
+  tx.addOutput(recipientAddress, amount);
+  // Further implementation...
+  return tx.buildIncomplete().toHex();
+};
+
+/**
+ * Retrieves a specific transaction record by its ID.
+ *
+ * @async
+ * @param {string} transactionId - ID of the transaction to retrieve.
+ * @return {Promise&lt;Object>} The found transaction object.
+ * @throws {NotFoundError} Throws an error if the transaction is not found.
+ */
+const getTransactionRecord = async (transactionId) => {
+  const transaction = await Transaction.findById(transactionId);
+  if (!transaction) {
+    throw new NotFoundError(`Transaction with ID ${transactionId} not found`);
+  }
+  return transaction;
+};
+
+/**
+ * Retrieves all transaction records from the database.
+ *
+ * @async
+ * @return {Promise&lt;Array>} An array of all transaction objects.
+ */
+const getAllTransactionRecords = async () => {
+  return await Transaction.find({});
+};
+
+/**
+ * Updates an existing transaction record.
+ *
+ * @async
+ * @param {string} transactionId - ID of the transaction to update.
+ * @param {Object} updateData - New data for the transaction.
+ * @return {Promise&lt;Object>} The updated transaction object.
+ * @throws {NotFoundError} Throws an error if the transaction is not found.
+ * @throws {Error} Throws an error if updating the transaction record fails.
+ */
+const updateTransactionRecord = async (transactionId, updateData) => {
+  try {
+    const transaction = await Transaction.findByIdAndUpdate(
+      transactionId,
+      updateData,
+      { new: true },
+    );
+    if (!transaction) {
+      throw new NotFoundError(`Transaction with ID ${transactionId} not found`);
+    }
+    log.info(`Transaction record with ID ${transactionId} updated`);
+    return transaction;
+  } catch (error) {
+    throw new Error(`Error updating transaction record: ${error.message}`);
+  }
+};
+
+module.exports = {
+  createTransactionRecord,
+  createRawBitcoinTransaction,
+  getTransactionRecord,
+  getAllTransactionRecords,
+  updateTransactionRecord,
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_Transaction.html">models/Transaction</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#port">port</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

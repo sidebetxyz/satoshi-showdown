@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: controllers/webhookController.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: controllers/webhookController.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @fileoverview Webhook Controller for Satoshi Showdown.
+ * This controller is specifically designed to manage the processing of incoming webhook callbacks.
+ * It acts as the entry point for webhook data sent to the application, extracting necessary information
+ * from the incoming requests and delegating the processing logic to the Webhook Service. This controller
+ * ensures that webhook callbacks are parsed accurately and handled efficiently, with appropriate responses
+ * sent back to the source of the webhook. It plays a crucial role in handling asynchronous events and
+ * notifications that the application receives from external systems or services.
+ *
+ * @module controllers/webhookController
+ * @requires services/webhookService - Service layer responsible for the business logic related to the processing of webhooks.
+ */
+
+const { processWebhook } = require("../services/webhookService");
+
+/**
+ * Handles the processing of received webhook callbacks.
+ * This function extracts necessary data such as the unique ID and content of the webhook from the request,
+ * and passes it to the Webhook Service for further processing. It ensures that the application responds
+ * to the source of the webhook with an appropriate confirmation message, acknowledging the successful
+ * reception and processing of the webhook data. This function is vital for the integration of external
+ * services and systems that rely on webhooks to communicate events or updates to the application.
+ *
+ * @async
+ * @function handleProcessWebhook
+ * @param {express.Request} req - The Express request object containing the webhook data and unique identifier.
+ * @param {express.Response} res - The Express response object used to send back a confirmation response.
+ * @param {express.NextFunction} next - The Express next middleware function for error handling and propagation.
+ * @return {Promise&lt;void>} No explicit return value; the function sends a response to the source of the webhook.
+ * @throws {Error} Propagates any errors encountered during webhook processing to the error handling middleware.
+ */
+const handleProcessWebhook = async (req, res, next) => {
+  try {
+    const { uniqueId } = req.params;
+    const data = req.body;
+    const headers = req.headers;
+    await processWebhook(uniqueId, headers, data);
+    res.status(200).send("Webhook processed successfully");
+  } catch (err) {
+    next(err); // Propagate error to centralized error handling middleware.
+  }
+};
+
+module.exports = {
+  handleProcessWebhook,
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_Transaction.html">models/Transaction</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#port">port</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

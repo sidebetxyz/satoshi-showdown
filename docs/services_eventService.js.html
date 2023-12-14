@@ -1,4 +1,32 @@
-/**
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: services/eventService.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: services/eventService.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
  * @fileoverview Event Service for Satoshi Showdown.
  * Provides functionalities for managing event-related operations such as creating,
  * updating, deleting, and retrieving events. Also manages financial transactions
@@ -61,7 +89,7 @@ const log = require("../utils/logUtil");
  * @param {Array} eventData.socialSharingLinks - Links for social sharing of the event.
  * @param {number} eventData.ageRestriction - Age restriction for participation or viewing.
  * @param {Array} eventData.geographicRestrictions - Geographic restrictions for the event.
- * @return {Promise<Object>} The created event object with complete details.
+ * @return {Promise&lt;Object>} The created event object with complete details.
  * @throws {ValidationError} When event data validation fails, indicating invalid or incomplete input.
  * @throws {NotFoundError} When the user specified by userId is not found in the database.
  */
@@ -149,7 +177,7 @@ const createEvent = async (userId, userAddress, eventData) => {
  * @param {Array} updateData.socialSharingLinks - Updated links for social sharing of the event.
  * @param {number} updateData.ageRestriction - Updated age restriction for participation or viewing.
  * @param {Array} updateData.geographicRestrictions - Updated geographic restrictions for the event.
- * @return {Promise<Object>} The updated event object, reflecting the changes made.
+ * @return {Promise&lt;Object>} The updated event object, reflecting the changes made.
  * @throws {NotFoundError} When no event with the provided ID is found in the database.
  */
 const updateEvent = async (eventId, updateData) => {
@@ -176,7 +204,7 @@ const updateEvent = async (eventId, updateData) => {
  * @function joinEvent
  * @param {string} eventId - The unique identifier of the event to join.
  * @param {string} userId - The unique identifier of the user attempting to join the event.
- * @return {Promise<Object>} The updated event object reflecting the new participant.
+ * @return {Promise&lt;Object>} The updated event object reflecting the new participant.
  * @throws {NotFoundError} If the specified event or user is not found.
  * @throws {Error} If the event is already full or closed for new participants.
  */
@@ -224,7 +252,7 @@ const joinEvent = async (eventId, userId) => {
  * @async
  * @function getEvent
  * @param {string} eventId - ID of the event to be retrieved.
- * @return {Promise<Object>} The event object corresponding to the specified ID.
+ * @return {Promise&lt;Object>} The event object corresponding to the specified ID.
  * @throws {NotFoundError} When the event with the given ID does not exist in the database.
  */
 const getEvent = async (eventId) => {
@@ -247,7 +275,7 @@ const getEvent = async (eventId) => {
  *
  * @async
  * @function getAllEvents
- * @return {Promise<Array>} An array containing all event objects in the database.
+ * @return {Promise&lt;Array>} An array containing all event objects in the database.
  */
 const getAllEvents = async () => {
   try {
@@ -266,7 +294,7 @@ const getAllEvents = async () => {
  * @async
  * @function deleteEvent
  * @param {string} eventId - ID of the event to be deleted.
- * @return {Promise<void>} Indicates successful deletion of the event.
+ * @return {Promise&lt;void>} Indicates successful deletion of the event.
  * @throws {NotFoundError} When the event with the specified ID is not found.
  */
 const deleteEvent = async (eventId) => {
@@ -293,7 +321,7 @@ const deleteEvent = async (eventId) => {
  * @param {string} userRef - User reference ID.
  * @param {number} entryFee - Entry fee required to participate in the event.
  * @param {number} prizePoolContribution - Contribution to the prize pool, if any.
- * @return {Promise<Object>} An object containing details about the wallet and transaction created.
+ * @return {Promise&lt;Object>} An object containing details about the wallet and transaction created.
  * @private
  * @throws {Error} When financial setup encounters an error, such as wallet creation failure.
  */
@@ -357,3 +385,26 @@ module.exports = {
   joinEvent,
   deleteEvent,
 };
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_Transaction.html">models/Transaction</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#port">port</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: models/walletModel.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: models/walletModel.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @fileoverview Wallet Model for Satoshi Showdown.
+ * This model defines the structure and constraints for cryptocurrency wallets associated with users on the platform.
+ * It includes critical details such as public addresses, encrypted private keys, wallet types, and balances.
+ * The model also tracks associated transaction references, making it a key component in managing financial
+ * activities and ensuring secure and efficient cryptocurrency transactions within the platform.
+ *
+ * @module models/Wallet
+ * @requires mongoose - Mongoose library for MongoDB object modeling, offering schema definition and data validation.
+ */
+
+const mongoose = require("mongoose");
+
+/**
+ * Schema definition for the Wallet model.
+ * Specifies the structure, data types, and validation rules for fields associated with a cryptocurrency wallet.
+ * The schema includes fields for public address, encrypted private key, wallet type, and balances,
+ * along with references to related transaction records. This schema design ensures the secure and
+ * organized management of wallet-related data within the platform.
+ *
+ * @typedef {Object} WalletSchema
+ * @property {string} publicAddress - Public address of the wallet, unique for each wallet.
+ * @property {Object} encryptedPrivateKey - Encrypted private key details.
+ * @property {string} encryptedPrivateKey.iv - Initialization vector for private key encryption.
+ * @property {string} encryptedPrivateKey.content - Encrypted private key content.
+ * @property {string} encryptedPrivateKey.tag - Authentication tag for encrypted private key.
+ * @property {string} walletType - Type of the wallet, e.g., SegWit or Taproot.
+ * @property {number} confirmedBalance - Confirmed balance of the wallet in cryptocurrency units.
+ * @property {number} unconfirmedBalance - Unconfirmed balance of the wallet.
+ * @property {mongoose.Schema.Types.ObjectId[]} transactionRefs - References to transactions associated with the wallet.
+ *
+ * @type {mongoose.Schema}
+ */
+const walletSchema = new mongoose.Schema(
+  {
+    publicAddress: { type: String, required: true, unique: true },
+    encryptedPrivateKey: {
+      iv: { type: String, required: true },
+      content: { type: String, required: true },
+      tag: { type: String, required: true },
+    },
+    walletType: {
+      type: String,
+      enum: ["SegWit", "Taproot"],
+      required: true,
+    },
+    confirmedBalance: { type: Number, default: 0 },
+    unconfirmedBalance: { type: Number, default: 0 },
+    transactionRefs: [
+      { type: mongoose.Schema.Types.ObjectId, ref: "Transaction" },
+    ],
+  },
+  { timestamps: true },
+);
+
+/**
+ * Wallet model based on the defined schema.
+ * Represents a cryptocurrency wallet in the Satoshi Showdown platform, encapsulating all necessary
+ * data and functionalities related to wallet management, transaction tracking, and cryptographic security.
+ * This model is central to the financial operations and integrity of the platform's cryptocurrency transactions.
+ *
+ * @typedef {mongoose.Model&lt;module:models/Wallet~WalletSchema>} WalletModel
+ */
+
+/**
+ * @type {WalletModel}
+ */
+const Wallet = mongoose.model("Wallet", walletSchema);
+
+module.exports = Wallet;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_Transaction.html">models/Transaction</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#port">port</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

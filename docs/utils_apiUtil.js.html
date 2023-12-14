@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: utils/apiUtil.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: utils/apiUtil.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @fileoverview API Interaction Utility for Satoshi Showdown.
+ * This module facilitates communication with external APIs by abstracting
+ * the complexity of making HTTP requests and handling responses and errors.
+ * It supports various types of API requests including GET and POST.
+ *
+ * @module utils/apiUtil
+ * @requires axios - Axios library for making HTTP requests.
+ * @requires utils/logUtil - Logging utility for application-wide logging.
+ */
+
+const axios = require("axios");
+const log = require("./logUtil");
+
+/**
+ * Performs a GET request to the specified URL and returns the response data.
+ * Logs an error message and throws an error if the request fails.
+ *
+ * @async
+ * @function getAPI
+ * @param {string} url - The URL to send the GET request to.
+ * @param {Object} [params={}] - Optional query parameters for the GET request.
+ * @return {Promise&lt;Object>} A promise that resolves with the data from the response.
+ * @throws {Error} If the GET request fails.
+ */
+const getAPI = async (url, params = {}) => {
+  try {
+    const response = await axios.get(url, { params });
+    return response.data;
+  } catch (error) {
+    log.error(`GET request failed: ${error.message}`);
+    throw error;
+  }
+};
+
+/**
+ * Performs a POST request to the specified URL with the provided data and returns the response data.
+ * Logs an error message and throws an error if the request fails.
+ *
+ * @async
+ * @function postAPI
+ * @param {string} url - The URL to send the POST request to.
+ * @param {Object} data - The payload for the POST request.
+ * @return {Promise&lt;Object>} A promise that resolves with the data from the response.
+ * @throws {Error} If the POST request fails.
+ */
+const postAPI = async (url, data) => {
+  try {
+    const response = await axios.post(url, data);
+    return response.data;
+  } catch (error) {
+    log.error(`POST request failed: ${error.message}`);
+    throw error;
+  }
+};
+
+/**
+ * Placeholder function for processing callback data from an external API.
+ * This function should be implemented to handle specific callback logic.
+ *
+ * @function processCallback
+ * @param {Object} callbackData - The data received from the callback.
+ */
+const processCallback = (callbackData) => {
+  // Implement callback processing logic here
+};
+
+module.exports = { getAPI, postAPI, processCallback };
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_Transaction.html">models/Transaction</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#port">port</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

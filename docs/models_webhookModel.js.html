@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: models/webhookModel.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: models/webhookModel.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @fileoverview Webhook Model for Satoshi Showdown.
+ * This model defines the structure and constraints for managing and tracking blockchain event webhooks
+ * within the platform. It facilitates real-time monitoring and updates related to blockchain transactions
+ * and other significant events, playing a critical role in ensuring timely and accurate event handling.
+ * The model includes fields for webhook configuration, response data, type, associated transactions,
+ * and lifecycle information such as status and deletion flags.
+ *
+ * @module models/Webhook
+ * @requires mongoose - Mongoose library for MongoDB object modeling, providing schema definition and data validation.
+ * @requires uuid - UUID library for generating unique identifiers, utilized for creating distinct webhook IDs.
+ */
+
+const mongoose = require("mongoose");
+const { v4: uuidv4 } = require("uuid");
+
+/**
+ * Schema definition for the Webhook model.
+ * Specifies the structure, data types, and validation rules for fields associated with a blockchain event webhook.
+ * Fields include unique identifiers, response data, headers, body, webhook type, related transaction,
+ * status, and deletion information. This schema is designed to comprehensively capture all necessary
+ * details for webhook management and processing within the platform.
+ *
+ * @typedef {Object} WebhookSchema
+ * @property {string} urlId - Unique identifier for the webhook.
+ * @property {Object} response - Response data received from the external service.
+ * @property {Map} headers - HTTP headers associated with the webhook request.
+ * @property {*} body - Webhook payload, flexible in data type.
+ * @property {string} type - Type of webhook, e.g., transaction confirmation.
+ * @property {mongoose.Schema.Types.ObjectId} transaction - Reference to the associated Transaction model.
+ * @property {string} status - Current status of the webhook.
+ * @property {Date} lastAttempt - Timestamp of the last attempt to process the webhook.
+ * @property {boolean} isDeleted - Flag indicating soft deletion status.
+ * @property {Date} deletedAt - Timestamp of when the webhook was marked as deleted.
+ *
+ * @type {mongoose.Schema}
+ */
+const webhookSchema = new mongoose.Schema(
+  {
+    urlId: { type: String, default: uuidv4, unique: true },
+    response: Object,
+    headers: Map,
+    body: mongoose.Schema.Types.Mixed,
+    type: {
+      type: String,
+      enum: ["tx-confirmation"],
+      required: true,
+    },
+    transaction: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Transaction",
+      required: true,
+    },
+    status: {
+      type: String,
+      enum: ["pending", "success", "failed"],
+      default: "pending",
+    },
+    lastAttempt: Date,
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: Date,
+  },
+  { timestamps: true },
+);
+
+/**
+ * Soft delete method for the Webhook model.
+ * Marks the webhook as deleted (soft delete) without actually removing it from the database.
+ * Useful for maintaining records and audits while preventing further processing of the webhook.
+ *
+ * @function
+ * @name softDelete
+ * @memberof module:models/Webhook~WebhookSchema
+ * @instance
+ * @async
+ * @return {Promise&lt;module:models/Webhook~WebhookSchema>} The updated Webhook object after marking it as deleted.
+ */
+webhookSchema.methods.softDelete = async function () {
+  this.isDeleted = true;
+  this.deletedAt = new Date();
+  await this.save();
+  return this;
+};
+
+/**
+ * Webhook model based on the defined schema.
+ * Represents a blockchain event webhook in the Satoshi Showdown platform, encapsulating configuration,
+ * status, transaction association, and lifecycle management. This model is vital for the integration
+ * and handling of asynchronous events and notifications from blockchain networks and services.
+ *
+ * @typedef {mongoose.Model&lt;module:models/Webhook~WebhookSchema>} WebhookModel
+ */
+
+/**
+ * @type {WebhookModel}
+ */
+const Webhook = mongoose.model("Webhook", webhookSchema);
+
+module.exports = Webhook;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_Transaction.html">models/Transaction</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#port">port</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -1,14 +1,14 @@
 {
   "source": {
     "include": [
-      "server.js",
-      "controllers",
-      "models",
-      "routes",
-      "services",
-      "utils"
+      "../server/src/server.js",
+      "../server/src/controllers",
+      "../server/src/models",
+      "../server/src/routes",
+      "../server/src/services",
+      "../server/src/utils"
     ],
-    "exclude": ["node_modules"],
+    "exclude": ["../node_modules"],
     "includePattern": ".+\\.js(doc|x)?$",
     "excludePattern": "(^|\\/|\\\\)_"
   },

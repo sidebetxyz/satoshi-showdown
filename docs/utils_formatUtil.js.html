@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: utils/formatUtil.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: utils/formatUtil.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @fileoverview Formatting Utility for Satoshi Showdown.
+ * This module provides functions for standardizing and formatting data across the application,
+ * such as dates, currencies, and other domain-specific data. It ensures consistency and readability,
+ * enhancing the user experience and data handling.
+ *
+ * @module utils/formatUtil
+ * @requires luxon - The Luxon library for date and time manipulation.
+ */
+
+const { DateTime } = require("luxon");
+
+/**
+ * Formats a JavaScript Date object into a specified string format using Luxon.
+ *
+ * @function formatDate
+ * @param {Date} date - The date object to format.
+ * @param {string} [formatStr="yyyy-MM-dd HH:mm:ss"] - The string format to use for the output.
+ * @return {string} The formatted date string.
+ */
+const formatDate = (date, formatStr = "yyyy-MM-dd HH:mm:ss") =>
+  DateTime.fromJSDate(date).toFormat(formatStr);
+
+/**
+ * Formats a numeric amount into a currency string.
+ *
+ * @function formatCurrency
+ * @param {number} amount - The numeric amount to format.
+ * @param {string} [currency="USD"] - The currency code to format the amount in (e.g., "USD").
+ * @return {string} The formatted currency string.
+ */
+const formatCurrency = (amount, currency = "USD") =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency }).format(
+    amount,
+  );
+
+/**
+ * Placeholder function for formatting cryptocurrency addresses.
+ * Can be implemented to format addresses according to specific requirements.
+ *
+ * @function formatCryptoAddress
+ * @param {string} address - The cryptocurrency address to format.
+ * @return {string} The formatted cryptocurrency address.
+ */
+const formatCryptoAddress = (address) => {
+  // Implement specific formatting for cryptocurrency addresses if needed
+  return address;
+};
+
+module.exports = {
+  formatDate,
+  formatCurrency,
+  formatCryptoAddress,
+  // Export other formatting functions as they are implemented
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_Transaction.html">models/Transaction</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#port">port</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

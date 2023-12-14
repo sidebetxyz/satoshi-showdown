@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: models/eventModel.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: models/eventModel.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @fileoverview Event Model for Satoshi Showdown.
+ * This model defines the structure and constraints for events within the Satoshi Showdown platform.
+ * It encapsulates various aspects of an event, including its basic information, schedule, participation
+ * details, financial aspects, and associated metadata like transactions, feedback, and restrictions.
+ * The model is instrumental in representing and managing event-related data in the application's database.
+ *
+ * @module models/Event
+ * @requires mongoose - Mongoose library for MongoDB object modeling, providing schema definition and data validation.
+ * @requires uuid - UUID library for generating unique identifiers, used for creating distinct event IDs.
+ */
+
+const mongoose = require("mongoose");
+const { v4: uuidv4 } = require("uuid");
+
+/**
+ * Schema definition for the Event model.
+ * The schema defines the structure and rules for event-related data,
+ * including details like event name, type, schedule, participant information,
+ * and financial aspects. Enhanced to manage minimum and maximum participants,
+ * track participant join times, and handle event lifecycle stages including
+ * planning, ready, active, and completed states. Additionally, tracks event
+ * open/closed status and closure time.
+ *
+ * @typedef {Object} EventSchema
+ * @property {string} eventId - Unique identifier, automatically generated.
+ * @property {string} name - Name of the event, a brief title.
+ * @property {string} description - Longer description detailing the event.
+ * @property {string} type - Category or type of the event.
+ * @property {Date} startTime - When the event is scheduled to start.
+ * @property {Date} endTime - When the event is scheduled to end.
+ * @property {string} status - Lifecycle status of the event (e.g., planning, ready, active, completed).
+ * @property {number} entryFee - Cost for participants to enter the event.
+ * @property {number} prizePool - Total prize amount available for winners.
+ * @property {mongoose.Schema.Types.ObjectId} creator - Reference to the user who created the event.
+ * @property {Array} participants - Array of participants with timestamps for when they joined.
+ * @property {number} maxParticipants - Maximum allowed participants for the event.
+ * @property {number} minParticipants - Minimum required participants to start the event.
+ * @property {boolean} isOpen - Indicates if the event is open for new participants.
+ * @property {Date} closedAt - Timestamp when the event stopped accepting participants.
+ * @property {mongoose.Schema.Types.ObjectId[]} transactions - Financial transactions associated with the event.
+ * @property {mongoose.Schema.Types.ObjectId[]} winners - Winners of the event, if applicable.
+ * @property {Object} config - Miscellaneous configuration details for the event.
+ * @property {string} streamingUrl - URL for any live streaming of the event.
+ * @property {Object} streamingSchedule - Schedule for live streaming, if applicable.
+ * @property {Object[]} bettingOptions - Details of betting options available for the event.
+ * @property {number} viewCount - Counter for how many have viewed or attended the event.
+ * @property {mongoose.Schema.Types.ObjectId[]} feedback - User feedback submitted for the event.
+ * @property {string[]} socialSharingLinks - Links for sharing the event on social platforms.
+ * @property {number} ageRestriction - Minimum age required to participate or attend.
+ * @property {string[]} geographicRestrictions - Geographic limitations for the event.
+ * @property {Date} createdAt - Timestamp of when the event was created.
+ * @property {Date} updatedAt - Timestamp of the last update to the event.
+ *
+ * @type {mongoose.Schema}
+ */
+const eventSchema = new mongoose.Schema(
+  {
+    eventId: { type: String, default: uuidv4, unique: true },
+    name: { type: String, required: true },
+    description: String,
+    type: String,
+    startTime: Date,
+    endTime: Date,
+    status: {
+      type: String,
+      enum: ["planning", "ready", "active", "completed", "cancelled"],
+      default: "planning",
+    },
+    entryFee: Number,
+    prizePool: Number,
+    creator: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    participants: [
+      {
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        joinedAt: { type: Date, default: Date.now },
+      },
+    ],
+    maxParticipants: { type: Number, required: true },
+    minParticipants: { type: Number, required: true },
+    isOpen: { type: Boolean, default: true },
+    closedAt: Date,
+    transactions: [
+      { type: mongoose.Schema.Types.ObjectId, ref: "Transaction" },
+    ],
+    winners: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    config: Object,
+    streamingUrl: String,
+    streamingSchedule: { start: Date, end: Date },
+    bettingOptions: [
+      {
+        type: { type: String },
+        description: String,
+        odds: Number,
+      },
+    ],
+    viewCount: Number,
+    feedback: [{ type: mongoose.Schema.Types.ObjectId, ref: "UserFeedback" }],
+    socialSharingLinks: [String],
+    ageRestriction: Number,
+    geographicRestrictions: [String],
+  },
+  { timestamps: true },
+);
+
+const Event = mongoose.model("Event", eventSchema);
+
+module.exports = Event;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_Transaction.html">models/Transaction</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#port">port</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

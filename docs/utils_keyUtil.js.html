@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: utils/keyUtil.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: utils/keyUtil.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @fileoverview Key Utility for Satoshi Showdown.
+ * This module provides functionalities related to cryptographic key generation and management,
+ * especially for Bitcoin wallets. It utilizes bitcoinjs-lib and tiny-secp256k1 for cryptographic
+ * operations and supports the generation of SegWit and Taproot Bitcoin wallet keys.
+ *
+ * @module utils/keyUtil
+ * @requires bitcoinjs-lib - A JavaScript Bitcoin library for node.js and browsers.
+ * @requires ecpair - Factory for creating Elliptic Curve pairs for Bitcoin.
+ * @requires tiny-secp256k1 - A small elliptic curve library optimized for secp256k1 in JavaScript.
+ * @requires utils/encryptionUtil - Utility for encrypting private keys.
+ */
+
+const bitcoin = require("bitcoinjs-lib");
+const ecPairFactory = require("ecpair").default;
+const ecc = require("tiny-secp256k1");
+const { encryptPrivateKey } = require("./encryptionUtil");
+
+// Initialize ECPair factory with tiny-secp256k1
+const ecPair = ecPairFactory(ecc);
+
+// Define the network for which to generate wallets (testnet or mainnet)
+const network = bitcoin.networks.testnet;
+
+/**
+ * Generates a new SegWit Bitcoin wallet (P2WPKH).
+ * Creates a random key pair and derives the corresponding SegWit address.
+ * The private key is encrypted for security.
+ *
+ * @function generateSegWitBitcoinKeys
+ * @return {Object} An object containing the generated SegWit address and the encrypted private key.
+ */
+const generateSegWitBitcoinKeys = () => {
+  const keyPair = ecPair.makeRandom({ network });
+  const { address } = bitcoin.payments.p2wpkh({
+    pubkey: keyPair.publicKey,
+    network,
+  });
+  const privateKey = keyPair.toWIF();
+  const encryptedPrivateKey = encryptPrivateKey(privateKey);
+  return { address, encryptedPrivateKey };
+};
+
+/**
+ * Generates a new Taproot Bitcoin wallet (P2TR).
+ * Creates a random key pair and derives the corresponding Taproot address.
+ * The private key is encrypted for security.
+ *
+ * @function generateTaprootBitcoinKeys
+ * @return {Object} An object containing the generated Taproot address and the encrypted private key.
+ */
+const generateTaprootBitcoinKeys = () => {
+  const keyPair = ecPair.makeRandom({ network, compressed: false });
+  const { address } = bitcoin.payments.p2tr({
+    pubkey: keyPair.publicKey,
+    network,
+  });
+  const privateKey = keyPair.toWIF();
+  const encryptedPrivateKey = encryptPrivateKey(privateKey);
+  return { address, encryptedPrivateKey };
+};
+
+module.exports = {
+  generateSegWitBitcoinKeys,
+  generateTaprootBitcoinKeys,
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_Transaction.html">models/Transaction</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#port">port</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
