@@ -78,7 +78,7 @@ const validateEvent = (data) =>
         Joi.object({
           userId: validateObjectId,
           joinedAt: validateDate,
-        })
+        }),
       )
       .optional(),
     maxParticipants: validateNumber.required(),
@@ -99,7 +99,7 @@ const validateEvent = (data) =>
           type: validateString.required(),
           description: validateString.optional(),
           odds: validateNumber.optional(),
-        })
+        }),
       )
       .optional(),
     viewCount: validateNumber.optional(),
