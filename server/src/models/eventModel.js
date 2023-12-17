@@ -67,8 +67,16 @@ const eventSchema = new mongoose.Schema(
       enum: ["planning", "ready", "active", "completed", "cancelled"],
       default: "planning",
     },
-    entryFee: Number,
-    prizePool: Number,
+    entryFee: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+    prizePool: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
     creator: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

@@ -70,15 +70,15 @@ const validateEvent = (data) =>
     status: Joi.string()
       .valid("planning", "ready", "active", "completed", "cancelled")
       .default("planning"),
-    entryFee: validateNumber.optional(),
-    prizePool: validateNumber.optional(),
+    entryFee: validateNumber.min(0).required(),
+    prizePool: validateNumber.min(0).required(),
     creator: validateObjectId.required(),
     participants: Joi.array()
       .items(
         Joi.object({
-          userId: validateObjectId.required(),
-          joinedAt: validateDate.optional(),
-        }),
+          userId: validateObjectId,
+          joinedAt: validateDate,
+        })
       )
       .optional(),
     maxParticipants: validateNumber.required(),
@@ -99,7 +99,7 @@ const validateEvent = (data) =>
           type: validateString.required(),
           description: validateString.optional(),
           odds: validateNumber.optional(),
-        }),
+        })
       )
       .optional(),
     viewCount: validateNumber.optional(),

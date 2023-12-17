@@ -30,91 +30,59 @@ const { ValidationError, NotFoundError } = require("../utils/errorUtil");
 const log = require("../utils/logUtil");
 
 /**
- * Creates a new event with the provided details.
- * This function validates the event data, sets up financial transactions and webhooks,
- * and then saves the new event to the database. It is designed to handle all aspects
- * of event creation, ensuring a cohesive process.
+ * Creates a new event based on the provided user and event data.
+ * Validates the initial event data, handles financial setup,
+ * and then saves the event to the database.
+ * This process includes setting up a wallet for the event,
+ * creating a transaction record, and adding necessary details
+ * to the event before saving.
  *
  * @async
  * @function createEvent
- * @param {string} userId - ID of the user creating the event.
- * @param {string} userAddress - Bitcoin address of the user creating the event.
- * @param {Object} eventData - Data for creating the new event.
- * @param {string} eventData.name - Name of the event.
- * @param {string} eventData.description - Detailed description of the event.
- * @param {string} eventData.type - Type or category of the event.
- * @param {Date} eventData.startTime - Scheduled start time of the event.
- * @param {Date} eventData.endTime - Scheduled end time of the event.
- * @param {string} eventData.status - Current status of the event.
- * @param {number} eventData.entryFee - Entry fee required to participate in the event.
- * @param {number} eventData.prizePool - Total prize pool available for the event winners.
- * @param {ObjectID} eventData.creator - Reference to the User model for the event creator.
- * @param {Array} eventData.participants - List of participants in the event.
- * @param {Array} eventData.transactions - Associated financial transactions.
- * @param {Array} eventData.winners - List of winners of the event.
- * @param {Object} eventData.config - Custom configuration options for the event.
- * @param {string} eventData.streamingUrl - URL for live streaming of the event.
- * @param {Object} eventData.streamingSchedule - Schedule for the streaming of the event.
- * @param {Array} eventData.bettingOptions - Betting options available for the event.
- * @param {number} eventData.viewCount - Number of views or attendance count for the event.
- * @param {Array} eventData.feedback - User feedback associated with the event.
- * @param {Array} eventData.socialSharingLinks - Links for social sharing of the event.
- * @param {number} eventData.ageRestriction - Age restriction for participation or viewing.
- * @param {Array} eventData.geographicRestrictions - Geographic restrictions for the event.
- * @return {Promise<Object>} The created event object with complete details.
- * @throws {ValidationError} When event data validation fails, indicating invalid or incomplete input.
- * @throws {NotFoundError} When the user specified by userId is not found in the database.
+ * @param {string} userId - The ID of the user creating the event.
+ * @param {string} userAddress - The Bitcoin address of the user creating the event.
+ * @param {Object} eventData - The initial data for the event.
+ * @return {Promise<Object>} The newly created event object.
+ * @throws {ValidationError} If the event data does not pass validation.
+ * @throws {NotFoundError} If the user is not found in the database.
  */
 const createEvent = async (userId, userAddress, eventData) => {
   try {
-    // Retrieve the user from the database using the provided userId.
     const user = await getUserById(userId);
     if (!user) {
-      // Throw an error if the user is not found.
       throw new NotFoundError(`User with ID ${userId} not found`);
     }
 
-    // Set the creator of the event to the authenticated user's ID.
-    eventData.creator = user._id;
+    eventData.creator = user._id.toString();
 
-    // Validate the event data using Joi validation.
     const validation = validateEvent(eventData);
     if (validation.error) {
-      // If validation fails, throw a ValidationError with details.
       throw new ValidationError(
         `Invalid event data: ${validation.error.details
           .map((d) => d.message)
-          .join("; ")}`,
+          .join("; ")}`
       );
     }
 
-    // Handle the financial setup for the event (creating wallet and transactions).
     const financialSetup = await handleFinancialSetup(
       userAddress,
       user._id,
       eventData.entryFee,
-      eventData.prizePool,
+      eventData.prizePool
     );
 
-    // Create the event object with the provided data and financial setup information.
-    const newEvent = new Event({
+    const completeEventData = {
       ...eventData,
-      transactions: [financialSetup.transaction._id], // Store the transaction ID from financial setup.
-    });
+      transactions: [financialSetup.transaction._id],
+    };
 
-    // Save the new event to the database.
+    const newEvent = new Event(completeEventData);
     await newEvent.save();
 
-    // Log the successful creation of the event.
     log.info(`New event created: ${newEvent._id}`);
-
-    // Return the newly created event object.
     return newEvent;
   } catch (err) {
-    // Log any errors that occur during the event creation process.
     log.error(`Error in createEvent: ${err.message}`);
-
-    // Rethrow the error for further handling.
     throw err;
   }
 };
@@ -301,7 +269,7 @@ const handleFinancialSetup = async (
   userAddress,
   userRef,
   entryFee,
-  prizePoolContribution,
+  prizePoolContribution
 ) => {
   try {
     // Calculate the total amount the user needs to send in
@@ -336,7 +304,7 @@ const handleFinancialSetup = async (
     await createWebhook(wallet.publicAddress, transaction._id);
 
     log.info(
-      `Financial setup completed for event: Wallet and transaction created`,
+      `Financial setup completed for event: Wallet and transaction created`
     );
 
     // Return an object containing wallet and transaction details
@@ -344,7 +312,7 @@ const handleFinancialSetup = async (
   } catch (err) {
     log.error(`Error in handleFinancialSetup: ${err.message}`);
     throw new Error(
-      `Failed to set up financial aspects of the event: ${err.message}`,
+      `Failed to set up financial aspects of the event: ${err.message}`
     );
   }
 };
