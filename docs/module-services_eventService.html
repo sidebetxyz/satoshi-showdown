@@ -141,10 +141,12 @@ manipulation are handled effectively.</p></div>
 
 
 <div class="description">
-    <p>Creates a new event with the provided details.
-This function validates the event data, sets up financial transactions and webhooks,
-and then saves the new event to the database. It is designed to handle all aspects
-of event creation, ensuring a cohesive process.</p>
+    <p>Creates a new event based on the provided user and event data.
+Validates the initial event data, handles financial setup,
+and then saves the event to the database.
+This process includes setting up a wallet for the event,
+creating a transaction record, and adding necessary details
+to the event before saving.</p>
 </div>
 
 
@@ -196,7 +198,7 @@ of event creation, ensuring a cohesive process.</p>
 
             
 
-            <td class="description last"><p>ID of the user creating the event.</p></td>
+            <td class="description last"><p>The ID of the user creating the event.</p></td>
         </tr>
 
     
@@ -219,7 +221,7 @@ of event creation, ensuring a cohesive process.</p>
 
             
 
-            <td class="description last"><p>Bitcoin address of the user creating the event.</p></td>
+            <td class="description last"><p>The Bitcoin address of the user creating the event.</p></td>
         </tr>
 
     
@@ -242,516 +244,7 @@ of event creation, ensuring a cohesive process.</p>
 
             
 
-            <td class="description last"><p>Data for creating the new event.</p>
-                <h6>Properties</h6>
-                
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>name</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Name of the event.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>description</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Detailed description of the event.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>type</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Type or category of the event.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>startTime</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Date</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Scheduled start time of the event.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>endTime</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Date</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Scheduled end time of the event.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>status</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Current status of the event.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>entryFee</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">number</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Entry fee required to participate in the event.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>prizePool</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">number</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Total prize pool available for the event winners.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>creator</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">ObjectID</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Reference to the User model for the event creator.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>participants</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Array</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>List of participants in the event.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>transactions</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Array</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Associated financial transactions.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>winners</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Array</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>List of winners of the event.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>config</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Object</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Custom configuration options for the event.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>streamingUrl</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>URL for live streaming of the event.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>streamingSchedule</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Object</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Schedule for the streaming of the event.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>bettingOptions</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Array</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Betting options available for the event.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>viewCount</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">number</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Number of views or attendance count for the event.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>feedback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Array</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>User feedback associated with the event.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>socialSharingLinks</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Array</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Links for social sharing of the event.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>ageRestriction</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">number</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Age restriction for participation or viewing.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>geographicRestrictions</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Array</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Geographic restrictions for the event.</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-            </td>
+            <td class="description last"><p>The initial data for the event.</p></td>
         </tr>
 
     
@@ -822,7 +315,7 @@ of event creation, ensuring a cohesive process.</p>
 <dl>
     <dt>
         <div class="param-desc">
-        <p>When event data validation fails, indicating invalid or incomplete input.</p>
+        <p>If the event data does not pass validation.</p>
         </div>
     </dt>
     <dd></dd>
@@ -849,7 +342,7 @@ of event creation, ensuring a cohesive process.</p>
 <dl>
     <dt>
         <div class="param-desc">
-        <p>When the user specified by userId is not found in the database.</p>
+        <p>If the user is not found in the database.</p>
         </div>
     </dt>
     <dd></dd>
@@ -877,7 +370,7 @@ of event creation, ensuring a cohesive process.</p>
 
         
 <div class="param-desc">
-    <p>The created event object with complete details.</p>
+    <p>The newly created event object.</p>
 </div>
 
 
@@ -1009,7 +502,7 @@ effectively canceling the event and cleaning up resources.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="services_eventService.js.html">services/eventService.js</a>, <a href="services_eventService.js.html#line261">line 261</a>
+        <a href="services_eventService.js.html">services/eventService.js</a>, <a href="services_eventService.js.html#line229">line 229</a>
     </li></ul></dd>
     
 
@@ -1150,7 +643,7 @@ dashboard or a public event listing. It provides a complete overview of all even
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="services_eventService.js.html">services/eventService.js</a>, <a href="services_eventService.js.html#line243">line 243</a>
+        <a href="services_eventService.js.html">services/eventService.js</a>, <a href="services_eventService.js.html#line211">line 211</a>
     </li></ul></dd>
     
 
@@ -1311,7 +804,7 @@ including its data and related transactions or webhooks.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="services_eventService.js.html">services/eventService.js</a>, <a href="services_eventService.js.html#line219">line 219</a>
+        <a href="services_eventService.js.html">services/eventService.js</a>, <a href="services_eventService.js.html#line187">line 187</a>
     </li></ul></dd>
     
 
@@ -1523,7 +1016,7 @@ Throws an error if the event is full or closed, or if the event or user does not
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="services_eventService.js.html">services/eventService.js</a>, <a href="services_eventService.js.html#line171">line 171</a>
+        <a href="services_eventService.js.html">services/eventService.js</a>, <a href="services_eventService.js.html#line139">line 139</a>
     </li></ul></dd>
     
 
@@ -2272,7 +1765,7 @@ It ensures that the event data is kept current and accurate.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="services_eventService.js.html">services/eventService.js</a>, <a href="services_eventService.js.html#line122">line 122</a>
+        <a href="services_eventService.js.html">services/eventService.js</a>, <a href="services_eventService.js.html#line90">line 90</a>
     </li></ul></dd>
     
 
