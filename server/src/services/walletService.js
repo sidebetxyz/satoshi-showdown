@@ -1,14 +1,14 @@
 /**
- * @fileoverview Service for managing wallets in Satoshi Showdown.
- * This service provides essential functionalities for creating, retrieving,
- * updating, and managing cryptocurrency wallets, particularly Segregated Witness (SegWit) Bitcoin wallets.
- * These wallets are primarily used for handling financial transactions related to events.
- * The service interfaces with the wallet data model and external key generation utilities to ensure
- * secure and efficient management of wallet-related operations.
+ * @fileoverview Wallet Service for Satoshi Showdown.
+ * Provides functionalities for managing cryptocurrency wallets, specifically for Bitcoin SegWit wallets.
+ * It includes operations such as wallet creation, retrieval, balance update, and transaction association.
+ * This service is essential for financial transactions within the platform, ensuring secure and efficient
+ * management of user and event-related wallets.
  *
  * @module services/walletService
  * @requires models/walletModel - Wallet data model for database interactions.
- * @requires utils/keyUtil - Utility for generating SegWit Bitcoin keys.
+ * @requires utils/keyUtil - Utility functions for generating and handling Bitcoin keys.
+ * @requires utils/errorUtil - Custom error classes and error handling utilities.
  * @requires utils/logUtil - Logging utility for application-wide logging.
  */
 
@@ -18,16 +18,14 @@ const { NotFoundError } = require("../utils/errorUtil");
 const log = require("../utils/logUtil");
 
 /**
- * Creates a SegWit Bitcoin wallet specifically for handling event-related financial transactions.
- * Generates a new set of Bitcoin keys (public and private) and initializes a wallet object,
- * which is then saved to the database. This service supports the creation of individual wallets
- * for users or events, ensuring unique and secure financial transactions.
+ * Creates a new Segregated Witness (SegWit) Bitcoin wallet, primarily for event-related financial activities.
+ * Generates a unique Bitcoin address and corresponding encrypted private key.
+ * This wallet type is optimized for Satoshi Showdown's transaction processing needs, ensuring security and efficiency.
  *
  * @async
  * @function createSegWitWalletForEvent
- * @return {Promise<Object>} The created wallet object, including public address, encrypted private key, and wallet type.
- * @throws {Error} Thrown if there is an issue in generating keys or saving the wallet to the database.
- * @throws {Error} Thrown if wallet creation fails for any reason.
+ * @return {Promise<Object>} The created wallet object, including public address and encrypted private key details.
+ * @throws {Error} If there's an issue in key generation or saving the wallet to the database.
  */
 const createSegWitWalletForEvent = async () => {
   const { address, encryptedPrivateKey } = generateSegWitBitcoinKeys();

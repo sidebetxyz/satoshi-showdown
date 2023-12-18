@@ -24,25 +24,23 @@ const {
 } = require("./walletService");
 const { createTransactionRecord } = require("./transactionService");
 const { createWebhook } = require("./webhookService");
+const { getTransactionRecord } = require("./transactionService");
 const { getUserById } = require("./userService");
 const { validateEvent } = require("../utils/validationUtil");
 const { ValidationError, NotFoundError } = require("../utils/errorUtil");
 const log = require("../utils/logUtil");
 
 /**
- * Creates a new event based on the provided user and event data.
- * Validates the initial event data, handles financial setup,
- * and then saves the event to the database.
- * This process includes setting up a wallet for the event,
- * creating a transaction record, and adding necessary details
- * to the event before saving.
+ * Creates a new event based on the provided user and event data, including financial setup.
+ * This process involves validating the event data, setting up a wallet, creating a transaction record,
+ * and saving the event to the database. The function returns both the created event and transaction details.
  *
  * @async
  * @function createEvent
  * @param {string} userId - The ID of the user creating the event.
  * @param {string} userAddress - The Bitcoin address of the user creating the event.
  * @param {Object} eventData - The initial data for the event.
- * @return {Promise<Object>} The newly created event object.
+ * @return {Promise<{event: Object, transaction: Object}>} An object containing the created event and transaction details.
  * @throws {ValidationError} If the event data does not pass validation.
  * @throws {NotFoundError} If the user is not found in the database.
  */
@@ -71,16 +69,18 @@ const createEvent = async (userId, userAddress, eventData) => {
       eventData.prizePool,
     );
 
-    const completeEventData = {
-      ...eventData,
-      transactions: [financialSetup.transaction._id],
-    };
+    eventData.transactions = [financialSetup.transaction._id];
 
-    const newEvent = new Event(completeEventData);
+    const newEvent = new Event(eventData);
     await newEvent.save();
 
+    // Retrieve the transaction details
+    const transactionDetails = await getTransactionRecord(
+      financialSetup.transaction._id,
+    );
+
     log.info(`New event created: ${newEvent._id}`);
-    return newEvent;
+    return { event: newEvent, transaction: transactionDetails };
   } catch (err) {
     log.error(`Error in createEvent: ${err.message}`);
     throw err;
@@ -252,17 +252,17 @@ const deleteEvent = async (eventId) => {
 
 /**
  * Handles the financial setup for an event, including wallet and transaction creation.
- * This is a private function used internally by the createEvent function to encapsulate
- * the financial aspects of event setup, ensuring a smooth and error-free process.
+ * This private function is used by `createEvent` to encapsulate the financial aspects of event setup.
+ * It ensures a smooth and error-free process by creating a wallet and transaction for the event.
  *
  * @async
+ * @private
  * @function handleFinancialSetup
  * @param {string} userAddress - Bitcoin address for the transaction.
  * @param {string} userRef - User reference ID.
  * @param {number} entryFee - Entry fee required to participate in the event.
  * @param {number} prizePoolContribution - Contribution to the prize pool, if any.
  * @return {Promise<Object>} An object containing details about the wallet and transaction created.
- * @private
  * @throws {Error} When financial setup encounters an error, such as wallet creation failure.
  */
 const handleFinancialSetup = async (
