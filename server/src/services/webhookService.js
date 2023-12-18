@@ -158,16 +158,17 @@ const deleteWebhook = async (webhookId) => {
 };
 
 /**
- * Processes incoming webhook data, performing necessary updates on transaction records and wallets.
- * This function is a key component in the webhook lifecycle, handling the business logic triggered by webhook events.
+ * Processes incoming webhook data and updates the corresponding transaction and wallet records.
+ * This function is a key component in handling the response from BlockCypher webhooks. It ensures that each transaction
+ * confirmation is processed only once, updating transaction records and wallet balances based on the received data.
+ * The function efficiently updates the webhook's headers and body if they differ from previous calls, minimizing database writes.
  *
  * @async
  * @function processWebhook
  * @param {string} urlId - The URL identifier of the webhook.
  * @param {Object} headers - The headers of the incoming webhook request.
  * @param {Object} data - The payload of the webhook request, containing transaction details.
- * @return {Promise<void>}
- * @throws {NotFoundError} If the webhook or related transaction is not found for processing.
+ * @throws {NotFoundError} Thrown if the webhook with the given URL ID is not found.
  */
 const processWebhook = async (urlId, headers, data) => {
   log.debug(`Received webhook data for URL ID: ${urlId}`);
@@ -179,18 +180,29 @@ const processWebhook = async (urlId, headers, data) => {
       throw new NotFoundError(`Webhook with URL ID ${urlId} not found`);
     }
 
-    // Convert headers to a Map for Mongoose and update the webhook record
+    // Skip processing if the confirmation count has not changed
+    if (webhook.lastProcessedConfirmation === data.confirmations) {
+      log.info(`Duplicate confirmation count received. Skipping processing.`);
+      return;
+    }
+
+    // Update webhook with new headers and body only if they have changed
     const headersMap = new Map(Object.entries(headers));
-    await Webhook.findByIdAndUpdate(webhook._id, {
-      headers: headersMap,
-      body: data,
-    });
+    if (
+      JSON.stringify(Array.from(headersMap)) !==
+      JSON.stringify(Array.from(webhook.headers))
+    ) {
+      webhook.headers = headersMap;
+    }
+    if (JSON.stringify(data) !== JSON.stringify(webhook.body)) {
+      webhook.body = data;
+    }
+    webhook.lastProcessedConfirmation = data.confirmations;
+    await webhook.save();
 
     // Extract monitored address and amount from the webhook's response
     const monitoredAddress = webhook.response.address;
     let amountReceived = 0;
-
-    // Check each output to find the amount sent to the monitored address
     data.outputs.forEach((output) => {
       if (output.addresses.includes(monitoredAddress)) {
         amountReceived += output.value;
@@ -198,32 +210,20 @@ const processWebhook = async (urlId, headers, data) => {
     });
 
     if (amountReceived > 0) {
-      // Determine the transaction status based on the number of confirmations
-      let transactionStatus = "confirming";
-      if (data.confirmations >= 6) {
-        transactionStatus = "completed";
-      }
+      const transactionStatus =
+        data.confirmations >= 6 ? "completed" : "confirming";
+      await updateTransactionRecord(webhook.transaction, {
+        confirmations: data.confirmations,
+        status: transactionStatus,
+        receivedAmount: amountReceived,
+      });
 
-      // Update the transaction record with new data
-      const updatedTransaction = await updateTransactionRecord(
-        webhook.transaction,
-        {
-          confirmations: data.confirmations,
-          status: transactionStatus,
-          receivedAmount: amountReceived,
-          // Additional fields to update can be added here
-        },
-      );
-
-      // Retrieve the wallet by its public address
+      // Update wallet balance based on confirmations
       const wallet = await getWalletByAddress(monitoredAddress);
-
-      // Update the wallet's balance with the received amount
-      const newBalance = wallet.balance + amountReceived;
-      await updateWalletBalance(wallet._id, newBalance);
+      await updateWalletBalance(wallet._id, amountReceived, data.confirmations);
 
       log.info(
-        `Transaction with ID ${updatedTransaction._id} updated. Status: ${transactionStatus}, Amount received: ${amountReceived}`,
+        `Transaction updated. Status: ${transactionStatus}, Amount received: ${amountReceived}`,
       );
     } else {
       log.info(

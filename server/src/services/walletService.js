@@ -14,6 +14,7 @@
 
 const Wallet = require("../models/walletModel");
 const { generateSegWitBitcoinKeys } = require("../utils/keyUtil");
+const { NotFoundError } = require("../utils/errorUtil");
 const log = require("../utils/logUtil");
 
 /**
@@ -74,33 +75,38 @@ const getWalletByAddress = async (address) => {
 };
 
 /**
- * Updates the balance of a specific wallet identified by its unique ID.
- * This function plays a crucial role in maintaining up-to-date balance information,
- * which is critical for transaction processing and financial reconciliations. It ensures
- * that the wallet's balance reflects the latest state after transactions or other financial activities.
+ * Updates the balance of a wallet in the database, handling both confirmed and unconfirmed balances.
+ * Initially, it updates the unconfirmed balance of the wallet when a new transaction is detected.
+ * Once the transaction reaches six confirmations, it updates the confirmed balance and resets the unconfirmed balance.
+ * This approach ensures accurate tracking of balances in the dynamic environment of cryptocurrency transactions.
  *
  * @async
  * @function updateWalletBalance
- * @param {string} walletId - The unique identifier of the wallet whose balance is to be updated.
- * @param {number} newBalance - The new balance amount to be set in the wallet.
- * @return {Promise<Object>} The updated wallet object with the revised balance.
- * @throws {NotFoundError} Thrown if the wallet with the specified ID cannot be found in the database.
- * @throws {Error} Thrown if there is an issue with the database update.
+ * @param {string} walletId - The ID of the wallet to update.
+ * @param {number} amountReceived - The amount received in the transaction.
+ * @param {number} confirmations - The number of confirmations for the transaction.
+ * @throws {NotFoundError} Thrown if the wallet with the given ID is not found.
  */
-const updateWalletBalance = async (walletId, newBalance) => {
+const updateWalletBalance = async (walletId, amountReceived, confirmations) => {
   try {
-    const wallet = await Wallet.findByIdAndUpdate(
-      walletId,
-      { balance: newBalance },
-      { new: true },
-    );
+    const wallet = await Wallet.findById(walletId);
     if (!wallet) {
-      throw new Error(`Wallet with ID ${walletId} not found`);
+      throw new NotFoundError(`Wallet with ID ${walletId} not found`);
     }
-    return wallet;
-  } catch (err) {
-    log.error(`Error in updateWalletBalance: ${err.message}`);
-    throw err;
+
+    if (confirmations < 6) {
+      // Update the unconfirmed balance for transactions with less than 6 confirmations
+      wallet.unconfirmedBalance += amountReceived;
+    } else {
+      // Update the confirmed balance and reset unconfirmed balance for transactions with 6 or more confirmations
+      wallet.confirmedBalance += amountReceived;
+      wallet.unconfirmedBalance = 0;
+    }
+
+    await wallet.save();
+    log.info(`Wallet balance updated for wallet ID: ${walletId}`);
+  } catch (error) {
+    throw new Error(`Error updating wallet balance: ${error.message}`);
   }
 };
 

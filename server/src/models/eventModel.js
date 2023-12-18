@@ -115,6 +115,18 @@ const eventSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+/**
+ * Event model based on the defined schema.
+ * Represents an event within the Satoshi Showdown platform, encapsulating all data and behaviors
+ * related to event management. This includes event creation, modification, participant management,
+ * and handling of associated financial transactions and user feedback.
+ *
+ * @typedef {mongoose.Model<module:models/Event~EventSchema>} EventModel
+ */
+
+/**
+ * @type {EventModel}
+ */
 const Event = mongoose.model("Event", eventSchema);
 
 module.exports = Event;

@@ -85,28 +85,55 @@ const getAllTransactionRecords = async () => {
 };
 
 /**
- * Updates an existing transaction record.
+ * Updates an existing transaction record in the database.
+ * This function first retrieves the existing transaction record to compare with the provided update data.
+ * It then applies updates only for fields that have changed, optimizing database operations
+ * and maintaining data integrity. If there are no changes, it skips the update.
  *
  * @async
- * @param {string} transactionId - ID of the transaction to update.
- * @param {Object} updateData - New data for the transaction.
- * @return {Promise<Object>} The updated transaction object.
- * @throws {NotFoundError} Throws an error if the transaction is not found.
- * @throws {Error} Throws an error if updating the transaction record fails.
+ * @function updateTransactionRecord
+ * @param {string} transactionId - The unique identifier of the transaction to update.
+ * @param {Object} updateData - An object containing the new data for the transaction.
+ * @return {Promise<Object>} A promise that resolves to the updated transaction object.
+ * @throws {NotFoundError} Thrown if the transaction with the specified ID is not found in the database.
+ * @throws {Error} Thrown if there is an error during the update process.
  */
 const updateTransactionRecord = async (transactionId, updateData) => {
   try {
-    const transaction = await Transaction.findByIdAndUpdate(
-      transactionId,
-      updateData,
-      { new: true },
-    );
-    if (!transaction) {
+    // Retrieve the existing transaction to compare with the new update data
+    const existingTransaction = await Transaction.findById(transactionId);
+    if (!existingTransaction) {
       throw new NotFoundError(`Transaction with ID ${transactionId} not found`);
     }
-    log.info(`Transaction record with ID ${transactionId} updated`);
-    return transaction;
+
+    // Check for changes in the update data and apply only the changes
+    let hasChanges = false;
+    const updatesToApply = {};
+
+    for (const key in updateData) {
+      if (updateData[key] !== existingTransaction[key]) {
+        updatesToApply[key] = updateData[key];
+        hasChanges = true;
+      }
+    }
+
+    // If there are changes, apply them; otherwise, skip the update
+    if (hasChanges) {
+      const updatedTransaction = await Transaction.findByIdAndUpdate(
+        transactionId,
+        updatesToApply,
+        { new: true },
+      );
+      log.info(`Transaction record with ID ${transactionId} updated`);
+      return updatedTransaction;
+    } else {
+      log.info(`No changes to update for transaction with ID ${transactionId}`);
+      return existingTransaction;
+    }
   } catch (error) {
+    if (error instanceof NotFoundError) {
+      throw error;
+    }
     throw new Error(`Error updating transaction record: ${error.message}`);
   }
 };
