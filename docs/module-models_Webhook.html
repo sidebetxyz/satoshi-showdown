@@ -35,11 +35,10 @@
     
         
             <div class="description"><p>Webhook Model for Satoshi Showdown.
-This model defines the structure and constraints for managing and tracking blockchain event webhooks
-within the platform. It facilitates real-time monitoring and updates related to blockchain transactions
-and other significant events, playing a critical role in ensuring timely and accurate event handling.
-The model includes fields for webhook configuration, response data, type, associated transactions,
-and lifecycle information such as status and deletion flags.</p></div>
+This model is pivotal for tracking and managing blockchain event webhooks within the platform.
+It enables real-time monitoring and updates related to blockchain transactions and significant events,
+thus playing a crucial role in timely and accurate event handling. The model includes fields for webhook
+configuration, response data, type, associated transactions, status, confirmation tracking, and lifecycle management.</p></div>
         
 
         
@@ -111,78 +110,6 @@ and lifecycle information such as status and deletion flags.</p></div>
     
 
     
-        <h3 class="subsection-title">Members</h3>
-
-        
-            
-<h4 class="name" id="~Webhook"><span class="type-signature">(inner, constant) </span>Webhook<span class="type-signature"> :WebhookModel</span></h4>
-
-
-
-
-
-
-    <h5>Type:</h5>
-    <ul>
-        <li>
-            
-<span class="param-type">WebhookModel</span>
-
-
-        </li>
-    </ul>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="models_webhookModel.js.html">models/webhookModel.js</a>, <a href="models_webhookModel.js.html#line97">line 97</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-        
-    
 
     
 
@@ -197,10 +124,9 @@ and lifecycle information such as status and deletion flags.</p></div>
 
 
 <div class="description">
-    <p>Webhook model based on the defined schema.
-Represents a blockchain event webhook in the Satoshi Showdown platform, encapsulating configuration,
-status, transaction association, and lifecycle management. This model is vital for the integration
-and handling of asynchronous events and notifications from blockchain networks and services.</p>
+    <p>WebhookModel: Represents a blockchain event webhook in Satoshi Showdown.
+Encapsulates configuration, status, transaction association, and lifecycle management.
+Essential for asynchronous event integration and notifications from blockchain services.</p>
 </div>
 
 
@@ -209,7 +135,7 @@ and handling of asynchronous events and notifications from blockchain networks a
     <ul>
         <li>
             
-<span class="param-type">mongoose.Model.&lt;<a href="module-models_Webhook.html#~WebhookSchema">module:models/Webhook~WebhookSchema</a>></span>
+<span class="param-type">mongoose.Model.&lt;<a href="WebhookSchema.html">WebhookSchema</a>></span>
 
 
         </li>
@@ -248,7 +174,7 @@ and handling of asynchronous events and notifications from blockchain networks a
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="models_webhookModel.js.html">models/webhookModel.js</a>, <a href="models_webhookModel.js.html#line85">line 85</a>
+        <a href="models_webhookModel.js.html">models/webhookModel.js</a>, <a href="models_webhookModel.js.html#line91">line 91</a>
     </li></ul></dd>
     
 
@@ -272,11 +198,9 @@ and handling of asynchronous events and notifications from blockchain networks a
 
 
 <div class="description">
-    <p>Schema definition for the Webhook model.
-Specifies the structure, data types, and validation rules for fields associated with a blockchain event webhook.
-Fields include unique identifiers, response data, headers, body, webhook type, related transaction,
-status, and deletion information. This schema is designed to comprehensively capture all necessary
-details for webhook management and processing within the platform.</p>
+    <p>WebhookSchema: Defines the structure and rules for blockchain event webhook data.
+Includes fields for unique identifier, response data, headers, body, type, related transaction, status,
+confirmation tracking, and lifecycle information. This schema ensures comprehensive management of webhooks.</p>
 </div>
 
 
@@ -436,7 +360,7 @@ details for webhook management and processing within the platform.</p>
 
         <tr>
             
-                <td class="name"><code>transaction</code></td>
+                <td class="name"><code>transactionRef</code></td>
             
 
             <td class="type">
@@ -452,7 +376,7 @@ details for webhook management and processing within the platform.</p>
 
             
 
-            <td class="description last"><p>Reference to the associated Transaction model.</p></td>
+            <td class="description last"><p>Reference to associated Transaction model.</p></td>
         </tr>
 
     
@@ -475,20 +399,20 @@ details for webhook management and processing within the platform.</p>
 
             
 
-            <td class="description last"><p>Current status of the webhook.</p></td>
+            <td class="description last"><p>Current status of the webhook (pending, processing, success, failed).</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>lastAttempt</code></td>
+                <td class="name"><code>confirmationsReceived</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">Date</span>
+<span class="param-type">Array.&lt;Object></span>
 
 
             
@@ -498,7 +422,53 @@ details for webhook management and processing within the platform.</p>
 
             
 
-            <td class="description last"><p>Timestamp of the last attempt to process the webhook.</p></td>
+            <td class="description last"><p>Array of objects, each tracking a received confirmation number along with its timestamp.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>lastProcessedConfirmation</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Last processed confirmation count.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>currentConfirmation</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Current confirmation count.</p></td>
         </tr>
 
     
@@ -521,7 +491,7 @@ details for webhook management and processing within the platform.</p>
 
             
 
-            <td class="description last"><p>Flag indicating soft deletion status.</p></td>
+            <td class="description last"><p>Indicates if the webhook is soft deleted.</p></td>
         </tr>
 
     
@@ -544,7 +514,30 @@ details for webhook management and processing within the platform.</p>
 
             
 
-            <td class="description last"><p>Timestamp of when the webhook was marked as deleted.</p></td>
+            <td class="description last"><p>Timestamp of webhook soft deletion.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>lastAttempt</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Date</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Timestamp of the last processing attempt.</p></td>
         </tr>
 
     
@@ -583,7 +576,7 @@ details for webhook management and processing within the platform.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="models_webhookModel.js.html">models/webhookModel.js</a>, <a href="models_webhookModel.js.html#line17">line 17</a>
+        <a href="models_webhookModel.js.html">models/webhookModel.js</a>, <a href="models_webhookModel.js.html#line16">line 16</a>
     </li></ul></dd>
     
 
@@ -613,7 +606,7 @@ details for webhook management and processing within the platform.</p>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-middlewares_corsSecurityMiddleware.html">middlewares/corsSecurityMiddleware</a></li><li><a href="module-middlewares_errorMiddleware.html">middlewares/errorMiddleware</a></li><li><a href="module-middlewares_httpSecurityMiddleware.html">middlewares/httpSecurityMiddleware</a></li><li><a href="module-middlewares_jsonParserMiddleware.html">middlewares/jsonParserMiddleware</a></li><li><a href="module-middlewares_requestLoggerMiddleware.html">middlewares/requestLoggerMiddleware</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_Transaction.html">models/Transaction</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#port">port</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-middlewares_corsSecurityMiddleware.html">middlewares/corsSecurityMiddleware</a></li><li><a href="module-middlewares_errorMiddleware.html">middlewares/errorMiddleware</a></li><li><a href="module-middlewares_httpSecurityMiddleware.html">middlewares/httpSecurityMiddleware</a></li><li><a href="module-middlewares_jsonParserMiddleware.html">middlewares/jsonParserMiddleware</a></li><li><a href="module-middlewares_requestLoggerMiddleware.html">middlewares/requestLoggerMiddleware</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#port">port</a></li></ul>
 </nav>
 
 <br class="clear">

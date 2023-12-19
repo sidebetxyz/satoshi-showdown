@@ -27,34 +27,33 @@
     <section>
         <article>
             <pre class="prettyprint source linenums"><code>/**
- * @fileoverview Service for managing wallets in Satoshi Showdown.
- * This service provides essential functionalities for creating, retrieving,
- * updating, and managing cryptocurrency wallets, particularly Segregated Witness (SegWit) Bitcoin wallets.
- * These wallets are primarily used for handling financial transactions related to events.
- * The service interfaces with the wallet data model and external key generation utilities to ensure
- * secure and efficient management of wallet-related operations.
+ * @fileoverview Wallet Service for Satoshi Showdown.
+ * Provides functionalities for managing cryptocurrency wallets, specifically for Bitcoin SegWit wallets.
+ * It includes operations such as wallet creation, retrieval, balance update, and transaction association.
+ * This service is essential for financial transactions within the platform, ensuring secure and efficient
+ * management of user and event-related wallets.
  *
  * @module services/walletService
  * @requires models/walletModel - Wallet data model for database interactions.
- * @requires utils/keyUtil - Utility for generating SegWit Bitcoin keys.
+ * @requires utils/keyUtil - Utility functions for generating and handling Bitcoin keys.
+ * @requires utils/errorUtil - Custom error classes and error handling utilities.
  * @requires utils/logUtil - Logging utility for application-wide logging.
  */
 
 const Wallet = require("../models/walletModel");
 const { generateSegWitBitcoinKeys } = require("../utils/keyUtil");
+const { NotFoundError } = require("../utils/errorUtil");
 const log = require("../utils/logUtil");
 
 /**
- * Creates a SegWit Bitcoin wallet specifically for handling event-related financial transactions.
- * Generates a new set of Bitcoin keys (public and private) and initializes a wallet object,
- * which is then saved to the database. This service supports the creation of individual wallets
- * for users or events, ensuring unique and secure financial transactions.
+ * Creates a new Segregated Witness (SegWit) Bitcoin wallet, primarily for event-related financial activities.
+ * Generates a unique Bitcoin address and corresponding encrypted private key.
+ * This wallet type is optimized for Satoshi Showdown's transaction processing needs, ensuring security and efficiency.
  *
  * @async
  * @function createSegWitWalletForEvent
- * @return {Promise&lt;Object>} The created wallet object, including public address, encrypted private key, and wallet type.
- * @throws {Error} Thrown if there is an issue in generating keys or saving the wallet to the database.
- * @throws {Error} Thrown if wallet creation fails for any reason.
+ * @return {Promise&lt;Object>} The created wallet object, including public address and encrypted private key details.
+ * @throws {Error} If there's an issue in key generation or saving the wallet to the database.
  */
 const createSegWitWalletForEvent = async () => {
   const { address, encryptedPrivateKey } = generateSegWitBitcoinKeys();
@@ -102,33 +101,38 @@ const getWalletByAddress = async (address) => {
 };
 
 /**
- * Updates the balance of a specific wallet identified by its unique ID.
- * This function plays a crucial role in maintaining up-to-date balance information,
- * which is critical for transaction processing and financial reconciliations. It ensures
- * that the wallet's balance reflects the latest state after transactions or other financial activities.
+ * Updates the balance of a wallet in the database, handling both confirmed and unconfirmed balances.
+ * Initially, it updates the unconfirmed balance of the wallet when a new transaction is detected.
+ * Once the transaction reaches six confirmations, it updates the confirmed balance and resets the unconfirmed balance.
+ * This approach ensures accurate tracking of balances in the dynamic environment of cryptocurrency transactions.
  *
  * @async
  * @function updateWalletBalance
- * @param {string} walletId - The unique identifier of the wallet whose balance is to be updated.
- * @param {number} newBalance - The new balance amount to be set in the wallet.
- * @return {Promise&lt;Object>} The updated wallet object with the revised balance.
- * @throws {NotFoundError} Thrown if the wallet with the specified ID cannot be found in the database.
- * @throws {Error} Thrown if there is an issue with the database update.
+ * @param {string} walletId - The ID of the wallet to update.
+ * @param {number} amountReceived - The amount received in the transaction.
+ * @param {number} confirmations - The number of confirmations for the transaction.
+ * @throws {NotFoundError} Thrown if the wallet with the given ID is not found.
  */
-const updateWalletBalance = async (walletId, newBalance) => {
+const updateWalletBalance = async (walletId, amountReceived, confirmations) => {
   try {
-    const wallet = await Wallet.findByIdAndUpdate(
-      walletId,
-      { balance: newBalance },
-      { new: true },
-    );
+    const wallet = await Wallet.findById(walletId);
     if (!wallet) {
-      throw new Error(`Wallet with ID ${walletId} not found`);
+      throw new NotFoundError(`Wallet with ID ${walletId} not found`);
     }
-    return wallet;
-  } catch (err) {
-    log.error(`Error in updateWalletBalance: ${err.message}`);
-    throw err;
+
+    if (confirmations &lt; 6) {
+      // Update the unconfirmed balance for transactions with less than 6 confirmations
+      wallet.unconfirmedBalance += amountReceived;
+    } else {
+      // Update the confirmed balance and reset unconfirmed balance for transactions with 6 or more confirmations
+      wallet.confirmedBalance += amountReceived;
+      wallet.unconfirmedBalance = 0;
+    }
+
+    await wallet.save();
+    log.info(`Wallet balance updated for wallet ID: ${walletId}`);
+  } catch (error) {
+    throw new Error(`Error updating wallet balance: ${error.message}`);
   }
 };
 
@@ -179,7 +183,7 @@ module.exports = {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-middlewares_corsSecurityMiddleware.html">middlewares/corsSecurityMiddleware</a></li><li><a href="module-middlewares_errorMiddleware.html">middlewares/errorMiddleware</a></li><li><a href="module-middlewares_httpSecurityMiddleware.html">middlewares/httpSecurityMiddleware</a></li><li><a href="module-middlewares_jsonParserMiddleware.html">middlewares/jsonParserMiddleware</a></li><li><a href="module-middlewares_requestLoggerMiddleware.html">middlewares/requestLoggerMiddleware</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_Transaction.html">models/Transaction</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#port">port</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-middlewares_corsSecurityMiddleware.html">middlewares/corsSecurityMiddleware</a></li><li><a href="module-middlewares_errorMiddleware.html">middlewares/errorMiddleware</a></li><li><a href="module-middlewares_httpSecurityMiddleware.html">middlewares/httpSecurityMiddleware</a></li><li><a href="module-middlewares_jsonParserMiddleware.html">middlewares/jsonParserMiddleware</a></li><li><a href="module-middlewares_requestLoggerMiddleware.html">middlewares/requestLoggerMiddleware</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#port">port</a></li></ul>
 </nav>
 
 <br class="clear">

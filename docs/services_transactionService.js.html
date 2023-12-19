@@ -95,7 +95,7 @@ const createRawBitcoinTransaction = ({ utxos, recipientAddress, amount }) => {
  * @throws {NotFoundError} Throws an error if the transaction is not found.
  */
 const getTransactionRecord = async (transactionId) => {
-  const transaction = await Transaction.findById(transactionId);
+  const transaction = await Transaction.findOne({ transactionId });
   if (!transaction) {
     throw new NotFoundError(`Transaction with ID ${transactionId} not found`);
   }
@@ -113,28 +113,55 @@ const getAllTransactionRecords = async () => {
 };
 
 /**
- * Updates an existing transaction record.
+ * Updates an existing transaction record in the database.
+ * This function first retrieves the existing transaction record to compare with the provided update data.
+ * It then applies updates only for fields that have changed, optimizing database operations
+ * and maintaining data integrity. If there are no changes, it skips the update.
  *
  * @async
- * @param {string} transactionId - ID of the transaction to update.
- * @param {Object} updateData - New data for the transaction.
- * @return {Promise&lt;Object>} The updated transaction object.
- * @throws {NotFoundError} Throws an error if the transaction is not found.
- * @throws {Error} Throws an error if updating the transaction record fails.
+ * @function updateTransactionRecord
+ * @param {string} transactionId - The unique identifier of the transaction to update.
+ * @param {Object} updateData - An object containing the new data for the transaction.
+ * @return {Promise&lt;Object>} A promise that resolves to the updated transaction object.
+ * @throws {NotFoundError} Thrown if the transaction with the specified ID is not found in the database.
+ * @throws {Error} Thrown if there is an error during the update process.
  */
 const updateTransactionRecord = async (transactionId, updateData) => {
   try {
-    const transaction = await Transaction.findByIdAndUpdate(
-      transactionId,
-      updateData,
-      { new: true },
-    );
-    if (!transaction) {
+    // Retrieve the existing transaction to compare with the new update data
+    const existingTransaction = await Transaction.findById(transactionId);
+    if (!existingTransaction) {
       throw new NotFoundError(`Transaction with ID ${transactionId} not found`);
     }
-    log.info(`Transaction record with ID ${transactionId} updated`);
-    return transaction;
+
+    // Check for changes in the update data and apply only the changes
+    let hasChanges = false;
+    const updatesToApply = {};
+
+    for (const key in updateData) {
+      if (updateData[key] !== existingTransaction[key]) {
+        updatesToApply[key] = updateData[key];
+        hasChanges = true;
+      }
+    }
+
+    // If there are changes, apply them; otherwise, skip the update
+    if (hasChanges) {
+      const updatedTransaction = await Transaction.findByIdAndUpdate(
+        transactionId,
+        updatesToApply,
+        { new: true },
+      );
+      log.info(`Transaction record with ID ${transactionId} updated`);
+      return updatedTransaction;
+    } else {
+      log.info(`No changes to update for transaction with ID ${transactionId}`);
+      return existingTransaction;
+    }
   } catch (error) {
+    if (error instanceof NotFoundError) {
+      throw error;
+    }
     throw new Error(`Error updating transaction record: ${error.message}`);
   }
 };
@@ -156,7 +183,7 @@ module.exports = {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-middlewares_corsSecurityMiddleware.html">middlewares/corsSecurityMiddleware</a></li><li><a href="module-middlewares_errorMiddleware.html">middlewares/errorMiddleware</a></li><li><a href="module-middlewares_httpSecurityMiddleware.html">middlewares/httpSecurityMiddleware</a></li><li><a href="module-middlewares_jsonParserMiddleware.html">middlewares/jsonParserMiddleware</a></li><li><a href="module-middlewares_requestLoggerMiddleware.html">middlewares/requestLoggerMiddleware</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_Transaction.html">models/Transaction</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#port">port</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-middlewares_corsSecurityMiddleware.html">middlewares/corsSecurityMiddleware</a></li><li><a href="module-middlewares_errorMiddleware.html">middlewares/errorMiddleware</a></li><li><a href="module-middlewares_httpSecurityMiddleware.html">middlewares/httpSecurityMiddleware</a></li><li><a href="module-middlewares_jsonParserMiddleware.html">middlewares/jsonParserMiddleware</a></li><li><a href="module-middlewares_requestLoggerMiddleware.html">middlewares/requestLoggerMiddleware</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#port">port</a></li></ul>
 </nav>
 
 <br class="clear">

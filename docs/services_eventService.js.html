@@ -52,25 +52,23 @@ const {
 } = require("./walletService");
 const { createTransactionRecord } = require("./transactionService");
 const { createWebhook } = require("./webhookService");
+const { getTransactionRecord } = require("./transactionService");
 const { getUserById } = require("./userService");
 const { validateEvent } = require("../utils/validationUtil");
 const { ValidationError, NotFoundError } = require("../utils/errorUtil");
 const log = require("../utils/logUtil");
 
 /**
- * Creates a new event based on the provided user and event data.
- * Validates the initial event data, handles financial setup,
- * and then saves the event to the database.
- * This process includes setting up a wallet for the event,
- * creating a transaction record, and adding necessary details
- * to the event before saving.
+ * Creates a new event based on the provided user and event data, including financial setup.
+ * This process involves validating the event data, setting up a wallet, creating a transaction record,
+ * and saving the event to the database. The function returns both the created event and transaction details.
  *
  * @async
  * @function createEvent
  * @param {string} userId - The ID of the user creating the event.
  * @param {string} userAddress - The Bitcoin address of the user creating the event.
  * @param {Object} eventData - The initial data for the event.
- * @return {Promise&lt;Object>} The newly created event object.
+ * @return {Promise&lt;{event: Object, transaction: Object}>} An object containing the created event and transaction details.
  * @throws {ValidationError} If the event data does not pass validation.
  * @throws {NotFoundError} If the user is not found in the database.
  */
@@ -99,16 +97,18 @@ const createEvent = async (userId, userAddress, eventData) => {
       eventData.prizePool,
     );
 
-    const completeEventData = {
-      ...eventData,
-      transactions: [financialSetup.transaction._id],
-    };
+    eventData.transactions = [financialSetup.transaction._id];
 
-    const newEvent = new Event(completeEventData);
+    const newEvent = new Event(eventData);
     await newEvent.save();
 
+    // Retrieve the transaction details
+    const transactionDetails = await getTransactionRecord(
+      financialSetup.transaction._id,
+    );
+
     log.info(`New event created: ${newEvent._id}`);
-    return newEvent;
+    return { event: newEvent, transaction: transactionDetails };
   } catch (err) {
     log.error(`Error in createEvent: ${err.message}`);
     throw err;
@@ -280,17 +280,17 @@ const deleteEvent = async (eventId) => {
 
 /**
  * Handles the financial setup for an event, including wallet and transaction creation.
- * This is a private function used internally by the createEvent function to encapsulate
- * the financial aspects of event setup, ensuring a smooth and error-free process.
+ * This private function is used by `createEvent` to encapsulate the financial aspects of event setup.
+ * It ensures a smooth and error-free process by creating a wallet and transaction for the event.
  *
  * @async
+ * @private
  * @function handleFinancialSetup
  * @param {string} userAddress - Bitcoin address for the transaction.
  * @param {string} userRef - User reference ID.
  * @param {number} entryFee - Entry fee required to participate in the event.
  * @param {number} prizePoolContribution - Contribution to the prize pool, if any.
  * @return {Promise&lt;Object>} An object containing details about the wallet and transaction created.
- * @private
  * @throws {Error} When financial setup encounters an error, such as wallet creation failure.
  */
 const handleFinancialSetup = async (
@@ -363,7 +363,7 @@ module.exports = {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-middlewares_corsSecurityMiddleware.html">middlewares/corsSecurityMiddleware</a></li><li><a href="module-middlewares_errorMiddleware.html">middlewares/errorMiddleware</a></li><li><a href="module-middlewares_httpSecurityMiddleware.html">middlewares/httpSecurityMiddleware</a></li><li><a href="module-middlewares_jsonParserMiddleware.html">middlewares/jsonParserMiddleware</a></li><li><a href="module-middlewares_requestLoggerMiddleware.html">middlewares/requestLoggerMiddleware</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_Transaction.html">models/Transaction</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#port">port</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-middlewares_corsSecurityMiddleware.html">middlewares/corsSecurityMiddleware</a></li><li><a href="module-middlewares_errorMiddleware.html">middlewares/errorMiddleware</a></li><li><a href="module-middlewares_httpSecurityMiddleware.html">middlewares/httpSecurityMiddleware</a></li><li><a href="module-middlewares_jsonParserMiddleware.html">middlewares/jsonParserMiddleware</a></li><li><a href="module-middlewares_requestLoggerMiddleware.html">middlewares/requestLoggerMiddleware</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#port">port</a></li></ul>
 </nav>
 
 <br class="clear">
