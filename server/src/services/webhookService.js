@@ -16,8 +16,6 @@
  */
 
 const Webhook = require("../models/webhookModel");
-const { updateTransactionRecord } = require("./transactionService");
-const { getWalletByAddress, updateWalletBalance } = require("./walletService");
 const { postAPI, getAPI } = require("../utils/apiUtil");
 const { NotFoundError } = require("../utils/errorUtil");
 const log = require("../utils/logUtil");
@@ -44,7 +42,7 @@ const createWebhook = async (address, transactionRef) => {
     // Create a new webhook in the local database
     const newWebhook = new Webhook({
       type: "tx-confirmation",
-      transaction: transactionRef,
+      transactionRef,
     });
     await newWebhook.save();
 
@@ -77,25 +75,6 @@ const createWebhook = async (address, transactionRef) => {
 };
 
 /**
- * Retrieves a specific webhook by its URL identifier.
- * This is primarily used for fetching webhook details for processing incoming requests or for updates.
- *
- * @async
- * @function getWebhook
- * @param {string} urlId - URL identifier of the webhook to retrieve.
- * @return {Promise<Object>} The retrieved webhook object, if found.
- * @throws {NotFoundError} If the webhook with the specified URL ID is not found.
- */
-const getWebhook = async (urlId) => {
-  const webhook = await Webhook.findOne({ urlId });
-  if (!webhook) {
-    log.warn(`Webhook with URL ID ${urlId} not found`);
-    throw new NotFoundError(`Webhook with URL ID ${urlId} not found`);
-  }
-  return webhook;
-};
-
-/**
  * Retrieves all webhooks currently stored in the database.
  * This can be used for administrative purposes such as monitoring or auditing webhook activities.
  *
@@ -105,28 +84,6 @@ const getWebhook = async (urlId) => {
  */
 const getAllWebhooks = async () => {
   return await Webhook.find({});
-};
-
-/**
- * Updates a webhook's configuration in the database.
- * This is used for modifying webhook details, like changing its monitoring conditions or callback URL.
- *
- * @async
- * @function updateWebhook
- * @param {string} urlId - URL identifier of the webhook to update.
- * @param {Object} updateData - New data to update the webhook with.
- * @return {Promise<Object>} The updated webhook object.
- * @throws {NotFoundError} If the webhook with the specified URL ID is not found for updating.
- */
-const updateWebhook = async (urlId, updateData) => {
-  const webhook = await Webhook.findOneAndUpdate({ urlId }, updateData, {
-    new: true,
-  });
-  if (!webhook) {
-    log.warn(`Webhook with URL ID ${urlId} not found for update`);
-    throw new NotFoundError(`Webhook with URL ID ${urlId} not found`);
-  }
-  return webhook;
 };
 
 /**
@@ -140,7 +97,7 @@ const updateWebhook = async (urlId, updateData) => {
  * @throws {Error} If there's an issue in removing the webhook from BlockCypher or updating the database.
  */
 const deleteWebhook = async (webhookId) => {
-  const webhook = await getWebhook(webhookId);
+  const webhook = await _getWebhook(webhookId);
   try {
     // Remove the webhook registration from BlockCypher
     await getAPI(`${apiBaseUrl}/hooks/${webhookId}?token=${apiToken}`);
@@ -159,9 +116,8 @@ const deleteWebhook = async (webhookId) => {
 
 /**
  * Processes incoming webhook data and updates the corresponding transaction and wallet records.
- * This function is a key component in handling the response from BlockCypher webhooks. It ensures that each transaction
- * confirmation is processed only once, updating transaction records and wallet balances based on the received data.
- * The function efficiently updates the webhook's headers and body if they differ from previous calls, minimizing database writes.
+ * Utilizes modular functions to handle different aspects of the webhook: headers, body, and status.
+ * This structured approach ensures efficient and accurate processing of blockchain event data.
  *
  * @async
  * @function processWebhook
@@ -173,63 +129,23 @@ const deleteWebhook = async (webhookId) => {
 const processWebhook = async (urlId, headers, data) => {
   log.debug(`Received webhook data for URL ID: ${urlId}`);
   try {
-    const webhook = await Webhook.findOne({ urlId });
+    // Retrieve the webhook using the private _getWebhook function
+    let webhook = await _getWebhook(urlId);
 
-    if (!webhook) {
-      log.error(`Webhook with URL ID ${urlId} not found`);
-      throw new NotFoundError(`Webhook with URL ID ${urlId} not found`);
-    }
+    // Process the headers, body, and status of the webhook
+    const updateData = {
+      headers: await _processWebhookHeaders(headers),
+      body: await _processWebhookBody(data),
+      ...(await _processWebhookStatus(webhook, data.confirmations)),
+    };
 
-    // Skip processing if the confirmation count has not changed
-    if (webhook.lastProcessedConfirmation === data.confirmations) {
-      log.info(`Duplicate confirmation count received. Skipping processing.`);
-      return;
-    }
+    // Update the webhook with the processed data
+    webhook = await _updateWebhook(urlId, updateData);
 
-    // Update webhook with new headers and body only if they have changed
-    const headersMap = new Map(Object.entries(headers));
-    if (
-      JSON.stringify(Array.from(headersMap)) !==
-      JSON.stringify(Array.from(webhook.headers))
-    ) {
-      webhook.headers = headersMap;
-    }
-    if (JSON.stringify(data) !== JSON.stringify(webhook.body)) {
-      webhook.body = data;
-    }
-    webhook.lastProcessedConfirmation = data.confirmations;
-    await webhook.save();
-
-    // Extract monitored address and amount from the webhook's response
-    const monitoredAddress = webhook.response.address;
-    let amountReceived = 0;
-    data.outputs.forEach((output) => {
-      if (output.addresses.includes(monitoredAddress)) {
-        amountReceived += output.value;
-      }
-    });
-
-    if (amountReceived > 0) {
-      const transactionStatus =
-        data.confirmations >= 6 ? "completed" : "confirming";
-      await updateTransactionRecord(webhook.transaction, {
-        confirmations: data.confirmations,
-        status: transactionStatus,
-        receivedAmount: amountReceived,
-      });
-
-      // Update wallet balance based on confirmations
-      const wallet = await getWalletByAddress(monitoredAddress);
-      await updateWalletBalance(wallet._id, amountReceived, data.confirmations);
-
-      log.info(
-        `Transaction updated. Status: ${transactionStatus}, Amount received: ${amountReceived}`,
-      );
-    } else {
-      log.info(
-        `No transaction amount for monitored address: ${monitoredAddress}`,
-      );
-    }
+    // Process the transaction and wallet updates
+    const { transactionUpdate, walletUpdate } =
+      await _processWebhookTransactionData(webhook);
+    console.log(transactionUpdate, walletUpdate);
   } catch (error) {
     log.error(
       `Error processing webhook with URL ID ${urlId}: ${error.message}`,
@@ -238,11 +154,203 @@ const processWebhook = async (urlId, headers, data) => {
   }
 };
 
+/**
+ * Retrieves a specific webhook by its URL identifier.
+ * This private function is used within the service for fetching webhook details.
+ *
+ * @async
+ * @private
+ * @function _getWebhook
+ * @param {string} urlId - URL identifier of the webhook to retrieve.
+ * @return {Promise<Object>} The retrieved webhook object, if found.
+ * @throws {NotFoundError} If the webhook with the specified URL ID is not found.
+ */
+const _getWebhook = async (urlId) => {
+  const webhook = await Webhook.findOne({ urlId });
+  if (!webhook) {
+    log.warn(`Webhook with URL ID ${urlId} not found`);
+    throw new NotFoundError(`Webhook with URL ID ${urlId} not found`);
+  }
+  return webhook;
+};
+
+/**
+ * Processes the headers received from a webhook call and returns simplified header information.
+ * Extracts and logs relevant information from the headers for debugging and audit purposes.
+ *
+ * @async
+ * @private
+ * @function _processWebhookHeaders
+ * @param {Object} headers - The headers of the incoming webhook request.
+ * @return {Object} Simplified headers object.
+ */
+const _processWebhookHeaders = async (headers) => {
+  log.debug(`Processing webhook headers`);
+
+  const simplifiedHeaders = {
+    host: headers.host,
+    userAgent: headers["user-agent"],
+    eventId: headers["x-eventid"],
+    eventType: headers["x-eventtype"],
+    rateLimitRemaining: headers["x-ratelimit-remaining"],
+  };
+
+  log.info(`Webhook headers processed: ${JSON.stringify(simplifiedHeaders)}`);
+  return simplifiedHeaders;
+};
+
+/**
+ * Processes the body of the webhook request and returns structured transaction data.
+ * This function parses the transaction data to understand the nature of the transaction,
+ * such as the involved addresses, amounts, confirmations, and other relevant details.
+ *
+ * @async
+ * @private
+ * @function _processWebhookBody
+ * @param {Object} body - The payload of the webhook request.
+ * @return {Object} Structured transaction data.
+ */
+const _processWebhookBody = async (body) => {
+  log.debug(`Processing webhook body`);
+
+  const transactionData = {
+    hash: body.hash,
+    totalAmount: body.total,
+    fees: body.fees,
+    confirmations: body.confirmations,
+    inputs: body.inputs.map((input) => ({
+      prevHash: input.prev_hash,
+      outputValue: input.output_value,
+      addresses: input.addresses,
+    })),
+    outputs: body.outputs.map((output) => ({
+      value: output.value,
+      addresses: output.addresses,
+    })),
+  };
+
+  log.info(`Webhook body processed: ${JSON.stringify(transactionData)}`);
+  return transactionData;
+};
+
+/**
+ * Processes the status of a webhook based on the current count of confirmations.
+ * This function updates the webhook's status to 'processing' upon first-time processing
+ * and tracks each confirmation by updating the confirmationsReceived array. It assumes
+ * confirmations are received sequentially and in order. The method is specifically designed
+ * to accurately timestamp the arrival of each confirmation.
+ *
+ * @async
+ * @private
+ * @function _processWebhookStatus
+ * @param {Webhook} webhook - The webhook document being evaluated.
+ * @param {number} currentConfirmations - The number of confirmations currently received for the transaction.
+ * @return {Object} An object containing updates for the webhook's status and the confirmationsReceived array.
+ * @throws {Error} Thrown if any issues occur while processing the webhook status.
+ */
+const _processWebhookStatus = async (webhook, currentConfirmations) => {
+  // Prepare an object to hold potential updates
+  const statusUpdate = {
+    status: webhook.status, // Maintain the current status
+    lastProcessedConfirmation: webhook.currentConfirmation, // Update the last processed confirmation
+    currentConfirmation: currentConfirmations, // Set the current confirmation count
+    confirmationsReceived: webhook.confirmationsReceived.slice(), // Clone the existing confirmations array
+  };
+
+  // Change status to 'processing' upon initial processing of the webhook
+  if (webhook.status === "pending") {
+    statusUpdate.status = "processing";
+  }
+
+  // Update the confirmationsReceived array with the current confirmation and timestamp
+  statusUpdate.confirmationsReceived[currentConfirmations] = {
+    confirmationNumber: currentConfirmations,
+    timestamp: new Date(),
+  };
+
+  return statusUpdate;
+};
+
+/**
+ * Prepares the transaction and wallet update data based on the transaction details from the webhook body.
+ * Calculates the amount involved for the monitored address and determines the necessary updates based on
+ * the number of confirmations.
+ *
+ * @async
+ * @private
+ * @function _processWebhookTransactionData
+ * @param {Webhook} webhook - The webhook document containing response data.
+ * @param {Object} transactionDetails - The processed transaction details from the webhook body.
+ * @return {Object} An object containing the transaction update and wallet update data.
+ * @throws {Error} Thrown if there is an issue preparing the transaction or wallet update data.
+ */
+const _processWebhookTransactionData = async (webhook) => {
+  const monitoredAddress = webhook.response.address;
+
+  // Calculate the total amount involved for the monitored address
+  const amountInvolved = webhook.body.outputs.reduce((sum, output) => {
+    if (output.addresses.includes(monitoredAddress)) {
+      return sum + output.value;
+    }
+    return sum;
+  }, 0);
+
+  if (amountInvolved > 0) {
+    // Determine the transaction status based on the number of confirmations
+    const isConfirmed = webhook.body.confirmations >= 6;
+    const transactionStatus = isConfirmed ? "completed" : "confirming";
+
+    // Prepare transaction update data
+    const transactionUpdate = {
+      confirmations: webhook.body.confirmations,
+      status: transactionStatus,
+    };
+
+    if (isConfirmed) {
+      transactionUpdate.confirmedAmount = amountInvolved;
+      transactionUpdate.unconfirmedAmount = 0;
+    } else {
+      transactionUpdate.unconfirmedAmount = amountInvolved;
+      transactionUpdate.confirmedAmount = 0;
+    }
+
+    // Prepare wallet update data (if confirmed)
+    const walletUpdate = null;
+
+    return { transactionUpdate, walletUpdate };
+  } else {
+    log.info(
+      `No transaction amount for monitored address: ${monitoredAddress}`,
+    );
+    return { transactionUpdate: null, walletUpdate: null };
+  }
+};
+
+/**
+ * Updates a webhook's configuration in the database.
+ * This is used for modifying webhook details, like changing its monitoring conditions or callback URL.
+ *
+ * @async
+ * @function updateWebhook
+ * @param {string} urlId - URL identifier of the webhook to update.
+ * @param {Object} updateData - New data to update the webhook with.
+ * @return {Promise<Object>} The updated webhook object.
+ * @throws {NotFoundError} If the webhook with the specified URL ID is not found for updating.
+ */
+const _updateWebhook = async (urlId, updateData) => {
+  const webhook = await Webhook.findOneAndUpdate({ urlId }, updateData, {
+    new: true,
+  });
+  if (!webhook) {
+    log.warn(`Webhook with URL ID ${urlId} not found for update`);
+    throw new NotFoundError(`Webhook with URL ID ${urlId} not found`);
+  }
+  return webhook;
+};
+
 module.exports = {
   createWebhook,
-  getWebhook,
   getAllWebhooks,
-  updateWebhook,
   deleteWebhook,
   processWebhook,
 };

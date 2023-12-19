@@ -67,7 +67,7 @@ const createRawBitcoinTransaction = ({ utxos, recipientAddress, amount }) => {
  * @throws {NotFoundError} Throws an error if the transaction is not found.
  */
 const getTransactionRecord = async (transactionId) => {
-  const transaction = await Transaction.findById(transactionId);
+  const transaction = await Transaction.findOne({ transactionId });
   if (!transaction) {
     throw new NotFoundError(`Transaction with ID ${transactionId} not found`);
   }

@@ -1,25 +1,22 @@
 /**
  * @fileoverview Webhook Model for Satoshi Showdown.
- * This model defines the structure and constraints for managing and tracking blockchain event webhooks
- * within the platform. It facilitates real-time monitoring and updates related to blockchain transactions
- * and other significant events, playing a critical role in ensuring timely and accurate event handling.
- * The model includes fields for webhook configuration, response data, type, associated transactions,
- * and lifecycle information such as status and deletion flags.
+ * This model is pivotal for tracking and managing blockchain event webhooks within the platform.
+ * It enables real-time monitoring and updates related to blockchain transactions and significant events,
+ * thus playing a crucial role in timely and accurate event handling. The model includes fields for webhook
+ * configuration, response data, type, associated transactions, status, confirmation tracking, and lifecycle management.
  *
  * @module models/Webhook
- * @requires mongoose - Mongoose library for MongoDB object modeling, providing schema definition and data validation.
- * @requires uuid - UUID library for generating unique identifiers, utilized for creating distinct webhook IDs.
+ * @requires mongoose - Mongoose library for MongoDB object modeling.
+ * @requires uuid - UUID library for generating unique webhook identifiers.
  */
 
 const mongoose = require("mongoose");
 const { v4: uuidv4 } = require("uuid");
 
 /**
- * Schema definition for the Webhook model.
- * Specifies the structure, data types, and validation rules for fields associated with a blockchain event webhook.
- * Fields include unique identifiers, response data, headers, body, webhook type, related transaction,
- * status, and deletion information. This schema is designed to comprehensively capture all necessary
- * details for webhook management and processing within the platform.
+ * WebhookSchema: Defines the structure and rules for blockchain event webhook data.
+ * Includes fields for unique identifier, response data, headers, body, type, related transaction, status,
+ * confirmation tracking, and lifecycle information. This schema ensures comprehensive management of webhooks.
  *
  * @typedef {Object} WebhookSchema
  * @property {string} urlId - Unique identifier for the webhook.
@@ -27,11 +24,14 @@ const { v4: uuidv4 } = require("uuid");
  * @property {Map} headers - HTTP headers associated with the webhook request.
  * @property {*} body - Webhook payload, flexible in data type.
  * @property {string} type - Type of webhook, e.g., transaction confirmation.
- * @property {mongoose.Schema.Types.ObjectId} transaction - Reference to the associated Transaction model.
- * @property {string} status - Current status of the webhook.
- * @property {Date} lastAttempt - Timestamp of the last attempt to process the webhook.
- * @property {boolean} isDeleted - Flag indicating soft deletion status.
- * @property {Date} deletedAt - Timestamp of when the webhook was marked as deleted.
+ * @property {mongoose.Schema.Types.ObjectId} transactionRef - Reference to associated Transaction model.
+ * @property {string} status - Current status of the webhook (pending, processing, success, failed).
+ * @property {Object[]} confirmationsReceived - Array of objects, each tracking a received confirmation number along with its timestamp.
+ * @property {number} lastProcessedConfirmation - Last processed confirmation count.
+ * @property {number} currentConfirmation - Current confirmation count.
+ * @property {boolean} isDeleted - Indicates if the webhook is soft deleted.
+ * @property {Date} deletedAt - Timestamp of webhook soft deletion.
+ * @property {Date} lastAttempt - Timestamp of the last processing attempt.
  *
  * @type {mongoose.Schema}
  */
@@ -46,34 +46,40 @@ const webhookSchema = new mongoose.Schema(
       enum: ["tx-confirmation"],
       required: true,
     },
-    transaction: {
+    transactionRef: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Transaction",
       required: true,
     },
     status: {
       type: String,
-      enum: ["pending", "success", "failed"],
+      enum: ["pending", "processing", "success", "failed"],
       default: "pending",
     },
-    lastAttempt: Date,
+    confirmationsReceived: [
+      {
+        confirmationNumber: Number,
+        timestamp: { type: Date, default: Date.now },
+      },
+    ],
+    lastProcessedConfirmation: { type: Number, default: null },
+    currentConfirmation: { type: Number, default: null },
     isDeleted: { type: Boolean, default: false },
     deletedAt: Date,
+    lastAttempt: Date,
   },
   { timestamps: true },
 );
 
 /**
- * Soft delete method for the Webhook model.
- * Marks the webhook as deleted (soft delete) without actually removing it from the database.
- * Useful for maintaining records and audits while preventing further processing of the webhook.
+ * Marks the webhook as deleted (soft delete) without removing it from the database.
+ * Maintains records for audits while preventing further processing.
  *
- * @function
- * @name softDelete
- * @memberof module:models/Webhook~WebhookSchema
+ * @function softDelete
+ * @memberof WebhookSchema
  * @instance
  * @async
- * @return {Promise<module:models/Webhook~WebhookSchema>} The updated Webhook object after marking it as deleted.
+ * @return {Promise<WebhookSchema>} The updated webhook object marked as deleted.
  */
 webhookSchema.methods.softDelete = async function () {
   this.isDeleted = true;
@@ -83,16 +89,11 @@ webhookSchema.methods.softDelete = async function () {
 };
 
 /**
- * Webhook model based on the defined schema.
- * Represents a blockchain event webhook in the Satoshi Showdown platform, encapsulating configuration,
- * status, transaction association, and lifecycle management. This model is vital for the integration
- * and handling of asynchronous events and notifications from blockchain networks and services.
+ * WebhookModel: Represents a blockchain event webhook in Satoshi Showdown.
+ * Encapsulates configuration, status, transaction association, and lifecycle management.
+ * Essential for asynchronous event integration and notifications from blockchain services.
  *
- * @typedef {mongoose.Model<module:models/Webhook~WebhookSchema>} WebhookModel
- */
-
-/**
- * @type {WebhookModel}
+ * @typedef {mongoose.Model<WebhookSchema>} WebhookModel
  */
 const Webhook = mongoose.model("Webhook", webhookSchema);
 
