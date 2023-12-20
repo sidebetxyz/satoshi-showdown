@@ -43,76 +43,87 @@
 
 
     <section>
-        <article><h1>Satoshi Showdown</h1>
+        <article><h1>Satoshi Showdown Server</h1>
 <h2>Overview</h2>
-<p>Satoshi Showdown is a sophisticated web-based platform dedicated to organizing and running competitive events, leveraging Bitcoin transactions. It combines efficient event management with secure transaction handling and user interaction.</p>
+<p>Satoshi Showdown is a sophisticated web-based platform dedicated to organizing and running competitive events, leveraging Bitcoin transactions. It combines efficient event management with secure transaction handling, targeting gaming enthusiasts and event organizers interested in cryptocurrency-based solutions.</p>
+<h2>Table of Contents</h2>
+<ol>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#features">Features</a></li>
+<li><a href="#project-structure">Project Structure</a></li>
+<li><a href="#getting-started">Getting Started</a>
+<ul>
+<li><a href="#prerequisites">Prerequisites</a></li>
+<li><a href="#installation">Installation</a></li>
+</ul>
+</li>
+<li><a href="#usage">Usage</a></li>
+<li><a href="#api-documentation">API Documentation</a></li>
+<li><a href="#development">Development</a>
+<ul>
+<li><a href="#coding-standards">Coding Standards</a></li>
+<li><a href="#running-tests">Running Tests</a></li>
+</ul>
+</li>
+<li><a href="#contributing">Contributing</a></li>
+<li><a href="#license">License</a></li>
+<li><a href="#contact">Contact</a></li>
+</ol>
+<h2>Introduction</h2>
+<p>Satoshi Showdown is designed to facilitate the organization of gaming events with a unique twist - integration of Bitcoin transactions for entry fees and prizes. This innovative approach not only enhances the gaming experience but also introduces a new dimension to event management and cryptocurrency utilization.</p>
+<h2>Features</h2>
+<ul>
+<li><strong>Bitcoin Transactions</strong>: Secure handling of Bitcoin transactions for event entry fees and prize distributions.</li>
+<li><strong>Event Management</strong>: Comprehensive tools for organizing and managing various types of competitive events.</li>
+<li><strong>User Interaction</strong>: Engaging user interface for participants to manage their profiles, events, and transactions.</li>
+</ul>
 <h2>Project Structure</h2>
 <h3>Server Application</h3>
-<p>Located in the <code>server</code> directory, this application is the core of Satoshi Showdown, handling critical functionalities:</p>
+<p>Located in the <code>server</code> directory, this application handles critical functionalities:</p>
 <ul>
-<li><strong>Bitcoin Transactions</strong>: Manages the intricacies of Bitcoin transactions for event participation and prize allocation.</li>
-<li><strong>Event Management</strong>: Supports creating, updating, and overseeing competitive events.</li>
-<li><strong>User and Wallet Management</strong>: Offers services for user registration, authentication, and digital wallet operations.</li>
-<li><strong>Middleware Integration</strong>: Employs various middleware for enhanced security, data processing, and error management.</li>
-<li><strong>Technology Stack</strong>: Uses Node.js, Express.js, MongoDB, Mongoose, and a suite of cryptographic libraries.</li>
+<li><strong>Controllers</strong>: Manages the application logic, responding to user requests.</li>
+<li><strong>Models</strong>: Represents data structures for user, event, and transaction information.</li>
+<li><strong>Services</strong>: Contains business logic and interacts with models.</li>
+<li><strong>Middlewares</strong>: Provides common functionalities like error handling and logging.</li>
+<li><strong>Utilities</strong>: Offers reusable code segments for various operations.</li>
 </ul>
-<h3>Certificates</h3>
-<p>The <code>certs</code> folder within the <code>server</code> directory contains SSL/TLS certificates and keys (<code>cert.pem</code>, <code>csr.pem</code>, <code>key.pem</code>) for HTTPS setup and secure data transmission.</p>
-<h3>Configuration Files</h3>
-<p>In the <code>configs</code> folder, configuration files for essential tools are maintained:</p>
+<h3>Configuration and Security</h3>
 <ul>
-<li><strong>JSDoc (<code>jsdoc.json</code>)</strong>: Configurations for generating project documentation.</li>
-<li><strong>ESLint (<code>.eslintrc.js</code>)</strong>: JavaScript linting options for code quality and consistency.</li>
-<li><strong>Prettier (<code>.prettierrc</code>)</strong>: Code formatting rules.</li>
-<li><strong>dotenv</strong>: Environment variable configurations.</li>
+<li><strong>Configs</strong>: Stores configuration files and environment variables.</li>
+<li><strong>Certs</strong>: Contains security certificates for HTTPS connections.</li>
 </ul>
-<h3>Client Application (Future Development)</h3>
-<p>Planned under a separate <code>client</code> folder, focused on delivering an intuitive user interface for the platform's services.</p>
-<h2>Key Components</h2>
+<h2>Getting Started</h2>
+<h3>Prerequisites</h3>
 <ul>
-<li><strong>Controllers</strong>: Manage API requests and responses.</li>
-<li><strong>Models</strong>: Define data structures and schemas for the MongoDB database.</li>
-<li><strong>Routes</strong>: Specify API endpoints for client-server communication.</li>
-<li><strong>Services</strong>: Core business logic, including transaction handling and event management.</li>
-<li><strong>Utils</strong>: Auxiliary functions for database connectivity, logging, error handling, and more.</li>
+<li>Node.js (v14 or later)</li>
+<li>MongoDB</li>
 </ul>
-<h2>Installation and Setup</h2>
+<h3>Installation</h3>
 <ol>
-<li>Install Node.js, npm, and MongoDB.</li>
-<li>Clone the repository and navigate to the <code>server</code> directory.</li>
-<li>Run <code>npm install</code> to install dependencies.</li>
-<li>Set up a <code>.env</code> file for environment variables (e.g., database URI, cryptographic keys).</li>
-<li>Start the application with <code>npm start</code>.</li>
+<li>Clone the repository: <code>git clone [repository-url]</code></li>
+<li>Navigate to the project directory: <code>cd satoshi-showdown-server</code></li>
+<li>Install dependencies: <code>npm install</code></li>
+<li>Set up environment variables in <code>.env</code> file</li>
+<li>Start the server: <code>npm start</code></li>
 </ol>
-<h2>Environment Variables</h2>
+<h2>Usage</h2>
 <ul>
-<li><strong>Database URI</strong>: MongoDB connection string.</li>
-<li><strong>Cryptographic Keys</strong>: Keys for data encryption and secure connections.</li>
-<li><strong>Server Configuration</strong>: Additional settings like the port number.</li>
+<li>Run the server: <code>npm start</code></li>
+<li>Access the API at <code>http://localhost:[port]/api</code></li>
 </ul>
 <h2>API Documentation</h2>
-<p>The project utilizes JSDoc for documentation generation, configured in <code>configs/jsdoc.json</code>.</p>
-<h2>Development Best Practices</h2>
-<ul>
-<li>Write clean, efficient, and well-documented code.</li>
-<li>Follow predefined coding standards and style guidelines.</li>
-<li>Consistently update the repository with changes and accompanying documentation.</li>
-<li>Conduct thorough testing for all features and functionalities.</li>
-</ul>
-<h2>Contributing Guidelines</h2>
-<ul>
-<li>Use a feature-branch workflow for development.</li>
-<li>Code reviews are mandatory before merging any changes.</li>
-<li>Follow protocols for pull requests, including detailed descriptions and issue references.</li>
-</ul>
-<h2>Future Enhancements</h2>
-<ul>
-<li>Broadening the scope of event types and user interaction features.</li>
-<li>Integration of additional cryptocurrencies and payment methods.</li>
-<li>Enhancement of security features and user authentication mechanisms.</li>
-</ul>
-<h2>Confidentiality Note</h2>
-<p>This README and the associated codebase are part of Satoshi Showdown's internal development phase. All information is confidential and proprietary.</p></article>
+<p>Refer to <code>[link-to-api-documentation]</code> for detailed API documentation.</p>
+<h2>Development</h2>
+<h3>Coding Standards</h3>
+<p>We use ESLint and Prettier for maintaining coding standards. Please adhere to the configurations provided in the project.</p>
+<h3>Running Tests</h3>
+<p>To run tests, execute: <code>npm test</code></p>
+<h2>Contributing</h2>
+<p>Contributions are welcome! Please read our <a href="CONTRIBUTING.md">Contributing Guidelines</a> for more information on how to submit pull requests, report issues, and contribute to the codebase.</p>
+<h2>License</h2>
+<p>This project is licensed under the MIT License - see the <a href="LICENSE.md">LICENSE.md</a> file for details.</p>
+<h2>Contact</h2>
+<p>For any inquiries or contributions, please contact [project-maintainer-email] or join our community on [Discord/Slack].</p></article>
     </section>
 
 
@@ -197,17 +208,17 @@ and securely accessible.</p></div>
         <h3 class="subsection-title">Requires</h3>
 
         <ul>
-            <li>module:dotenv:</li>
+            <li>module:`dotenv`:</li>
         
-            <li>module:utils/databaseUtil:</li>
+            <li>module:`utils/databaseUtil`:</li>
         
-            <li>module:utils/httpsUtil:</li>
+            <li>module:`utils/httpsUtil`:</li>
         
-            <li>module:utils/signalUtil:</li>
+            <li>module:`utils/signalUtil`:</li>
         
-            <li>module:utils/serverUtil:</li>
+            <li>module:`utils/serverUtil`:</li>
         
-            <li>module:utils/logUtil:</li>
+            <li>module:`utils/logUtil`:</li>
         </ul>
     
 
