@@ -136,10 +136,12 @@ const processWebhook = async (urlId, headers, data) => {
 
     // Process the headers, body, and status of the webhook
     const updateData = {
-      headers: await _processWebhookHeaders(headers),
-      body: await _processWebhookBody(data),
+      headers,
+      body: data,
       ...(await _processWebhookStatus(webhook, data.confirmations)),
     };
+    console.log(headers);
+    console.log(data);
 
     // Update the webhook with the processed data
     webhook = await _updateWebhook(urlId, updateData);
@@ -188,65 +190,6 @@ const _getWebhook = async (urlId) => {
     throw new NotFoundError(`Webhook with URL ID ${urlId} not found`);
   }
   return webhook;
-};
-
-/**
- * Processes the headers received from a webhook call and returns simplified header information.
- * Extracts and logs relevant information from the headers for debugging and audit purposes.
- *
- * @async
- * @private
- * @function _processWebhookHeaders
- * @param {Object} headers - The headers of the incoming webhook request.
- * @return {Object} Simplified headers object.
- */
-const _processWebhookHeaders = async (headers) => {
-  log.debug(`Processing webhook headers`);
-
-  const simplifiedHeaders = {
-    host: headers.host,
-    userAgent: headers["user-agent"],
-    eventId: headers["x-eventid"],
-    eventType: headers["x-eventtype"],
-    rateLimitRemaining: headers["x-ratelimit-remaining"],
-  };
-
-  log.info(`Webhook headers processed: ${JSON.stringify(simplifiedHeaders)}`);
-  return simplifiedHeaders;
-};
-
-/**
- * Processes the body of the webhook request and returns structured transaction data.
- * This function parses the transaction data to understand the nature of the transaction,
- * such as the involved addresses, amounts, confirmations, and other relevant details.
- *
- * @async
- * @private
- * @function _processWebhookBody
- * @param {Object} body - The payload of the webhook request.
- * @return {Object} Structured transaction data.
- */
-const _processWebhookBody = async (body) => {
-  log.debug(`Processing webhook body`);
-
-  const transactionData = {
-    hash: body.hash,
-    totalAmount: body.total,
-    fees: body.fees,
-    confirmations: body.confirmations,
-    inputs: body.inputs.map((input) => ({
-      prevHash: input.prev_hash,
-      outputValue: input.output_value,
-      addresses: input.addresses,
-    })),
-    outputs: body.outputs.map((output) => ({
-      value: output.value,
-      addresses: output.addresses,
-    })),
-  };
-
-  log.info(`Webhook body processed: ${JSON.stringify(transactionData)}`);
-  return transactionData;
 };
 
 /**
