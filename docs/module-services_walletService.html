@@ -251,7 +251,7 @@ traceability and auditability of financial activities associated with the wallet
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="services_walletService.js.html">services/walletService.js</a>, <a href="services_walletService.js.html#line111">line 111</a>
+        <a href="services_walletService.js.html">services/walletService.js</a>, <a href="services_walletService.js.html#line75">line 75</a>
     </li></ul></dd>
     
 
@@ -724,7 +724,7 @@ that operations involving a particular wallet address are accurately processed.<
     
 
     
-    <h4 class="name" id="~updateWalletBalance"><span class="type-signature">(async, inner) </span>updateWalletBalance<span class="signature">(walletId, amountReceived, confirmations)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="~updateWalletBalanceById"><span class="type-signature">(async, inner) </span>updateWalletBalanceById<span class="signature">(walletId, updateData)</span><span class="type-signature"> &rarr; {Promise.&lt;Object>}</span></h4>
     
 
     
@@ -732,10 +732,9 @@ that operations involving a particular wallet address are accurately processed.<
 
 
 <div class="description">
-    <p>Updates the balance of a wallet in the database, handling both confirmed and unconfirmed balances.
-Initially, it updates the unconfirmed balance of the wallet when a new transaction is detected.
-Once the transaction reaches six confirmations, it updates the confirmed balance and resets the unconfirmed balance.
-This approach ensures accurate tracking of balances in the dynamic environment of cryptocurrency transactions.</p>
+    <p>Updates the balance of an existing wallet record in the database by its MongoDB reference ID.
+This function focuses on updating only the confirmed and unconfirmed balances of the wallet.
+It retrieves the existing wallet record and applies balance updates as necessary.</p>
 </div>
 
 
@@ -787,20 +786,20 @@ This approach ensures accurate tracking of balances in the dynamic environment o
 
             
 
-            <td class="description last"><p>The ID of the wallet to update.</p></td>
+            <td class="description last"><p>The MongoDB reference ID of the wallet to update.</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>amountReceived</code></td>
+                <td class="name"><code>updateData</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">number</span>
+<span class="param-type">Object</span>
 
 
             
@@ -810,30 +809,7 @@ This approach ensures accurate tracking of balances in the dynamic environment o
 
             
 
-            <td class="description last"><p>The amount received in the transaction.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>confirmations</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">number</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>The number of confirmations for the transaction.</p></td>
+            <td class="description last"><p>An object containing the new balance data for the wallet.</p></td>
         </tr>
 
     
@@ -874,7 +850,7 @@ This approach ensures accurate tracking of balances in the dynamic environment o
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="services_walletService.js.html">services/walletService.js</a>, <a href="services_walletService.js.html#line75">line 75</a>
+        <a href="services_walletService.js.html">services/walletService.js</a>, <a href="services_walletService.js.html#line106">line 106</a>
     </li></ul></dd>
     
 
@@ -898,13 +874,13 @@ This approach ensures accurate tracking of balances in the dynamic environment o
 
 
 <h5>Throws:</h5>
-
-        
+<ul>
+        <li>
 
 <dl>
     <dt>
         <div class="param-desc">
-        <p>Thrown if the wallet with the given ID is not found.</p>
+        <p>Thrown if the wallet with the specified ID is not found in the database.</p>
         </div>
     </dt>
     <dd></dd>
@@ -924,10 +900,59 @@ This approach ensures accurate tracking of balances in the dynamic environment o
     <dd></dd>
 </dl>
 
+</li>
+    
+        <li>
+
+<dl>
+    <dt>
+        <div class="param-desc">
+        <p>Thrown if there is an error during the update process.</p>
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl>
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type">Error</span>
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+</li>
+    </ul>
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>A promise that resolves to the updated wallet object.</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;Object></span>
+
+
+    </dd>
+</dl>
 
     
-
-
 
 
 

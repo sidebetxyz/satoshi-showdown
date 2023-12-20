@@ -16,7 +16,8 @@
  */
 
 const Webhook = require("../models/webhookModel");
-const { updateTransactionRecordById } = require("./transactionService");
+const { updateTransactionById } = require("./transactionService");
+const { updateWalletBalanceById } = require("./walletService");
 const { postAPI, getAPI } = require("../utils/apiUtil");
 const { NotFoundError } = require("../utils/errorUtil");
 const log = require("../utils/logUtil");
@@ -117,8 +118,8 @@ const deleteWebhook = async (webhookId) => {
 
 /**
  * Processes incoming webhook data and updates the corresponding transaction and wallet records.
- * Utilizes modular functions to handle different aspects of the webhook: headers, body, and status.
- * This structured approach ensures efficient and accurate processing of blockchain event data.
+ * It handles the different aspects of the webhook, such as headers, body, and status, efficiently.
+ * This function is crucial for real-time processing of blockchain events and updating related records.
  *
  * @async
  * @function processWebhook
@@ -149,11 +150,18 @@ const processWebhook = async (urlId, headers, data) => {
     console.log(transactionUpdate, walletUpdate);
 
     // Update the transaction record
-    const transaction = await updateTransactionRecordById(
+    const transaction = await updateTransactionById(
       webhook.transactionRef,
       transactionUpdate,
     );
     console.log(transaction);
+
+    // Update the wallet
+    const wallet = await updateWalletBalanceById(
+      transaction.walletRef,
+      walletUpdate,
+    );
+    console.log(wallet);
   } catch (error) {
     log.error(
       `Error processing webhook with URL ID ${urlId}: ${error.message}`,
@@ -281,16 +289,17 @@ const _processWebhookStatus = async (webhook, currentConfirmations) => {
 
 /**
  * Prepares the transaction and wallet update data based on the transaction details from the webhook body.
- * Calculates the amount involved for the monitored address and determines the necessary updates based on
- * the number of confirmations.
+ * This function calculates the total amount involved for the monitored address and prepares the necessary
+ * updates for both the transaction and the wallet. It handles the differentiation between confirmed and
+ * unconfirmed transactions for accurate record updating.
  *
  * @async
  * @private
  * @function _processWebhookTransactionData
  * @param {Webhook} webhook - The webhook document containing response data.
- * @param {Object} transactionDetails - The processed transaction details from the webhook body.
  * @return {Object} An object containing the transaction update and wallet update data.
- * @throws {Error} Thrown if there is an issue preparing the transaction or wallet update data.
+ * @throws {Error} Thrown if there is an issue in processing the transaction or wallet update data.
+ * @note This function does not directly update the database but prepares data for subsequent updates.
  */
 const _processWebhookTransactionData = async (webhook) => {
   const monitoredAddress = webhook.response.address;
@@ -314,16 +323,20 @@ const _processWebhookTransactionData = async (webhook) => {
       status: transactionStatus,
     };
 
+    // Prepare wallet update data
+    const walletUpdate = {};
+
     if (isConfirmed) {
       transactionUpdate.confirmedAmount = amountInvolved;
       transactionUpdate.unconfirmedAmount = 0;
+      walletUpdate.confirmedBalance = amountInvolved;
+      walletUpdate.unconfirmedBalance = 0;
     } else {
       transactionUpdate.unconfirmedAmount = amountInvolved;
       transactionUpdate.confirmedAmount = 0;
+      walletUpdate.unconfirmedBalance = amountInvolved;
+      walletUpdate.confirmedBalance = 0;
     }
-
-    // Prepare wallet update data (if confirmed)
-    const walletUpdate = null;
 
     return { transactionUpdate, walletUpdate };
   } else {

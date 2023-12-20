@@ -73,42 +73,6 @@ const getWalletByAddress = async (address) => {
 };
 
 /**
- * Updates the balance of a wallet in the database, handling both confirmed and unconfirmed balances.
- * Initially, it updates the unconfirmed balance of the wallet when a new transaction is detected.
- * Once the transaction reaches six confirmations, it updates the confirmed balance and resets the unconfirmed balance.
- * This approach ensures accurate tracking of balances in the dynamic environment of cryptocurrency transactions.
- *
- * @async
- * @function updateWalletBalance
- * @param {string} walletId - The ID of the wallet to update.
- * @param {number} amountReceived - The amount received in the transaction.
- * @param {number} confirmations - The number of confirmations for the transaction.
- * @throws {NotFoundError} Thrown if the wallet with the given ID is not found.
- */
-const updateWalletBalance = async (walletId, amountReceived, confirmations) => {
-  try {
-    const wallet = await Wallet.findById(walletId);
-    if (!wallet) {
-      throw new NotFoundError(`Wallet with ID ${walletId} not found`);
-    }
-
-    if (confirmations < 6) {
-      // Update the unconfirmed balance for transactions with less than 6 confirmations
-      wallet.unconfirmedBalance += amountReceived;
-    } else {
-      // Update the confirmed balance and reset unconfirmed balance for transactions with 6 or more confirmations
-      wallet.confirmedBalance += amountReceived;
-      wallet.unconfirmedBalance = 0;
-    }
-
-    await wallet.save();
-    log.info(`Wallet balance updated for wallet ID: ${walletId}`);
-  } catch (error) {
-    throw new Error(`Error updating wallet balance: ${error.message}`);
-  }
-};
-
-/**
  * Adds a transaction reference to the specified wallet's transaction history.
  * This function is essential for associating transaction records with the wallet,
  * aiding in the creation of a comprehensive transaction history. It enhances the
@@ -139,9 +103,60 @@ const addTransactionToWallet = async (walletId, transactionId) => {
   }
 };
 
+/**
+ * Updates the balance of an existing wallet record in the database by its MongoDB reference ID.
+ * This function focuses on updating only the confirmed and unconfirmed balances of the wallet.
+ * It retrieves the existing wallet record and applies balance updates as necessary.
+ *
+ * @async
+ * @function updateWalletBalanceById
+ * @param {string} walletId - The MongoDB reference ID of the wallet to update.
+ * @param {Object} updateData - An object containing the new balance data for the wallet.
+ * @return {Promise<Object>} A promise that resolves to the updated wallet object.
+ * @throws {NotFoundError} Thrown if the wallet with the specified ID is not found in the database.
+ * @throws {Error} Thrown if there is an error during the update process.
+ */
+const updateWalletBalanceById = async (walletId, updateData) => {
+  try {
+    const existingWallet = await Wallet.findById(walletId);
+    if (!existingWallet) {
+      throw new NotFoundError(`Wallet with ID ${walletId} not found`);
+    }
+
+    const updatesToApply = {
+      confirmedBalance:
+        updateData.confirmedBalance ?? existingWallet.confirmedBalance,
+      unconfirmedBalance:
+        updateData.unconfirmedBalance ?? existingWallet.unconfirmedBalance,
+    };
+
+    // Update only if there's a change in balance
+    if (
+      updatesToApply.confirmedBalance !== existingWallet.confirmedBalance ||
+      updatesToApply.unconfirmedBalance !== existingWallet.unconfirmedBalance
+    ) {
+      const updatedWallet = await Wallet.findByIdAndUpdate(
+        walletId,
+        updatesToApply,
+        { new: true },
+      );
+      log.info(`Wallet balance with ID ${walletId} updated`);
+      return updatedWallet;
+    } else {
+      log.info(`No changes to update for wallet balance with ID ${walletId}`);
+      return existingWallet;
+    }
+  } catch (error) {
+    if (error instanceof NotFoundError) {
+      throw error;
+    }
+    throw new Error(`Error updating wallet balance: ${error.message}`);
+  }
+};
+
 module.exports = {
   createSegWitWalletForEvent,
   getWalletByAddress,
-  updateWalletBalance,
   addTransactionToWallet,
+  updateWalletBalanceById,
 };

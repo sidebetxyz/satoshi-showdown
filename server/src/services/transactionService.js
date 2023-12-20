@@ -62,12 +62,12 @@ const createRawBitcoinTransaction = ({ utxos, recipientAddress, amount }) => {
  * Retrieves a specific transaction record by its ID.
  *
  * @async
- * @param {string} transactionId - ID of the transaction to retrieve.
+ * @param {string} transactionId - The MongoDB reference ID of the transaction to retrieve.
  * @return {Promise<Object>} The found transaction object.
  * @throws {NotFoundError} Throws an error if the transaction is not found.
  */
 const getTransactionRecordById = async (transactionId) => {
-  const transaction = await Transaction.findOne({ transactionId });
+  const transaction = await Transaction.findById(transactionId);
   if (!transaction) {
     throw new NotFoundError(`Transaction with ID ${transactionId} not found`);
   }
@@ -91,14 +91,14 @@ const getAllTransactionRecords = async () => {
  * and maintains data integrity. If there are no changes, the update is skipped.
  *
  * @async
- * @function updateTransactionRecordById
+ * @function updateTransactionById
  * @param {string} transactionId - The MongoDB reference ID of the transaction to update.
  * @param {Object} updateData - An object containing the new data for the transaction.
  * @return {Promise<Object>} A promise that resolves to the updated transaction object.
  * @throws {NotFoundError} Thrown if the transaction with the specified ID is not found in the database.
  * @throws {Error} Thrown if there is an error during the update process.
  */
-const updateTransactionRecordById = async (transactionId, updateData) => {
+const updateTransactionById = async (transactionId, updateData) => {
   try {
     const existingTransaction = await Transaction.findById(transactionId);
     if (!existingTransaction) {
@@ -140,5 +140,5 @@ module.exports = {
   createRawBitcoinTransaction,
   getTransactionRecordById,
   getAllTransactionRecords,
-  updateTransactionRecordById,
+  updateTransactionById,
 };
