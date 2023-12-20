@@ -838,7 +838,7 @@ ensuring data integrity and consistency.</p></div>
     
 
     
-    <h4 class="name" id="~getTransactionRecord"><span class="type-signature">(async, inner) </span>getTransactionRecord<span class="signature">(transactionId)</span><span class="type-signature"> &rarr; {Promise.&lt;Object>}</span></h4>
+    <h4 class="name" id="~getTransactionRecordById"><span class="type-signature">(async, inner) </span>getTransactionRecordById<span class="signature">(transactionId)</span><span class="type-signature"> &rarr; {Promise.&lt;Object>}</span></h4>
     
 
     
@@ -1026,7 +1026,7 @@ ensuring data integrity and consistency.</p></div>
     
 
     
-    <h4 class="name" id="~updateTransactionRecord"><span class="type-signature">(async, inner) </span>updateTransactionRecord<span class="signature">(transactionId, updateData)</span><span class="type-signature"> &rarr; {Promise.&lt;Object>}</span></h4>
+    <h4 class="name" id="~updateTransactionRecordById"><span class="type-signature">(async, inner) </span>updateTransactionRecordById<span class="signature">(transactionId, updateData)</span><span class="type-signature"> &rarr; {Promise.&lt;Object>}</span></h4>
     
 
     
@@ -1034,10 +1034,10 @@ ensuring data integrity and consistency.</p></div>
 
 
 <div class="description">
-    <p>Updates an existing transaction record in the database.
-This function first retrieves the existing transaction record to compare with the provided update data.
-It then applies updates only for fields that have changed, optimizing database operations
-and maintaining data integrity. If there are no changes, it skips the update.</p>
+    <p>Updates an existing transaction record in the database by its MongoDB reference ID.
+This function retrieves the existing transaction record, compares it with the provided update data,
+and applies updates only for fields that have changed. This optimizes database operations
+and maintains data integrity. If there are no changes, the update is skipped.</p>
 </div>
 
 
@@ -1089,7 +1089,7 @@ and maintaining data integrity. If there are no changes, it skips the update.</p
 
             
 
-            <td class="description last"><p>The unique identifier of the transaction to update.</p></td>
+            <td class="description last"><p>The MongoDB reference ID of the transaction to update.</p></td>
         </tr>
 
     

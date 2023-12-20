@@ -37,7 +37,7 @@ const { v4: uuidv4 } = require("uuid");
  * transaction hash.
  *
  * @typedef {Object} TransactionSchema
- * @property {string} transactionId - Unique identifier for the transaction.
+ * @property {string} transactionUUID - Unique identifier for the transaction.
  * @property {mongoose.Schema.Types.ObjectId} userRef - Reference to the User model.
  * @property {mongoose.Schema.Types.ObjectId} walletRef - Reference to the Wallet model.
  * @property {string} transactionType - Direction of the transaction (incoming/outgoing).
@@ -54,7 +54,7 @@ const { v4: uuidv4 } = require("uuid");
  */
 const transactionSchema = new mongoose.Schema(
   {
-    transactionId: { type: String, default: uuidv4, unique: true },
+    transactionUUID: { type: String, default: uuidv4, unique: true },
     userRef: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

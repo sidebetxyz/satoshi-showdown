@@ -66,7 +66,7 @@ const createRawBitcoinTransaction = ({ utxos, recipientAddress, amount }) => {
  * @return {Promise<Object>} The found transaction object.
  * @throws {NotFoundError} Throws an error if the transaction is not found.
  */
-const getTransactionRecord = async (transactionId) => {
+const getTransactionRecordById = async (transactionId) => {
   const transaction = await Transaction.findOne({ transactionId });
   if (!transaction) {
     throw new NotFoundError(`Transaction with ID ${transactionId} not found`);
@@ -85,28 +85,26 @@ const getAllTransactionRecords = async () => {
 };
 
 /**
- * Updates an existing transaction record in the database.
- * This function first retrieves the existing transaction record to compare with the provided update data.
- * It then applies updates only for fields that have changed, optimizing database operations
- * and maintaining data integrity. If there are no changes, it skips the update.
+ * Updates an existing transaction record in the database by its MongoDB reference ID.
+ * This function retrieves the existing transaction record, compares it with the provided update data,
+ * and applies updates only for fields that have changed. This optimizes database operations
+ * and maintains data integrity. If there are no changes, the update is skipped.
  *
  * @async
- * @function updateTransactionRecord
- * @param {string} transactionId - The unique identifier of the transaction to update.
+ * @function updateTransactionRecordById
+ * @param {string} transactionId - The MongoDB reference ID of the transaction to update.
  * @param {Object} updateData - An object containing the new data for the transaction.
  * @return {Promise<Object>} A promise that resolves to the updated transaction object.
  * @throws {NotFoundError} Thrown if the transaction with the specified ID is not found in the database.
  * @throws {Error} Thrown if there is an error during the update process.
  */
-const updateTransactionRecord = async (transactionId, updateData) => {
+const updateTransactionRecordById = async (transactionId, updateData) => {
   try {
-    // Retrieve the existing transaction to compare with the new update data
     const existingTransaction = await Transaction.findById(transactionId);
     if (!existingTransaction) {
       throw new NotFoundError(`Transaction with ID ${transactionId} not found`);
     }
 
-    // Check for changes in the update data and apply only the changes
     let hasChanges = false;
     const updatesToApply = {};
 
@@ -117,7 +115,6 @@ const updateTransactionRecord = async (transactionId, updateData) => {
       }
     }
 
-    // If there are changes, apply them; otherwise, skip the update
     if (hasChanges) {
       const updatedTransaction = await Transaction.findByIdAndUpdate(
         transactionId,
@@ -141,7 +138,7 @@ const updateTransactionRecord = async (transactionId, updateData) => {
 module.exports = {
   createTransactionRecord,
   createRawBitcoinTransaction,
-  getTransactionRecord,
+  getTransactionRecordById,
   getAllTransactionRecords,
-  updateTransactionRecord,
+  updateTransactionRecordById,
 };

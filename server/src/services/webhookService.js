@@ -16,6 +16,7 @@
  */
 
 const Webhook = require("../models/webhookModel");
+const { updateTransactionRecordById } = require("./transactionService");
 const { postAPI, getAPI } = require("../utils/apiUtil");
 const { NotFoundError } = require("../utils/errorUtil");
 const log = require("../utils/logUtil");
@@ -146,6 +147,13 @@ const processWebhook = async (urlId, headers, data) => {
     const { transactionUpdate, walletUpdate } =
       await _processWebhookTransactionData(webhook);
     console.log(transactionUpdate, walletUpdate);
+
+    // Update the transaction record
+    const transaction = await updateTransactionRecordById(
+      webhook.transactionRef,
+      transactionUpdate,
+    );
+    console.log(transaction);
   } catch (error) {
     log.error(
       `Error processing webhook with URL ID ${urlId}: ${error.message}`,
