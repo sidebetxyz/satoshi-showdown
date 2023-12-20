@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: models/walletModel.js</title>
+    <title>JSDoc: Source: models/utxoModel.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: models/walletModel.js</h1>
+    <h1 class="page-title">Source: models/utxoModel.js</h1>
 
     
 
@@ -26,80 +26,38 @@
     
     <section>
         <article>
-            <pre class="prettyprint source linenums"><code>/**
- * @fileoverview Wallet Model for Satoshi Showdown.
- * This model defines the structure and constraints for cryptocurrency wallets associated with users on the platform.
- * It includes critical details such as public addresses, encrypted private keys, wallet types, and balances.
- * The model also tracks associated transaction references, making it a key component in managing financial
- * activities and ensuring secure and efficient cryptocurrency transactions within the platform.
- *
- * @module models/Wallet
- * @requires mongoose - Mongoose library for MongoDB object modeling, offering schema definition and data validation.
- */
+            <pre class="prettyprint source linenums"><code>const mongoose = require("mongoose");
 
-const mongoose = require("mongoose");
-
-/**
- * Schema definition for the Wallet model.
- * Specifies the structure, data types, and validation rules for fields associated with a cryptocurrency wallet.
- * The schema includes fields for public address, encrypted private key, wallet type, and balances,
- * along with references to related transaction records. This schema design ensures the secure and
- * organized management of wallet-related data within the platform.
- *
- * @typedef {Object} WalletSchema
- * @property {string} publicAddress - Public address of the wallet, unique for each wallet.
- * @property {Object} encryptedPrivateKey - Encrypted private key details.
- * @property {string} encryptedPrivateKey.iv - Initialization vector for private key encryption.
- * @property {string} encryptedPrivateKey.content - Encrypted private key content.
- * @property {string} encryptedPrivateKey.tag - Authentication tag for encrypted private key.
- * @property {string} walletType - Type of the wallet, e.g., SegWit or Taproot.
- * @property {number} confirmedBalance - Confirmed balance of the wallet in cryptocurrency units.
- * @property {number} unconfirmedBalance - Unconfirmed balance of the wallet.
- * @property {mongoose.Schema.Types.ObjectId[]} transactionRefs - References to transactions associated with the wallet.
- *
- * @type {mongoose.Schema}
- */
-const walletSchema = new mongoose.Schema(
+// UTXO Schema Definition
+const utxoSchema = new mongoose.Schema(
   {
-    publicAddress: { type: String, required: true, unique: true },
-    encryptedPrivateKey: {
-      iv: { type: String, required: true },
-      content: { type: String, required: true },
-      tag: { type: String, required: true },
-    },
-    walletType: {
-      type: String,
-      enum: ["SegWit", "Taproot"],
+    transactionHash: { type: String, required: true },
+    outputIndex: { type: Number, required: true },
+    amount: { type: Number, required: true },
+    script: { type: String, required: true },
+    addresses: [{ type: String }],
+    spent: { type: Boolean, default: false },
+    walletRef: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Wallet",
       required: true,
     },
-    confirmedBalance: { type: Number, default: null },
-    unconfirmedBalance: { type: Number, default: null },
-    transactionRefs: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Transaction",
-        required: true,
-      },
-    ],
   },
   { timestamps: true },
 );
 
 /**
- * Wallet model based on the defined schema.
- * Represents a cryptocurrency wallet in the Satoshi Showdown platform, encapsulating all necessary
- * data and functionalities related to wallet management, transaction tracking, and cryptographic security.
- * This model is central to the financial operations and integrity of the platform's cryptocurrency transactions.
+ * UTXO Model: Represents an Unspent Transaction Output in the Satoshi Showdown platform.
+ * Encapsulates the details of individual transaction outputs that are unspent.
+ * This model is key for managing and tracking UTXOs, crucial for transaction creation and validation.
  *
- * @typedef {mongoose.Model&lt;module:models/Wallet~WalletSchema>} WalletModel
+ * @typedef {mongoose.Model&lt;UTXOSchema>} UTXOModel
  */
 
-/**
- * @type {WalletModel}
- */
-const Wallet = mongoose.model("Wallet", walletSchema);
+// UTXO Model Creation
+const UTXO = mongoose.model("UTXO", utxoSchema);
 
-module.exports = Wallet;
+module.exports = UTXO;
 </code></pre>
         </article>
     </section>
