@@ -52,7 +52,7 @@ const {
 } = require("./walletService");
 const { createTransactionRecord } = require("./transactionService");
 const { createWebhook } = require("./webhookService");
-const { getTransactionRecord } = require("./transactionService");
+const { getTransactionRecordById } = require("./transactionService");
 const { getUserById } = require("./userService");
 const { validateEvent } = require("../utils/validationUtil");
 const { ValidationError, NotFoundError } = require("../utils/errorUtil");
@@ -103,7 +103,7 @@ const createEvent = async (userId, userAddress, eventData) => {
     await newEvent.save();
 
     // Retrieve the transaction details
-    const transactionDetails = await getTransactionRecord(
+    const transactionDetails = await getTransactionRecordById(
       financialSetup.transaction._id,
     );
 
