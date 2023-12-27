@@ -28,255 +28,180 @@
         <article>
             <pre class="prettyprint source linenums"><code>/**
  * @fileoverview Service for managing webhooks in Satoshi Showdown.
- * This service is responsible for creating, updating, retrieving, and managing
- * the deletion of webhooks. It interfaces with external services like BlockCypher
- * for blockchain event monitoring and interacts with the local database for webhook
- * data management. The service plays a crucial role in event-driven processes within
- * the application, especially for transaction and blockchain event monitoring.
+ * Handles the lifecycle of webhooks including creation, processing, and deletion.
+ * Interacts with the BlockCypher API for blockchain event monitoring and manages local
+ * database records for webhooks. This service is integral to the platform's event-driven
+ * architecture, particularly for monitoring blockchain transactions.
  *
  * @module services/webhookService
- * @requires models/webhookModel - Webhook data model for database interactions.
- * @requires services/transactionService - Service for updating transaction records.
- * @requires services/walletService - Service for wallet-related operations.
- * @requires utils/apiUtil - Utility functions for API interactions.
- * @requires utils/errorUtil - Custom error classes and error handling utilities.
- * @requires utils/logUtil - Logging utility for application-wide logging.
+ * @requires models/webhookModel - Data model for webhooks.
+ * @requires services/transactionService - For updating transaction records.
+ * @requires services/walletService - For managing wallet operations.
+ * @requires utils/apiUtil - For making external API requests.
+ * @requires utils/errorUtil - For custom error handling.
+ * @requires utils/logUtil - For application-wide logging.
  */
 
 const Webhook = require("../models/webhookModel");
+const { createUTXO } = require("./utxoService");
 const { updateTransactionById } = require("./transactionService");
 const { updateWalletBalanceById } = require("./walletService");
 const { postAPI, getAPI } = require("../utils/apiUtil");
 const { NotFoundError } = require("../utils/errorUtil");
 const log = require("../utils/logUtil");
 
-// Configuration constants for external API
+// Configuration for external API interaction
 const apiBaseUrl = process.env.BLOCKCYPHER_BASE_URL;
 const apiToken = process.env.BLOCKCYPHER_TOKEN;
 
 /**
- * Creates and registers a new webhook with BlockCypher for event monitoring.
- * It sets up a webhook to monitor specific blockchain events related to a given address.
- * The webhook is stored in the local database and registered with BlockCypher.
+ * Creates a new webhook in the Satoshi Showdown application and registers it with BlockCypher.
+ * This webhook monitors blockchain events for a specific address and tracks transaction confirmations.
  *
  * @async
- * @function createWebhook
- * @param {string} address - Blockchain address to monitor for transactions.
- * @param {string} transactionRef - Associated transaction reference ID.
- * @param {number} [confirmations=6] - Number of confirmations for transaction finality (default is 6).
- * @return {Promise&lt;Object>} The created webhook object containing its configuration and response data.
- * @throws {Error} Thrown if there is an issue creating the webhook in the database or with BlockCypher.
+ * @param {string} address - The blockchain address to monitor.
+ * @param {string} transactionRef - The reference ID of the associated transaction.
+ * @return {Promise&lt;Object>} A promise resolving to the newly created webhook object.
+ * @throws {Error} If an error occurs during webhook creation or registration.
  */
 const createWebhook = async (address, transactionRef) => {
-  try {
-    // Create a new webhook in the local database
-    const newWebhook = new Webhook({
-      type: "tx-confirmation",
-      transactionRef,
-    });
-    await newWebhook.save();
+  // Define the new webhook and save it in the database
+  const newWebhook = new Webhook({ type: "tx-confirmation", transactionRef });
+  await newWebhook.save();
 
-    // Generate a callback URL for the webhook
-    const callbackUrl = `${process.env.WEBHOOK_DOMAIN}/webhook/receive/${newWebhook.urlId}`;
-    const webhookData = {
-      event: "tx-confirmation",
-      address,
-      url: callbackUrl,
-      confirmations: 6,
-      token: apiToken,
-    };
+  // Register the webhook with BlockCypher
+  const callbackUrl = `${process.env.WEBHOOK_DOMAIN}/webhook/receive/${newWebhook.urlId}`;
+  const webhookData = {
+    event: "tx-confirmation",
+    address,
+    url: callbackUrl,
+    confirmations: 6,
+    token: apiToken,
+  };
+  const response = await postAPI(
+    `${apiBaseUrl}/hooks?token=${apiToken}`,
+    webhookData,
+  );
 
-    // Register the webhook with BlockCypher and get the response
-    const response = await postAPI(
-      `${apiBaseUrl}/hooks?token=${apiToken}`,
-      webhookData,
-    );
-
-    log.debug(`Response: ${JSON.stringify(response, null, 2)}`);
-
-    // Update the webhook document in the local database with the response data
-    await Webhook.findByIdAndUpdate(newWebhook._id, { response });
-
-    return newWebhook;
-  } catch (err) {
-    log.error(`Error in createWebhook: ${err.message}`);
-    throw err;
-  }
+  // Update the local webhook record with the response
+  await Webhook.findByIdAndUpdate(newWebhook._id, { response });
+  log.debug(`Webhook created: ${JSON.stringify(response, null, 2)}`);
+  return newWebhook;
 };
 
 /**
- * Retrieves all webhooks currently stored in the database.
- * This can be used for administrative purposes such as monitoring or auditing webhook activities.
+ * Retrieves all webhook objects currently stored in the Satoshi Showdown database.
  *
  * @async
- * @function getAllWebhooks
- * @return {Promise&lt;Array>} An array of all webhook objects in the database.
+ * @return {Promise&lt;Array>} A promise resolving to an array of webhook objects.
  */
-const getAllWebhooks = async () => {
-  return await Webhook.find({});
-};
+const getAllWebhooks = async () => await Webhook.find({});
 
 /**
- * Soft deletes a webhook in the local database and removes its registration from BlockCypher.
- * This helps in maintaining a record of the webhook while ensuring it's no longer active.
+ * Processes a received webhook by updating its status and associated transaction and wallet records.
+ * Efficiently handles the headers, body, and confirmation status of the incoming webhook data.
  *
  * @async
- * @function deleteWebhook
- * @param {string} webhookId - ID of the webhook to soft delete.
- * @return {Promise&lt;void>}
- * @throws {Error} If there's an issue in removing the webhook from BlockCypher or updating the database.
- */
-const deleteWebhook = async (webhookId) => {
-  const webhook = await _getWebhook(webhookId);
-  try {
-    // Remove the webhook registration from BlockCypher
-    await getAPI(`${apiBaseUrl}/hooks/${webhookId}?token=${apiToken}`);
-    log.info(`Webhook with uniqueId ${webhookId} removed from BlockCypher.`);
-
-    // Soft delete the webhook in the local database
-    await Webhook.findByIdAndUpdate(webhook._id, { isDeleted: true });
-    log.info(
-      `Webhook with URL ID ${webhookId} soft deleted in the local database.`,
-    );
-  } catch (err) {
-    log.error(`Error in soft deleting webhook: ${err.message}`);
-    throw err;
-  }
-};
-
-/**
- * Processes incoming webhook data and updates the corresponding transaction and wallet records.
- * It handles the different aspects of the webhook, such as headers, body, and status, efficiently.
- * This function is crucial for real-time processing of blockchain events and updating related records.
- *
- * @async
- * @function processWebhook
- * @param {string} urlId - The URL identifier of the webhook.
- * @param {Object} headers - The headers of the incoming webhook request.
- * @param {Object} data - The payload of the webhook request, containing transaction details.
- * @throws {NotFoundError} Thrown if the webhook with the given URL ID is not found.
+ * @param {string} urlId - The unique identifier of the webhook.
+ * @param {Object} headers - The HTTP headers of the incoming webhook request.
+ * @param {Object} data - The JSON payload of the webhook request.
+ * @throws {NotFoundError} If the webhook with the specified URL ID is not found.
  */
 const processWebhook = async (urlId, headers, data) => {
-  log.debug(`Received webhook data for URL ID: ${urlId}`);
-  try {
-    // Retrieve the webhook using the private _getWebhook function
-    let webhook = await _getWebhook(urlId);
+  let webhook = await _getWebhook(urlId);
 
-    // Process the headers, body, and status of the webhook
-    const updateData = {
-      headers,
-      body: data,
-      ...(await _processWebhookStatus(webhook, data.confirmations)),
-    };
-    console.log(headers);
-    console.log(data);
+  // Update webhook with received data and process its status
+  const updateData = {
+    headers,
+    body: data,
+    ...(await _processWebhookStatus(webhook, data.confirmations)),
+  };
+  webhook = await _updateWebhook(urlId, updateData);
 
-    // Update the webhook with the processed data
-    webhook = await _updateWebhook(urlId, updateData);
+  // Process transaction and wallet updates based on webhook data
+  const { transactionUpdate, walletUpdate } =
+    await _processWebhookTransactionData(webhook);
+  const transaction = await updateTransactionById(
+    webhook.transactionRef,
+    transactionUpdate,
+  );
+  const wallet = await updateWalletBalanceById(
+    transaction.walletRef,
+    walletUpdate,
+  );
 
-    // Process the transaction and wallet updates
-    const { transactionUpdate, walletUpdate } =
-      await _processWebhookTransactionData(webhook);
-    console.log(transactionUpdate, walletUpdate);
-
-    // Update the transaction record
-    const transaction = await updateTransactionById(
-      webhook.transactionRef,
-      transactionUpdate,
-    );
-    console.log(transaction);
-
-    // Update the wallet
-    const wallet = await updateWalletBalanceById(
-      transaction.walletRef,
-      walletUpdate,
-    );
-    console.log(wallet);
-  } catch (error) {
-    log.error(
-      `Error processing webhook with URL ID ${urlId}: ${error.message}`,
-    );
-    throw error;
-  }
+  log.info(
+    `Webhook processed: Transaction - ${transaction._id}, Wallet - ${wallet._id}`,
+  );
 };
 
 /**
- * Retrieves a specific webhook by its URL identifier.
- * This private function is used within the service for fetching webhook details.
+ * Retrieves a specific webhook by its URL identifier from the database.
+ * This function is internal to the service and not exposed externally.
  *
  * @async
  * @private
- * @function _getWebhook
- * @param {string} urlId - URL identifier of the webhook to retrieve.
- * @return {Promise&lt;Object>} The retrieved webhook object, if found.
+ * @param {string} urlId - The URL identifier of the webhook.
+ * @return {Promise&lt;Object>} The retrieved webhook object.
  * @throws {NotFoundError} If the webhook with the specified URL ID is not found.
  */
 const _getWebhook = async (urlId) => {
   const webhook = await Webhook.findOne({ urlId });
-  if (!webhook) {
-    log.warn(`Webhook with URL ID ${urlId} not found`);
+  if (!webhook)
     throw new NotFoundError(`Webhook with URL ID ${urlId} not found`);
-  }
   return webhook;
 };
 
 /**
- * Processes the status of a webhook based on the current count of confirmations.
- * This function updates the webhook's status to 'processing' upon first-time processing
- * and tracks each confirmation by updating the confirmationsReceived array. It assumes
- * confirmations are received sequentially and in order. The method is specifically designed
- * to accurately timestamp the arrival of each confirmation.
+ * Updates the status of a webhook based on the current confirmation count.
+ * Tracks each confirmation update and marks the webhook as 'processing' or 'success' as appropriate.
  *
  * @async
  * @private
- * @function _processWebhookStatus
- * @param {Webhook} webhook - The webhook document being evaluated.
- * @param {number} currentConfirmations - The number of confirmations currently received for the transaction.
- * @return {Object} An object containing updates for the webhook's status and the confirmationsReceived array.
- * @throws {Error} Thrown if any issues occur while processing the webhook status.
+ * @param {Webhook} webhook - The webhook document being processed.
+ * @param {number} currentConfirmations - The latest count of confirmations for the transaction.
+ * @return {Object} An object with updates for the webhook's status and confirmations.
+ * @throws {Error} If there is an issue with processing the webhook status.
  */
 const _processWebhookStatus = async (webhook, currentConfirmations) => {
-  // Prepare an object to hold potential updates
   const statusUpdate = {
-    status: webhook.status, // Maintain the current status
-    lastProcessedConfirmation: webhook.currentConfirmation, // Update the last processed confirmation
-    currentConfirmation: currentConfirmations, // Set the current confirmation count
-    confirmationsReceived: webhook.confirmationsReceived.slice(), // Clone the existing confirmations array
+    status: webhook.status,
+    lastProcessedConfirmation: webhook.currentConfirmation,
+    currentConfirmation: currentConfirmations,
+    confirmationsReceived: [...webhook.confirmationsReceived],
   };
 
-  // Change status to 'processing' upon initial processing of the webhook
-  if (webhook.status === "pending") {
-    statusUpdate.status = "processing";
-  }
-
-  // Update the confirmationsReceived array with the current confirmation and timestamp
+  if (webhook.status === "pending") statusUpdate.status = "processing";
   statusUpdate.confirmationsReceived[currentConfirmations] = {
     confirmationNumber: currentConfirmations,
     timestamp: new Date(),
   };
+
+  if (currentConfirmations === 6) {
+    statusUpdate.status = "success";
+    // Delete the webhook after 6 confirmations
+  }
 
   return statusUpdate;
 };
 
 /**
  * Prepares the transaction and wallet update data based on the transaction details from the webhook body.
- * This function calculates the total amount involved for the monitored address and prepares the necessary
- * updates for both the transaction and the wallet. It handles the differentiation between confirmed and
- * unconfirmed transactions for accurate record updating.
+ * Calculates the amount involved for the monitored address and determines the necessary updates.
  *
  * @async
  * @private
- * @function _processWebhookTransactionData
  * @param {Webhook} webhook - The webhook document containing response data.
- * @return {Object} An object containing the transaction update and wallet update data.
+ * @return {Object} An object containing updates for the transaction and wallet.
  * @throws {Error} Thrown if there is an issue in processing the transaction or wallet update data.
  * @note This function does not directly update the database but prepares data for subsequent updates.
  */
 const _processWebhookTransactionData = async (webhook) => {
+  const transactionDetails = webhook.body;
   const monitoredAddress = webhook.response.address;
 
   // Calculate the total amount involved for the monitored address
-  const amountInvolved = webhook.body.outputs.reduce((sum, output) => {
+  const amountInvolved = transactionDetails.outputs.reduce((sum, output) => {
     if (output.addresses.includes(monitoredAddress)) {
       return sum + output.value;
     }
@@ -284,6 +209,30 @@ const _processWebhookTransactionData = async (webhook) => {
   }, 0);
 
   if (amountInvolved > 0) {
+    // Create UTXO records only for the first confirmation
+    if (transactionDetails.confirmations === 1) {
+      const utxoPromises = transactionDetails.outputs
+        .filter((output) => output.addresses.includes(monitoredAddress))
+        .map((output, index) =>
+          createUTXO({
+            transactionHash: transactionDetails.hash,
+            outputIndex: index,
+            amount: output.value,
+            address: monitoredAddress,
+            scriptPubKey: output.script,
+            scriptType: output.script_type,
+            blockHeight: transactionDetails.block_height,
+            timestamp: new Date(transactionDetails.received),
+          }),
+        );
+
+      try {
+        await Promise.all(utxoPromises);
+      } catch (error) {
+        log.error("Error creating UTXOs:", error);
+      }
+    }
+
     // Determine the transaction status based on the number of confirmations
     const isConfirmed = webhook.body.confirmations >= 6;
     const transactionStatus = isConfirmed ? "completed" : "confirming";
@@ -292,22 +241,15 @@ const _processWebhookTransactionData = async (webhook) => {
     const transactionUpdate = {
       confirmations: webhook.body.confirmations,
       status: transactionStatus,
+      confirmedAmount: isConfirmed ? amountInvolved : 0,
+      unconfirmedAmount: !isConfirmed ? amountInvolved : 0,
     };
 
     // Prepare wallet update data
-    const walletUpdate = {};
-
-    if (isConfirmed) {
-      transactionUpdate.confirmedAmount = amountInvolved;
-      transactionUpdate.unconfirmedAmount = 0;
-      walletUpdate.confirmedBalance = amountInvolved;
-      walletUpdate.unconfirmedBalance = 0;
-    } else {
-      transactionUpdate.unconfirmedAmount = amountInvolved;
-      transactionUpdate.confirmedAmount = 0;
-      walletUpdate.unconfirmedBalance = amountInvolved;
-      walletUpdate.confirmedBalance = 0;
-    }
+    const walletUpdate = {
+      confirmedBalance: isConfirmed ? amountInvolved : 0,
+      unconfirmedBalance: !isConfirmed ? amountInvolved : 0,
+    };
 
     return { transactionUpdate, walletUpdate };
   } else {
@@ -319,31 +261,45 @@ const _processWebhookTransactionData = async (webhook) => {
 };
 
 /**
- * Updates a webhook's configuration in the database.
- * This is used for modifying webhook details, like changing its monitoring conditions or callback URL.
+ * Updates the database record of a specific webhook with new data.
+ * Primarily used to update the status and data payload of a webhook.
  *
  * @async
- * @function updateWebhook
- * @param {string} urlId - URL identifier of the webhook to update.
- * @param {Object} updateData - New data to update the webhook with.
- * @return {Promise&lt;Object>} The updated webhook object.
- * @throws {NotFoundError} If the webhook with the specified URL ID is not found for updating.
+ * @private
+ * @param {string} urlId - The unique identifier of the webhook.
+ * @param {Object} updateData - New data for updating the webhook.
+ * @return {Promise&lt;Object>} A promise resolving to the updated webhook object.
+ * @throws {NotFoundError} If the webhook with the specified URL ID is not found.
  */
 const _updateWebhook = async (urlId, updateData) => {
-  const webhook = await Webhook.findOneAndUpdate({ urlId }, updateData, {
+  const updatedWebhook = await Webhook.findOneAndUpdate({ urlId }, updateData, {
     new: true,
   });
-  if (!webhook) {
-    log.warn(`Webhook with URL ID ${urlId} not found for update`);
-    throw new NotFoundError(`Webhook with URL ID ${urlId} not found`);
-  }
-  return webhook;
+  if (!updatedWebhook)
+    throw new NotFoundError(
+      `Webhook with URL ID ${urlId} not found for update`,
+    );
+  return updatedWebhook;
+};
+
+/**
+ * Soft deletes a webhook in the database and removes its registration with BlockCypher.
+ * This is a cleanup operation performed when a webhook is no longer needed.
+ *
+ * @async
+ * @private
+ * @param {string} webhookId - The MongoDB ID of the webhook to delete.
+ * @throws {Error} If there's an issue with the deletion process.
+ */
+const _deleteWebhook = async (webhookId) => {
+  await getAPI(`${apiBaseUrl}/hooks/${webhookId}?token=${apiToken}`);
+  await Webhook.findByIdAndUpdate(webhookId, { isDeleted: true });
+  log.info(`Webhook with ID ${webhookId} soft deleted.`);
 };
 
 module.exports = {
   createWebhook,
   getAllWebhooks,
-  deleteWebhook,
   processWebhook,
 };
 </code></pre>

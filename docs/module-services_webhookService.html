@@ -35,11 +35,10 @@
     
         
             <div class="description"><p>Service for managing webhooks in Satoshi Showdown.
-This service is responsible for creating, updating, retrieving, and managing
-the deletion of webhooks. It interfaces with external services like BlockCypher
-for blockchain event monitoring and interacts with the local database for webhook
-data management. The service plays a crucial role in event-driven processes within
-the application, especially for transaction and blockchain event monitoring.</p></div>
+Handles the lifecycle of webhooks including creation, processing, and deletion.
+Interacts with the BlockCypher API for blockchain event monitoring and manages local
+database records for webhooks. This service is integral to the platform's event-driven
+architecture, particularly for monitoring blockchain transactions.</p></div>
         
 
         
@@ -129,7 +128,7 @@ the application, especially for transaction and blockchain event monitoring.</p>
     
 
     
-    <h4 class="name" id="~createWebhook"><span class="type-signature">(async, inner) </span>createWebhook<span class="signature">(address, transactionRef, confirmations<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;Object>}</span></h4>
+    <h4 class="name" id="~createWebhook"><span class="type-signature">(async, inner) </span>createWebhook<span class="signature">(address, transactionRef)</span><span class="type-signature"> &rarr; {Promise.&lt;Object>}</span></h4>
     
 
     
@@ -137,9 +136,8 @@ the application, especially for transaction and blockchain event monitoring.</p>
 
 
 <div class="description">
-    <p>Creates and registers a new webhook with BlockCypher for event monitoring.
-It sets up a webhook to monitor specific blockchain events related to a given address.
-The webhook is stored in the local database and registered with BlockCypher.</p>
+    <p>Creates a new webhook in the Satoshi Showdown application and registers it with BlockCypher.
+This webhook monitors blockchain events for a specific address and tracks transaction confirmations.</p>
 </div>
 
 
@@ -163,11 +161,7 @@ The webhook is stored in the local database and registered with BlockCypher.</p>
         <th>Type</th>
 
         
-        <th>Attributes</th>
-        
 
-        
-        <th>Default</th>
         
 
         <th class="last">Description</th>
@@ -192,22 +186,10 @@ The webhook is stored in the local database and registered with BlockCypher.</p>
             </td>
 
             
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
 
             
-                <td class="default">
-                
-                </td>
-            
 
-            <td class="description last"><p>Blockchain address to monitor for transactions.</p></td>
+            <td class="description last"><p>The blockchain address to monitor.</p></td>
         </tr>
 
     
@@ -227,61 +209,10 @@ The webhook is stored in the local database and registered with BlockCypher.</p>
             </td>
 
             
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
 
             
-                <td class="default">
-                
-                </td>
-            
 
-            <td class="description last"><p>Associated transaction reference ID.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>confirmations</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">number</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-                <td class="default">
-                
-                    6
-                
-                </td>
-            
-
-            <td class="description last"><p>Number of confirmations for transaction finality (default is 6).</p></td>
+            <td class="description last"><p>The reference ID of the associated transaction.</p></td>
         </tr>
 
     
@@ -322,7 +253,7 @@ The webhook is stored in the local database and registered with BlockCypher.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="services_webhookService.js.html">services/webhookService.js</a>, <a href="services_webhookService.js.html#line29">line 29</a>
+        <a href="services_webhookService.js.html">services/webhookService.js</a>, <a href="services_webhookService.js.html#line39">line 39</a>
     </li></ul></dd>
     
 
@@ -352,7 +283,7 @@ The webhook is stored in the local database and registered with BlockCypher.</p>
 <dl>
     <dt>
         <div class="param-desc">
-        <p>Thrown if there is an issue creating the webhook in the database or with BlockCypher.</p>
+        <p>If an error occurs during webhook creation or registration.</p>
         </div>
     </dt>
     <dd></dd>
@@ -380,7 +311,7 @@ The webhook is stored in the local database and registered with BlockCypher.</p>
 
         
 <div class="param-desc">
-    <p>The created webhook object containing its configuration and response data.</p>
+    <p>A promise resolving to the newly created webhook object.</p>
 </div>
 
 
@@ -409,191 +340,6 @@ The webhook is stored in the local database and registered with BlockCypher.</p>
     
 
     
-    <h4 class="name" id="~deleteWebhook"><span class="type-signature">(async, inner) </span>deleteWebhook<span class="signature">(webhookId)</span><span class="type-signature"> &rarr; {Promise.&lt;void>}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Soft deletes a webhook in the local database and removes its registration from BlockCypher.
-This helps in maintaining a record of the webhook while ensuring it's no longer active.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>webhookId</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>ID of the webhook to soft delete.</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="services_webhookService.js.html">services/webhookService.js</a>, <a href="services_webhookService.js.html#line91">line 91</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Throws:</h5>
-
-        
-
-<dl>
-    <dt>
-        <div class="param-desc">
-        <p>If there's an issue in removing the webhook from BlockCypher or updating the database.</p>
-        </div>
-    </dt>
-    <dd></dd>
-    <dt>
-        <dl>
-            <dt>
-                Type
-            </dt>
-            <dd>
-                
-<span class="param-type">Error</span>
-
-
-            </dd>
-        </dl>
-    </dt>
-    <dd></dd>
-</dl>
-
-
-    
-
-
-<h5>Returns:</h5>
-
-        
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Promise.&lt;void></span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
     <h4 class="name" id="~getAllWebhooks"><span class="type-signature">(async, inner) </span>getAllWebhooks<span class="signature">()</span><span class="type-signature"> &rarr; {Promise.&lt;Array>}</span></h4>
     
 
@@ -602,8 +348,7 @@ This helps in maintaining a record of the webhook while ensuring it's no longer 
 
 
 <div class="description">
-    <p>Retrieves all webhooks currently stored in the database.
-This can be used for administrative purposes such as monitoring or auditing webhook activities.</p>
+    <p>Retrieves all webhook objects currently stored in the Satoshi Showdown database.</p>
 </div>
 
 
@@ -647,7 +392,7 @@ This can be used for administrative purposes such as monitoring or auditing webh
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="services_webhookService.js.html">services/webhookService.js</a>, <a href="services_webhookService.js.html#line79">line 79</a>
+        <a href="services_webhookService.js.html">services/webhookService.js</a>, <a href="services_webhookService.js.html#line70">line 70</a>
     </li></ul></dd>
     
 
@@ -676,7 +421,7 @@ This can be used for administrative purposes such as monitoring or auditing webh
 
         
 <div class="param-desc">
-    <p>An array of all webhook objects in the database.</p>
+    <p>A promise resolving to an array of webhook objects.</p>
 </div>
 
 
@@ -713,9 +458,8 @@ This can be used for administrative purposes such as monitoring or auditing webh
 
 
 <div class="description">
-    <p>Processes incoming webhook data and updates the corresponding transaction and wallet records.
-It handles the different aspects of the webhook, such as headers, body, and status, efficiently.
-This function is crucial for real-time processing of blockchain events and updating related records.</p>
+    <p>Processes a received webhook by updating its status and associated transaction and wallet records.
+Efficiently handles the headers, body, and confirmation status of the incoming webhook data.</p>
 </div>
 
 
@@ -767,7 +511,7 @@ This function is crucial for real-time processing of blockchain events and updat
 
             
 
-            <td class="description last"><p>The URL identifier of the webhook.</p></td>
+            <td class="description last"><p>The unique identifier of the webhook.</p></td>
         </tr>
 
     
@@ -790,7 +534,7 @@ This function is crucial for real-time processing of blockchain events and updat
 
             
 
-            <td class="description last"><p>The headers of the incoming webhook request.</p></td>
+            <td class="description last"><p>The HTTP headers of the incoming webhook request.</p></td>
         </tr>
 
     
@@ -813,7 +557,7 @@ This function is crucial for real-time processing of blockchain events and updat
 
             
 
-            <td class="description last"><p>The payload of the webhook request, containing transaction details.</p></td>
+            <td class="description last"><p>The JSON payload of the webhook request.</p></td>
         </tr>
 
     
@@ -854,7 +598,7 @@ This function is crucial for real-time processing of blockchain events and updat
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="services_webhookService.js.html">services/webhookService.js</a>, <a href="services_webhookService.js.html#line119">line 119</a>
+        <a href="services_webhookService.js.html">services/webhookService.js</a>, <a href="services_webhookService.js.html#line82">line 82</a>
     </li></ul></dd>
     
 
@@ -884,7 +628,7 @@ This function is crucial for real-time processing of blockchain events and updat
 <dl>
     <dt>
         <div class="param-desc">
-        <p>Thrown if the webhook with the given URL ID is not found.</p>
+        <p>If the webhook with the specified URL ID is not found.</p>
         </div>
     </dt>
     <dd></dd>
@@ -908,218 +652,6 @@ This function is crucial for real-time processing of blockchain events and updat
     
 
 
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="~updateWebhook"><span class="type-signature">(async, inner) </span>updateWebhook<span class="signature">(urlId, updateData)</span><span class="type-signature"> &rarr; {Promise.&lt;Object>}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Updates a webhook's configuration in the database.
-This is used for modifying webhook details, like changing its monitoring conditions or callback URL.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>urlId</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>URL identifier of the webhook to update.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>updateData</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Object</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>New data to update the webhook with.</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="services_webhookService.js.html">services/webhookService.js</a>, <a href="services_webhookService.js.html#line293">line 293</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Throws:</h5>
-
-        
-
-<dl>
-    <dt>
-        <div class="param-desc">
-        <p>If the webhook with the specified URL ID is not found for updating.</p>
-        </div>
-    </dt>
-    <dd></dd>
-    <dt>
-        <dl>
-            <dt>
-                Type
-            </dt>
-            <dd>
-                
-<span class="param-type">NotFoundError</span>
-
-
-            </dd>
-        </dl>
-    </dt>
-    <dd></dd>
-</dl>
-
-
-    
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>The updated webhook object.</p>
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Promise.&lt;Object></span>
-
-
-    </dd>
-</dl>
-
-    
 
 
 
