@@ -18,7 +18,7 @@ const Webhook = require("../models/webhookModel");
 const { createUTXO } = require("./utxoService");
 const { updateTransactionById } = require("./transactionService");
 const { updateWalletBalanceById } = require("./walletService");
-const { postAPI, getAPI } = require("../utils/apiUtil");
+const { postAPI, getAPI, deleteAPI } = require("../utils/apiUtil");
 const { NotFoundError } = require("../utils/errorUtil");
 const log = require("../utils/logUtil");
 
@@ -52,7 +52,7 @@ const createWebhook = async (address, transactionRef) => {
   };
   const response = await postAPI(
     `${apiBaseUrl}/hooks?token=${apiToken}`,
-    webhookData,
+    webhookData
   );
 
   // Update the local webhook record with the response
@@ -80,6 +80,8 @@ const getAllWebhooks = async () => await Webhook.find({});
  * @throws {NotFoundError} If the webhook with the specified URL ID is not found.
  */
 const processWebhook = async (urlId, headers, data) => {
+  console.log(data);
+
   let webhook = await _getWebhook(urlId);
 
   // Update webhook with received data and process its status
@@ -95,15 +97,15 @@ const processWebhook = async (urlId, headers, data) => {
     await _processWebhookTransactionData(webhook);
   const transaction = await updateTransactionById(
     webhook.transactionRef,
-    transactionUpdate,
+    transactionUpdate
   );
   const wallet = await updateWalletBalanceById(
     transaction.walletRef,
-    walletUpdate,
+    walletUpdate
   );
 
   log.info(
-    `Webhook processed: Transaction - ${transaction._id}, Wallet - ${wallet._id}`,
+    `Webhook processed: Transaction - ${transaction._id}, Wallet - ${wallet._id}`
   );
 };
 
@@ -151,7 +153,9 @@ const _processWebhookStatus = async (webhook, currentConfirmations) => {
 
   if (currentConfirmations === 6) {
     statusUpdate.status = "success";
-    // Delete the webhook after 6 confirmations
+
+    // Delete the webhook from BlockCypher
+    await _deleteWebhook(webhook.response.id);
   }
 
   return statusUpdate;
@@ -195,7 +199,7 @@ const _processWebhookTransactionData = async (webhook) => {
             scriptType: output.script_type,
             blockHeight: transactionDetails.block_height,
             timestamp: new Date(transactionDetails.received),
-          }),
+          })
         );
 
       try {
@@ -206,7 +210,7 @@ const _processWebhookTransactionData = async (webhook) => {
     }
 
     // Determine the transaction status based on the number of confirmations
-    const isConfirmed = webhook.body.confirmations >= 6;
+    const isConfirmed = webhook.body.confirmations >= 1;
     const transactionStatus = isConfirmed ? "completed" : "confirming";
 
     // Prepare transaction update data
@@ -226,7 +230,7 @@ const _processWebhookTransactionData = async (webhook) => {
     return { transactionUpdate, walletUpdate };
   } else {
     log.info(
-      `No transaction amount for monitored address: ${monitoredAddress}`,
+      `No transaction amount for monitored address: ${monitoredAddress}`
     );
     return { transactionUpdate: null, walletUpdate: null };
   }
@@ -249,7 +253,7 @@ const _updateWebhook = async (urlId, updateData) => {
   });
   if (!updatedWebhook)
     throw new NotFoundError(
-      `Webhook with URL ID ${urlId} not found for update`,
+      `Webhook with URL ID ${urlId} not found for update`
     );
   return updatedWebhook;
 };
@@ -260,13 +264,20 @@ const _updateWebhook = async (urlId, updateData) => {
  *
  * @async
  * @private
- * @param {string} webhookId - The MongoDB ID of the webhook to delete.
+ * @param {string} blockcypherId - The Blockcypher ID of the webhook to delete.
+ * @param {string} webhookId - The ID of the webhook to delete.
  * @throws {Error} If there's an issue with the deletion process.
  */
-const _deleteWebhook = async (webhookId) => {
-  await getAPI(`${apiBaseUrl}/hooks/${webhookId}?token=${apiToken}`);
+const _deleteWebhook = async (blockcypherId, webhookId) => {
+  // URL for the DELETE request to BlockCypher API
+  const deleteUrl = `${apiBaseUrl}/hooks/${blockcypherId}?token=${apiToken}`;
+
+  // Make the DELETE request to BlockCypher
+  await deleteAPI(deleteUrl);
+
+  // Additionally, soft delete the webhook record from the local database
   await Webhook.findByIdAndUpdate(webhookId, { isDeleted: true });
-  log.info(`Webhook with ID ${webhookId} soft deleted.`);
+  log.info(`Webhook with ID ${blockcypherId} soft deleted.`);
 };
 
 module.exports = {

@@ -13,27 +13,6 @@ const axios = require("axios");
 const log = require("./logUtil");
 
 /**
- * Performs a GET request to the specified URL and returns the response data.
- * Logs an error message and throws an error if the request fails.
- *
- * @async
- * @function getAPI
- * @param {string} url - The URL to send the GET request to.
- * @param {Object} [params={}] - Optional query parameters for the GET request.
- * @return {Promise<Object>} A promise that resolves with the data from the response.
- * @throws {Error} If the GET request fails.
- */
-const getAPI = async (url, params = {}) => {
-  try {
-    const response = await axios.get(url, { params });
-    return response.data;
-  } catch (error) {
-    log.error(`GET request failed: ${error.message}`);
-    throw error;
-  }
-};
-
-/**
  * Performs a POST request to the specified URL with the provided data and returns the response data.
  * Logs an error message and throws an error if the request fails.
  *
@@ -55,6 +34,47 @@ const postAPI = async (url, data) => {
 };
 
 /**
+ * Performs a GET request to the specified URL and returns the response data.
+ * Logs an error message and throws an error if the request fails.
+ *
+ * @async
+ * @function getAPI
+ * @param {string} url - The URL to send the GET request to.
+ * @param {Object} [params={}] - Optional query parameters for the GET request.
+ * @return {Promise<Object>} A promise that resolves with the data from the response.
+ * @throws {Error} If the GET request fails.
+ */
+const getAPI = async (url, params = {}) => {
+  try {
+    const response = await axios.get(url, { params });
+    return response.data;
+  } catch (error) {
+    log.error(`GET request failed: ${error.message}`);
+    throw error;
+  }
+};
+
+/**
+ * Performs a DELETE request to the specified URL and returns the response data.
+ * Logs an error message and throws an error if the request fails.
+ *
+ * @async
+ * @function deleteAPI
+ * @param {string} url - The URL to send the DELETE request to.
+ * @return {Promise<Object>} A promise that resolves with the data from the response.
+ * @throws {Error} If the DELETE request fails.
+ */
+const deleteAPI = async (url) => {
+  try {
+    const response = await axios.delete(url);
+    return response.data;
+  } catch (error) {
+    log.error(`DELETE request failed: ${error.message}`);
+    throw error;
+  }
+};
+
+/**
  * Placeholder function for processing callback data from an external API.
  * This function should be implemented to handle specific callback logic.
  *
@@ -65,4 +85,4 @@ const processCallback = (callbackData) => {
   // Implement callback processing logic here
 };
 
-module.exports = { getAPI, postAPI, processCallback };
+module.exports = { postAPI, getAPI, deleteAPI, processCallback };

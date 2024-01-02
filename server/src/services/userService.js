@@ -94,7 +94,7 @@ const getUserById = async (userId) => {
     throw new NotFoundError(`User with ID ${userId} not found`);
   }
 
-  return excludeSensitiveData(user);
+  return user;
 };
 
 /**
