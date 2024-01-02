@@ -58,7 +58,7 @@ const createEvent = async (userId, userAddress, eventData) => {
       throw new ValidationError(
         `Invalid event data: ${validation.error.details
           .map((d) => d.message)
-          .join("; ")}`
+          .join("; ")}`,
       );
     }
 
@@ -66,7 +66,7 @@ const createEvent = async (userId, userAddress, eventData) => {
       userAddress,
       user._id,
       eventData.entryFee,
-      eventData.prizePool
+      eventData.prizePool,
     );
 
     eventData.transactions = [financialSetup.transaction._id];
@@ -81,7 +81,7 @@ const createEvent = async (userId, userAddress, eventData) => {
 
     // Retrieve the transaction details
     const transactionDetails = await getTransactionRecordById(
-      financialSetup.transaction._id
+      financialSetup.transaction._id,
     );
 
     log.info(`New event created: ${newEvent._id}`);
@@ -274,7 +274,7 @@ const handleFinancialSetup = async (
   userAddress,
   userRef,
   entryFee,
-  prizePoolContribution
+  prizePoolContribution,
 ) => {
   try {
     // Calculate the total amount the user needs to send in
@@ -309,7 +309,7 @@ const handleFinancialSetup = async (
     await createWebhook(wallet.publicAddress, transaction._id);
 
     log.info(
-      `Financial setup completed for event: Wallet and transaction created`
+      `Financial setup completed for event: Wallet and transaction created`,
     );
 
     // Return an object containing wallet and transaction details
@@ -317,7 +317,7 @@ const handleFinancialSetup = async (
   } catch (err) {
     log.error(`Error in handleFinancialSetup: ${err.message}`);
     throw new Error(
-      `Failed to set up financial aspects of the event: ${err.message}`
+      `Failed to set up financial aspects of the event: ${err.message}`,
     );
   }
 };

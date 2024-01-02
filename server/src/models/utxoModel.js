@@ -15,7 +15,7 @@ const UTXOSchema = new mongoose.Schema(
     spendingTxHash: String, // Reference to the transaction that spent this UTXO
     keyPath: { type: String, required: false }, // Optional: HD wallet key path for this UTXO
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const UTXO = mongoose.model("UTXO", UTXOSchema);

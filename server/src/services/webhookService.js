@@ -52,7 +52,7 @@ const createWebhook = async (address, transactionRef) => {
   };
   const response = await postAPI(
     `${apiBaseUrl}/hooks?token=${apiToken}`,
-    webhookData
+    webhookData,
   );
 
   // Update the local webhook record with the response
@@ -97,15 +97,15 @@ const processWebhook = async (urlId, headers, data) => {
     await _processWebhookTransactionData(webhook);
   const transaction = await updateTransactionById(
     webhook.transactionRef,
-    transactionUpdate
+    transactionUpdate,
   );
   const wallet = await updateWalletBalanceById(
     transaction.walletRef,
-    walletUpdate
+    walletUpdate,
   );
 
   log.info(
-    `Webhook processed: Transaction - ${transaction._id}, Wallet - ${wallet._id}`
+    `Webhook processed: Transaction - ${transaction._id}, Wallet - ${wallet._id}`,
   );
 };
 
@@ -199,7 +199,7 @@ const _processWebhookTransactionData = async (webhook) => {
             scriptType: output.script_type,
             blockHeight: transactionDetails.block_height,
             timestamp: new Date(transactionDetails.received),
-          })
+          }),
         );
 
       try {
@@ -230,7 +230,7 @@ const _processWebhookTransactionData = async (webhook) => {
     return { transactionUpdate, walletUpdate };
   } else {
     log.info(
-      `No transaction amount for monitored address: ${monitoredAddress}`
+      `No transaction amount for monitored address: ${monitoredAddress}`,
     );
     return { transactionUpdate: null, walletUpdate: null };
   }
@@ -253,7 +253,7 @@ const _updateWebhook = async (urlId, updateData) => {
   });
   if (!updatedWebhook)
     throw new NotFoundError(
-      `Webhook with URL ID ${urlId} not found for update`
+      `Webhook with URL ID ${urlId} not found for update`,
     );
   return updatedWebhook;
 };

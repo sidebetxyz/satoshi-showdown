@@ -102,6 +102,11 @@ const createEvent = async (userId, userAddress, eventData) => {
     const newEvent = new Event(eventData);
     await newEvent.save();
 
+    // Update the user's eventsCreated array with the new event
+    user.eventsCreated.push(newEvent._id);
+    user.transactions.push(financialSetup.transaction._id);
+    await user.save(); // Saving the updated user data
+
     // Retrieve the transaction details
     const transactionDetails = await getTransactionRecordById(
       financialSetup.transaction._id,

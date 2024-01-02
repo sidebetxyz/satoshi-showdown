@@ -76,14 +76,46 @@ const createTransactionRecord = async (transactionData) => {
  * @param {Array} details.utxos - Unspent transaction outputs to be used.
  * @param {string} details.recipientAddress - The recipient's Bitcoin address.
  * @param {number} details.amount - Amount to send in satoshis.
+ * @param {number} details.fee - Transaction fee in satoshis.
+ * @param {string} details.changeAddress - Address to send the change to.
+ * @param {Array} details.privateKeys - Private keys for signing the transaction.
  * @return {string} The raw Bitcoin transaction in hex format.
  */
-const createRawBitcoinTransaction = ({ utxos, recipientAddress, amount }) => {
+const createRawBitcoinTransaction = ({
+  utxos,
+  recipientAddress,
+  amount,
+  fee,
+  changeAddress,
+  privateKeys,
+}) => {
   const tx = new bitcoin.TransactionBuilder(network);
-  utxos.forEach((utxo) => tx.addInput(utxo.txId, utxo.vout));
+
+  // Add inputs
+  let totalInput = 0;
+  utxos.forEach((utxo) => {
+    tx.addInput(utxo.txId, utxo.vout);
+    totalInput += utxo.amount;
+  });
+
+  // Add recipient output
   tx.addOutput(recipientAddress, amount);
-  // Further implementation...
-  return tx.buildIncomplete().toHex();
+
+  // Calculate and add change
+  const change = totalInput - amount - fee;
+  if (change > 0) {
+    tx.addOutput(changeAddress, change);
+  }
+
+  // Sign each input
+  utxos.forEach((utxo, index) => {
+    const privateKey = privateKeys[index];
+    const keyPair = bitcoin.ECPair.fromWIF(privateKey, network);
+    tx.sign(index, keyPair);
+  });
+
+  // Build and return the serialized transaction
+  return tx.build().toHex();
 };
 
 /**

@@ -151,7 +151,7 @@ const updateTransactionById = async (transactionId, updateData) => {
       const updatedTransaction = await Transaction.findByIdAndUpdate(
         transactionId,
         updatesToApply,
-        { new: true }
+        { new: true },
       );
       log.info(`Transaction record with ID ${transactionId} updated`);
       return updatedTransaction;
