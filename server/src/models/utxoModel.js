@@ -1,19 +1,46 @@
 const mongoose = require("mongoose");
 
+/**
+ * UTXO Schema definition for Satoshi Showdown.
+ * Represents Unspent Transaction Output (UTXO) data, crucial for tracking and managing cryptocurrency transactions.
+ * Includes references to users, events, and wallets, along with key transactional data like address, amount, and blockchain information.
+ *
+ * @typedef {Object} UTXOSchema
+ * @property {mongoose.Schema.Types.ObjectId} userRef - Reference to the User model, linking the UTXO to a specific user.
+ * @property {mongoose.Schema.Types.ObjectId} eventRef - Reference to the Event model, associating the UTXO with a particular event.
+ * @property {string} address - Address owning the UTXO.
+ * @property {number} amount - Amount of cryptocurrency (in satoshis) represented by this UTXO.
+ * @property {string} transactionHash - Hash of the transaction where this UTXO originated.
+ * @property {number} outputIndex - Output index in the transaction (vout).
+ * @property {string} scriptPubKey - ScriptPubKey for the output, defining how the UTXO can be spent.
+ * @property {string} scriptType - Type of script, e.g., 'pay-to-pubkey-hash'.
+ * @property {number} blockHeight - Block height at which this UTXO was mined (optional).
+ * @property {Date} timestamp - Timestamp of when the transaction was confirmed.
+ * @property {boolean} spent - Indicates if the UTXO has been spent.
+ * @property {string} spendingTxHash - Transaction hash that spent this UTXO (if spent).
+ * @property {boolean} refund - Marks the UTXO as part of a refund (optional).
+ * @property {string} refundTxHash - Reference to the transaction that refunded this UTXO (if applicable).
+ * @property {string} keyPath - HD wallet key path for this UTXO (optional).
+ *
+ * @type {mongoose.Schema}
+ */
 const UTXOSchema = new mongoose.Schema(
   {
-    transactionHash: { type: String, required: true }, // The hash of the transaction
-    outputIndex: { type: Number, required: true }, // The output index in the transaction (vout)
-    amount: { type: Number, required: true }, // Amount in satoshis
-    address: { type: String, required: true }, // Address that owns this UTXO
-    scriptPubKey: { type: String, required: true }, // ScriptPubKey for the output
-    scriptType: { type: String, required: true }, // Type of script (e.g., pay-to-pubkey-hash)
-    walletRef: { type: mongoose.Schema.Types.ObjectId, ref: "Wallet" }, // Reference to the wallet
-    blockHeight: Number, // The block height at which this UTXO was mined
-    timestamp: Date, // Timestamp of when the transaction was confirmed
-    spent: { type: Boolean, default: false }, // Whether this UTXO has been spent
-    spendingTxHash: String, // Reference to the transaction that spent this UTXO
-    keyPath: { type: String, required: false }, // Optional: HD wallet key path for this UTXO
+    userRef: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    eventRef: { type: mongoose.Schema.Types.ObjectId, ref: "Event" },
+    address: { type: String, required: true },
+    amount: { type: Number, required: true },
+    transactionHash: { type: String, required: true },
+    outputIndex: { type: Number, required: true },
+    scriptPubKey: { type: String, required: true },
+    scriptType: { type: String, required: true },
+    blockHeight: Number,
+    timestamp: Date,
+    spent: { type: Boolean, default: false },
+    spendingTxHash: String,
+    refund: { type: Boolean, default: false },
+    refundTxHash: String,
+    keyPath: { type: String, required: false },
   },
   { timestamps: true },
 );

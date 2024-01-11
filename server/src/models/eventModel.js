@@ -1,58 +1,49 @@
 /**
  * @fileoverview Event Model for Satoshi Showdown.
- * This model defines the structure and constraints for events within the Satoshi Showdown platform.
- * It encapsulates various aspects of an event, including its basic information, schedule, participation
- * details, financial aspects, and associated metadata like transactions, feedback, and restrictions.
- * The model is instrumental in representing and managing event-related data in the application's database.
+ * Defines the structure and constraints for events within the Satoshi Showdown platform.
+ * Encapsulates event information, schedule, participation details, financial aspects, and metadata.
+ * Instrumental in representing and managing event data in the application's database.
  *
  * @module models/Event
- * @requires mongoose - Mongoose library for MongoDB object modeling, providing schema definition and data validation.
- * @requires uuid - UUID library for generating unique identifiers, used for creating distinct event IDs.
+ * @requires mongoose - Mongoose library for MongoDB object modeling.
+ * @requires uuid - UUID library for generating unique identifiers.
  */
 
 const mongoose = require("mongoose");
 const { v4: uuidv4 } = require("uuid");
 
 /**
- * Schema definition for the Event model.
- * The schema defines the structure and rules for event-related data,
- * including details like event name, type, schedule, participant information,
- * and financial aspects. Enhanced to manage minimum and maximum participants,
- * track participant join times, and handle event lifecycle stages including
- * planning, ready, active, and completed states. Additionally, tracks event
- * open/closed status and closure time.
+ * EventSchema: Defines structure and rules for event-related data.
+ * Includes event name, type, schedule, participant information, and financial aspects.
+ * Manages event lifecycle stages, open/closed status, and closure time.
  *
  * @typedef {Object} EventSchema
- * @property {string} eventId - Unique identifier, automatically generated.
- * @property {string} name - Name of the event, a brief title.
- * @property {string} description - Longer description detailing the event.
- * @property {string} type - Category or type of the event.
- * @property {Date} startTime - When the event is scheduled to start.
- * @property {Date} endTime - When the event is scheduled to end.
- * @property {string} status - Lifecycle status of the event (e.g., planning, ready, active, completed).
- * @property {number} entryFee - Cost for participants to enter the event.
- * @property {number} prizePool - Total prize amount available for winners.
- * @property {mongoose.Schema.Types.ObjectId} creator - Reference to the user who created the event.
- * @property {Array} participants - Array of participants with timestamps for when they joined.
- * @property {number} maxParticipants - Maximum allowed participants for the event.
- * @property {number} minParticipants - Minimum required participants to start the event.
- * @property {boolean} isOpen - Indicates if the event is open for new participants.
- * @property {Date} closedAt - Timestamp when the event stopped accepting participants.
- * @property {mongoose.Schema.Types.ObjectId[]} transactions - Financial transactions associated with the event.
- * @property {mongoose.Schema.Types.ObjectId[]} winners - Winners of the event, if applicable.
- * @property {Object} config - Miscellaneous configuration details for the event.
- * @property {string} streamingUrl - URL for any live streaming of the event.
- * @property {Object} streamingSchedule - Schedule for live streaming, if applicable.
- * @property {Object[]} bettingOptions - Details of betting options available for the event.
- * @property {number} viewCount - Counter for how many have viewed or attended the event.
- * @property {mongoose.Schema.Types.ObjectId[]} feedback - User feedback submitted for the event.
- * @property {string[]} socialSharingLinks - Links for sharing the event on social platforms.
- * @property {number} ageRestriction - Minimum age required to participate or attend.
- * @property {string[]} geographicRestrictions - Geographic limitations for the event.
- * @property {Date} createdAt - Timestamp of when the event was created.
- * @property {Date} updatedAt - Timestamp of the last update to the event.
- *
- * @type {mongoose.Schema}
+ * @property {string} eventId - Unique identifier.
+ * @property {string} name - Event name.
+ * @property {string} description - Event description.
+ * @property {string} type - Event type.
+ * @property {Date} startTime - Scheduled start time.
+ * @property {Date} endTime - Scheduled end time.
+ * @property {string} status - Event lifecycle status.
+ * @property {number} entryFee - Participant entry fee.
+ * @property {number} prizePool - Prize amount available.
+ * @property {mongoose.Schema.Types.ObjectId} creator - Reference to the event creator.
+ * @property {Array} participants - Array of participant references with join timestamps.
+ * @property {number} maxParticipants - Maximum allowed participants.
+ * @property {number} minParticipants - Minimum required participants.
+ * @property {boolean} isOpen - Open status for new participants.
+ * @property {Date} closedAt - Timestamp of event closure.
+ * @property {Array} transactions - References to associated financial transactions.
+ * @property {Array} winners - References to event winners.
+ * @property {Object} config - Configuration details.
+ * @property {string} streamingUrl - Live streaming URL.
+ * @property {Object} streamingSchedule - Live streaming schedule.
+ * @property {Array} bettingOptions - Betting options details.
+ * @property {number} viewCount - Event view count.
+ * @property {Array} feedback - User feedback references.
+ * @property {Array} socialSharingLinks - Social sharing links.
+ * @property {number} ageRestriction - Age restriction for participation.
+ * @property {Array} geographicRestrictions - Geographic limitations.
  */
 const eventSchema = new mongoose.Schema(
   {
@@ -106,7 +97,7 @@ const eventSchema = new mongoose.Schema(
         odds: Number,
       },
     ],
-    viewCount: Number,
+    viewCount: { type: Number, default: 0 },
     feedback: [{ type: mongoose.Schema.Types.ObjectId, ref: "UserFeedback" }],
     socialSharingLinks: [String],
     ageRestriction: Number,
@@ -128,5 +119,4 @@ const eventSchema = new mongoose.Schema(
  * @type {EventModel}
  */
 const Event = mongoose.model("Event", eventSchema);
-
 module.exports = Event;

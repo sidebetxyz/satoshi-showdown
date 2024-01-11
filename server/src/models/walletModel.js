@@ -46,11 +46,10 @@ const walletSchema = new mongoose.Schema(
     },
     confirmedBalance: { type: Number, default: null },
     unconfirmedBalance: { type: Number, default: null },
-    transactionRefs: [
+    utxoRefs: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Transaction",
-        required: true,
+        ref: "UTXO",
       },
     ],
   },

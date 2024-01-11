@@ -35,10 +35,9 @@
     
         
             <div class="description"><p>Event Model for Satoshi Showdown.
-This model defines the structure and constraints for events within the Satoshi Showdown platform.
-It encapsulates various aspects of an event, including its basic information, schedule, participation
-details, financial aspects, and associated metadata like transactions, feedback, and restrictions.
-The model is instrumental in representing and managing event-related data in the application's database.</p></div>
+Defines the structure and constraints for events within the Satoshi Showdown platform.
+Encapsulates event information, schedule, participation details, financial aspects, and metadata.
+Instrumental in representing and managing event data in the application's database.</p></div>
         
 
         
@@ -164,7 +163,7 @@ The model is instrumental in representing and managing event-related data in the
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="models_eventModel.js.html">models/eventModel.js</a>, <a href="models_eventModel.js.html#line130">line 130</a>
+        <a href="models_eventModel.js.html">models/eventModel.js</a>, <a href="models_eventModel.js.html#line121">line 121</a>
     </li></ul></dd>
     
 
@@ -247,7 +246,7 @@ and handling of associated financial transactions and user feedback.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="models_eventModel.js.html">models/eventModel.js</a>, <a href="models_eventModel.js.html#line118">line 118</a>
+        <a href="models_eventModel.js.html">models/eventModel.js</a>, <a href="models_eventModel.js.html#line109">line 109</a>
     </li></ul></dd>
     
 
@@ -271,13 +270,9 @@ and handling of associated financial transactions and user feedback.</p>
 
 
 <div class="description">
-    <p>Schema definition for the Event model.
-The schema defines the structure and rules for event-related data,
-including details like event name, type, schedule, participant information,
-and financial aspects. Enhanced to manage minimum and maximum participants,
-track participant join times, and handle event lifecycle stages including
-planning, ready, active, and completed states. Additionally, tracks event
-open/closed status and closure time.</p>
+    <p>EventSchema: Defines structure and rules for event-related data.
+Includes event name, type, schedule, participant information, and financial aspects.
+Manages event lifecycle stages, open/closed status, and closure time.</p>
 </div>
 
 
@@ -338,7 +333,7 @@ open/closed status and closure time.</p>
 
             
 
-            <td class="description last"><p>Unique identifier, automatically generated.</p></td>
+            <td class="description last"><p>Unique identifier.</p></td>
         </tr>
 
     
@@ -361,7 +356,7 @@ open/closed status and closure time.</p>
 
             
 
-            <td class="description last"><p>Name of the event, a brief title.</p></td>
+            <td class="description last"><p>Event name.</p></td>
         </tr>
 
     
@@ -384,7 +379,7 @@ open/closed status and closure time.</p>
 
             
 
-            <td class="description last"><p>Longer description detailing the event.</p></td>
+            <td class="description last"><p>Event description.</p></td>
         </tr>
 
     
@@ -407,7 +402,7 @@ open/closed status and closure time.</p>
 
             
 
-            <td class="description last"><p>Category or type of the event.</p></td>
+            <td class="description last"><p>Event type.</p></td>
         </tr>
 
     
@@ -430,7 +425,7 @@ open/closed status and closure time.</p>
 
             
 
-            <td class="description last"><p>When the event is scheduled to start.</p></td>
+            <td class="description last"><p>Scheduled start time.</p></td>
         </tr>
 
     
@@ -453,7 +448,7 @@ open/closed status and closure time.</p>
 
             
 
-            <td class="description last"><p>When the event is scheduled to end.</p></td>
+            <td class="description last"><p>Scheduled end time.</p></td>
         </tr>
 
     
@@ -476,7 +471,7 @@ open/closed status and closure time.</p>
 
             
 
-            <td class="description last"><p>Lifecycle status of the event (e.g., planning, ready, active, completed).</p></td>
+            <td class="description last"><p>Event lifecycle status.</p></td>
         </tr>
 
     
@@ -499,7 +494,7 @@ open/closed status and closure time.</p>
 
             
 
-            <td class="description last"><p>Cost for participants to enter the event.</p></td>
+            <td class="description last"><p>Participant entry fee.</p></td>
         </tr>
 
     
@@ -522,7 +517,7 @@ open/closed status and closure time.</p>
 
             
 
-            <td class="description last"><p>Total prize amount available for winners.</p></td>
+            <td class="description last"><p>Prize amount available.</p></td>
         </tr>
 
     
@@ -545,7 +540,7 @@ open/closed status and closure time.</p>
 
             
 
-            <td class="description last"><p>Reference to the user who created the event.</p></td>
+            <td class="description last"><p>Reference to the event creator.</p></td>
         </tr>
 
     
@@ -568,7 +563,7 @@ open/closed status and closure time.</p>
 
             
 
-            <td class="description last"><p>Array of participants with timestamps for when they joined.</p></td>
+            <td class="description last"><p>Array of participant references with join timestamps.</p></td>
         </tr>
 
     
@@ -591,7 +586,7 @@ open/closed status and closure time.</p>
 
             
 
-            <td class="description last"><p>Maximum allowed participants for the event.</p></td>
+            <td class="description last"><p>Maximum allowed participants.</p></td>
         </tr>
 
     
@@ -614,7 +609,7 @@ open/closed status and closure time.</p>
 
             
 
-            <td class="description last"><p>Minimum required participants to start the event.</p></td>
+            <td class="description last"><p>Minimum required participants.</p></td>
         </tr>
 
     
@@ -637,7 +632,7 @@ open/closed status and closure time.</p>
 
             
 
-            <td class="description last"><p>Indicates if the event is open for new participants.</p></td>
+            <td class="description last"><p>Open status for new participants.</p></td>
         </tr>
 
     
@@ -660,7 +655,7 @@ open/closed status and closure time.</p>
 
             
 
-            <td class="description last"><p>Timestamp when the event stopped accepting participants.</p></td>
+            <td class="description last"><p>Timestamp of event closure.</p></td>
         </tr>
 
     
@@ -673,7 +668,7 @@ open/closed status and closure time.</p>
             <td class="type">
             
                 
-<span class="param-type">Array.&lt;mongoose.Schema.Types.ObjectId></span>
+<span class="param-type">Array</span>
 
 
             
@@ -683,7 +678,7 @@ open/closed status and closure time.</p>
 
             
 
-            <td class="description last"><p>Financial transactions associated with the event.</p></td>
+            <td class="description last"><p>References to associated financial transactions.</p></td>
         </tr>
 
     
@@ -696,7 +691,7 @@ open/closed status and closure time.</p>
             <td class="type">
             
                 
-<span class="param-type">Array.&lt;mongoose.Schema.Types.ObjectId></span>
+<span class="param-type">Array</span>
 
 
             
@@ -706,7 +701,7 @@ open/closed status and closure time.</p>
 
             
 
-            <td class="description last"><p>Winners of the event, if applicable.</p></td>
+            <td class="description last"><p>References to event winners.</p></td>
         </tr>
 
     
@@ -729,7 +724,7 @@ open/closed status and closure time.</p>
 
             
 
-            <td class="description last"><p>Miscellaneous configuration details for the event.</p></td>
+            <td class="description last"><p>Configuration details.</p></td>
         </tr>
 
     
@@ -752,7 +747,7 @@ open/closed status and closure time.</p>
 
             
 
-            <td class="description last"><p>URL for any live streaming of the event.</p></td>
+            <td class="description last"><p>Live streaming URL.</p></td>
         </tr>
 
     
@@ -775,7 +770,7 @@ open/closed status and closure time.</p>
 
             
 
-            <td class="description last"><p>Schedule for live streaming, if applicable.</p></td>
+            <td class="description last"><p>Live streaming schedule.</p></td>
         </tr>
 
     
@@ -788,7 +783,7 @@ open/closed status and closure time.</p>
             <td class="type">
             
                 
-<span class="param-type">Array.&lt;Object></span>
+<span class="param-type">Array</span>
 
 
             
@@ -798,7 +793,7 @@ open/closed status and closure time.</p>
 
             
 
-            <td class="description last"><p>Details of betting options available for the event.</p></td>
+            <td class="description last"><p>Betting options details.</p></td>
         </tr>
 
     
@@ -821,7 +816,7 @@ open/closed status and closure time.</p>
 
             
 
-            <td class="description last"><p>Counter for how many have viewed or attended the event.</p></td>
+            <td class="description last"><p>Event view count.</p></td>
         </tr>
 
     
@@ -834,7 +829,7 @@ open/closed status and closure time.</p>
             <td class="type">
             
                 
-<span class="param-type">Array.&lt;mongoose.Schema.Types.ObjectId></span>
+<span class="param-type">Array</span>
 
 
             
@@ -844,7 +839,7 @@ open/closed status and closure time.</p>
 
             
 
-            <td class="description last"><p>User feedback submitted for the event.</p></td>
+            <td class="description last"><p>User feedback references.</p></td>
         </tr>
 
     
@@ -857,7 +852,7 @@ open/closed status and closure time.</p>
             <td class="type">
             
                 
-<span class="param-type">Array.&lt;string></span>
+<span class="param-type">Array</span>
 
 
             
@@ -867,7 +862,7 @@ open/closed status and closure time.</p>
 
             
 
-            <td class="description last"><p>Links for sharing the event on social platforms.</p></td>
+            <td class="description last"><p>Social sharing links.</p></td>
         </tr>
 
     
@@ -890,7 +885,7 @@ open/closed status and closure time.</p>
 
             
 
-            <td class="description last"><p>Minimum age required to participate or attend.</p></td>
+            <td class="description last"><p>Age restriction for participation.</p></td>
         </tr>
 
     
@@ -903,7 +898,7 @@ open/closed status and closure time.</p>
             <td class="type">
             
                 
-<span class="param-type">Array.&lt;string></span>
+<span class="param-type">Array</span>
 
 
             
@@ -913,53 +908,7 @@ open/closed status and closure time.</p>
 
             
 
-            <td class="description last"><p>Geographic limitations for the event.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>createdAt</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Date</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Timestamp of when the event was created.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>updatedAt</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Date</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Timestamp of the last update to the event.</p></td>
+            <td class="description last"><p>Geographic limitations.</p></td>
         </tr>
 
     
@@ -998,7 +947,7 @@ open/closed status and closure time.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="models_eventModel.js.html">models/eventModel.js</a>, <a href="models_eventModel.js.html#line16">line 16</a>
+        <a href="models_eventModel.js.html">models/eventModel.js</a>, <a href="models_eventModel.js.html#line15">line 15</a>
     </li></ul></dd>
     
 

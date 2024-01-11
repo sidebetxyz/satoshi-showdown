@@ -41,6 +41,7 @@ const { v4: uuidv4 } = require("uuid");
  * @property {mongoose.Schema.Types.ObjectId} userRef - Reference to the User model.
  * @property {mongoose.Schema.Types.ObjectId} walletRef - Reference to the Wallet model.
  * @property {string} transactionType - Direction of the transaction (incoming/outgoing).
+ * @property {string} purpose - The intended use of the transaction, categorized by type.
  * @property {string} walletAddress - Address of the wallet involved.
  * @property {string} userAddress - Address of the user involved.
  * @property {number} expectedAmount - Expected amount of the transaction.
@@ -68,6 +69,17 @@ const transactionSchema = new mongoose.Schema(
     transactionType: {
       type: String,
       enum: ["incoming", "outgoing"],
+      required: true,
+    },
+    purpose: {
+      type: String,
+      enum: [
+        "entryFeePayment",
+        "prizePoolFunding",
+        "payFeeAndFundPool",
+        "refundUser",
+        "winnerPayout",
+      ],
       required: true,
     },
     walletAddress: { type: String, required: true },

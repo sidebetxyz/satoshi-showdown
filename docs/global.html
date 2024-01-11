@@ -374,7 +374,7 @@ processing, and verification of cryptocurrency movements.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="models_transactionModel.js.html">models/transactionModel.js</a>, <a href="models_transactionModel.js.html#line61">line 61</a>
+        <a href="models_transactionModel.js.html">models/transactionModel.js</a>, <a href="models_transactionModel.js.html#line73">line 73</a>
     </li></ul></dd>
     
 
@@ -533,6 +533,29 @@ transaction hash.</p>
             
 
             <td class="description last"><p>Direction of the transaction (incoming/outgoing).</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>purpose</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The intended use of the transaction, categorized by type.</p></td>
         </tr>
 
     
@@ -756,6 +779,454 @@ transaction hash.</p>
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
         <a href="models_transactionModel.js.html">models/transactionModel.js</a>, <a href="models_transactionModel.js.html#line4">line 4</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+            
+                
+<h4 class="name" id="UTXOSchema">UTXOSchema</h4>
+
+
+
+
+<div class="description">
+    <p>UTXO Schema definition for Satoshi Showdown.
+Represents Unspent Transaction Output (UTXO) data, crucial for tracking and managing cryptocurrency transactions.
+Includes references to users, events, and wallets, along with key transactional data like address, amount, and blockchain information.</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Object</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>userRef</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">mongoose.Schema.Types.ObjectId</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Reference to the User model, linking the UTXO to a specific user.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>eventRef</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">mongoose.Schema.Types.ObjectId</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Reference to the Event model, associating the UTXO with a particular event.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>address</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Address owning the UTXO.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>amount</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Amount of cryptocurrency (in satoshis) represented by this UTXO.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>transactionHash</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Hash of the transaction where this UTXO originated.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>outputIndex</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Output index in the transaction (vout).</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>scriptPubKey</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>ScriptPubKey for the output, defining how the UTXO can be spent.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>scriptType</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Type of script, e.g., 'pay-to-pubkey-hash'.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>blockHeight</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Block height at which this UTXO was mined (optional).</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>timestamp</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Date</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Timestamp of when the transaction was confirmed.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>spent</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Indicates if the UTXO has been spent.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>spendingTxHash</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Transaction hash that spent this UTXO (if spent).</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>refund</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Marks the UTXO as part of a refund (optional).</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>refundTxHash</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Reference to the transaction that refunded this UTXO (if applicable).</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>keyPath</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>HD wallet key path for this UTXO (optional).</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="models_utxoModel.js.html">models/utxoModel.js</a>, <a href="models_utxoModel.js.html#line3">line 3</a>
     </li></ul></dd>
     
 

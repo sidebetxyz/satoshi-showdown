@@ -31,9 +31,6 @@ const { v4: uuidv4 } = require("uuid");
  * @property {Object} profileInfo - Additional profile information, structure can vary.
  * @property {string} ipAddress - IP address of the user, used for tracking or security purposes.
  * @property {mongoose.Schema.Types.ObjectId} organization - Reference to an Organization, if applicable.
- * @property {mongoose.Schema.Types.ObjectId[]} eventsCreated - Events created by the user.
- * @property {mongoose.Schema.Types.ObjectId[]} eventsParticipated - Events in which the user has participated.
- * @property {mongoose.Schema.Types.ObjectId[]} transactions - Transactions associated with the user.
  *
  * @type {mongoose.Schema}
  */
@@ -52,13 +49,6 @@ const userSchema = new mongoose.Schema(
     profileInfo: Object,
     ipAddress: String,
     organization: { type: mongoose.Schema.Types.ObjectId, ref: "Organization" },
-    eventsCreated: [{ type: mongoose.Schema.Types.ObjectId, ref: "Event" }],
-    eventsParticipated: [
-      { type: mongoose.Schema.Types.ObjectId, ref: "Event" },
-    ],
-    transactions: [
-      { type: mongoose.Schema.Types.ObjectId, ref: "Transaction" },
-    ],
   },
   { timestamps: true },
 );
