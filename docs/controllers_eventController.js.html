@@ -44,6 +44,8 @@ const {
   deleteEvent,
   getEvent,
   getAllEvents,
+  joinEvent,
+  refundEventCreator,
 } = require("../services/eventService");
 
 /**
@@ -61,13 +63,8 @@ const {
  */
 const handleCreateEvent = async (req, res, next) => {
   try {
-    const { userId, userAddress, eventData } = req.body;
-
-    if (!userId) {
-      throw new Error("User not authenticated");
-    }
-
-    const newEvent = await createEvent(userId, userAddress, eventData);
+    const { eventData } = req.body;
+    const newEvent = await createEvent(eventData);
     res.status(201).json(newEvent);
   } catch (err) {
     next(err);
@@ -165,12 +162,60 @@ const handleDeleteEvent = async (req, res, next) => {
   }
 };
 
+/**
+ * Handles a user joining an event.
+ * Extracts event and user IDs from the request, calls the Event Service to add the user to the event,
+ * and returns updated event details in the response.
+ *
+ * @async
+ * @function handleJoinEvent
+ * @param {express.Request} req - Express request object containing event and user IDs.
+ * @param {express.Response} res - Express response object for sending back the updated event data.
+ * @param {express.NextFunction} next - Express next middleware function for error handling.
+ * @return {Promise&lt;void>} No explicit return value, sends response to the client.
+ * @throws {Error} If joining the event encounters issues.
+ */
+const handleJoinEvent = async (req, res, next) => {
+  try {
+    const { eventId, userId } = req.body;
+    const updatedEvent = await joinEvent(eventId, userId);
+    res.json(updatedEvent);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Handles refunding the creator of an event.
+ * Extracts the event ID from the request, invokes the Event Service to process the refund,
+ * and returns details of the refund transaction in the response.
+ *
+ * @async
+ * @function handleRefundEventCreator
+ * @param {express.Request} req - Express request object containing the event ID.
+ * @param {express.Response} res - Express response object for sending back the refund transaction data.
+ * @param {express.NextFunction} next - Express next middleware function for error handling.
+ * @return {Promise&lt;void>} No explicit return value, sends response to the client.
+ * @throws {Error} If the refund process encounters issues.
+ */
+const handleRefundEventCreator = async (req, res, next) => {
+  try {
+    const { eventId } = req.params;
+    const refundTransaction = await refundEventCreator(eventId);
+    res.json(refundTransaction);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   handleCreateEvent,
   handleUpdateEvent,
   handleGetEvent,
   handleGetAllEvents,
   handleDeleteEvent,
+  handleJoinEvent,
+  handleRefundEventCreator,
 };
 </code></pre>
         </article>
@@ -182,7 +227,7 @@ module.exports = {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-middlewares_corsSecurityMiddleware.html">middlewares/corsSecurityMiddleware</a></li><li><a href="module-middlewares_errorMiddleware.html">middlewares/errorMiddleware</a></li><li><a href="module-middlewares_httpSecurityMiddleware.html">middlewares/httpSecurityMiddleware</a></li><li><a href="module-middlewares_jsonParserMiddleware.html">middlewares/jsonParserMiddleware</a></li><li><a href="module-middlewares_requestLoggerMiddleware.html">middlewares/requestLoggerMiddleware</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#port">port</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-middlewares_corsSecurityMiddleware.html">middlewares/corsSecurityMiddleware</a></li><li><a href="module-middlewares_errorMiddleware.html">middlewares/errorMiddleware</a></li><li><a href="module-middlewares_httpSecurityMiddleware.html">middlewares/httpSecurityMiddleware</a></li><li><a href="module-middlewares_jsonParserMiddleware.html">middlewares/jsonParserMiddleware</a></li><li><a href="module-middlewares_requestLoggerMiddleware.html">middlewares/requestLoggerMiddleware</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_feeUtil.html">utils/feeUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#createUTXO">createUTXO</a></li><li><a href="global.html#findUTXOsByAddress">findUTXOsByAddress</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#markUTXOAsSpent">markUTXOAsSpent</a></li><li><a href="global.html#port">port</a></li><li><a href="global.html#selectUTXOsForTransaction">selectUTXOsForTransaction</a></li></ul>
 </nav>
 
 <br class="clear">

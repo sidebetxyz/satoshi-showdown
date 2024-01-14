@@ -13,9 +13,18 @@
  */
 
 const Wallet = require("../models/walletModel");
+const { decryptPrivateKey } = require("../utils/encryptionUtil");
 const { generateSegWitBitcoinKeys } = require("../utils/keyUtil");
 const { NotFoundError } = require("../utils/errorUtil");
 const log = require("../utils/logUtil");
+
+const bitcoin = require("bitcoinjs-lib");
+const network = bitcoin.networks.testnet;
+const ecPairFactory = require("ecpair").default;
+const ecc = require("tiny-secp256k1");
+
+// Initialize ECPair factory with tiny-secp256k1
+const ecPair = ecPairFactory(ecc);
 
 /**
  * Creates a new Segregated Witness (SegWit) Bitcoin wallet, primarily for event-related financial activities.
@@ -47,6 +56,82 @@ const createSegWitWalletForEvent = async () => {
 };
 
 /**
+ * Creates a raw Bitcoin transaction using UTXOs, target address, amount, change address, and a pre-calculated transaction fee.
+ * It signs the transaction inputs with the corresponding decrypted private keys from the wallets.
+ *
+ * @async
+ * @function createRawBitcoinTransaction
+ * @param {Array} selectedUTXOs - Array of selected UTXO objects for the transaction.
+ * @param {string} toAddress - The Bitcoin address to send the amount to.
+ * @param {number} amountToSend - The amount to send in satoshis.
+ * @param {string} changeAddress - The address where the change will be sent.
+ * @param {number} transactionFee - The pre-calculated transaction fee in satoshis.
+ * @return {Promise<string>} A promise that resolves to the raw transaction hex string.
+ * @throws {Error} Throws an error if transaction creation fails.
+ */
+const createRawBitcoinTransaction = async (
+  selectedUTXOs,
+  toAddress,
+  amountToSend,
+  changeAddress,
+  transactionFee,
+) => {
+  try {
+    const psbt = new bitcoin.Psbt({ network: network });
+
+    // Add inputs with necessary UTXO details
+    for (const utxo of selectedUTXOs) {
+      psbt.addInput({
+        hash: utxo.transactionHash,
+        index: utxo.outputIndex,
+        witnessUtxo: {
+          script: Buffer.from(utxo.scriptPubKey, "hex"), // scriptPubKey as a Buffer
+          value: utxo.amount, // Amount in satoshis
+        },
+      });
+    }
+
+    // Add outputs
+    psbt.addOutput({
+      address: toAddress,
+      value: amountToSend,
+    });
+
+    const changeAmount =
+      selectedUTXOs.reduce((acc, utxo) => acc + utxo.amount, 0) -
+      amountToSend -
+      transactionFee;
+    if (changeAmount > 0) {
+      psbt.addOutput({
+        address: changeAddress,
+        value: changeAmount,
+      });
+    }
+
+    // Sign each input
+    for (const utxo of selectedUTXOs) {
+      const wallet = await Wallet.findOne({ publicAddress: utxo.address });
+      if (!wallet) {
+        throw new Error(`Wallet not found for address ${utxo.address}`);
+      }
+      const privateKey = decryptPrivateKey(wallet.encryptedPrivateKey);
+      const keyPair = ecPair.fromWIF(privateKey, network);
+      psbt.signInput(selectedUTXOs.indexOf(utxo), keyPair);
+    }
+
+    // Finalize and extract transaction
+    psbt.finalizeAllInputs();
+    const transaction = psbt.extractTransaction();
+
+    return transaction.toHex();
+  } catch (error) {
+    throw new Error(
+      `Error in creating raw Bitcoin transaction: ${error.message}`,
+    );
+  }
+};
+
+/**
  * Retrieves a wallet by its public address from the database.
  * This function is vital for various operations such as validating wallet existence,
  * conducting transactions, and querying wallet balance. It is a key component in ensuring
@@ -68,37 +153,6 @@ const getWalletByAddress = async (address) => {
     return wallet;
   } catch (err) {
     log.error(`Error in getWalletByAddress: ${err.message}`);
-    throw err;
-  }
-};
-
-/**
- * Adds a transaction reference to the specified wallet's transaction history.
- * This function is essential for associating transaction records with the wallet,
- * aiding in the creation of a comprehensive transaction history. It enhances the
- * traceability and auditability of financial activities associated with the wallet.
- *
- * @async
- * @function addTransactionToWallet
- * @param {string} walletId - The unique identifier of the wallet to update.
- * @param {string} transactionId - The unique identifier of the transaction to be added to the wallet's history.
- * @return {Promise<Object>} The wallet object updated with the new transaction reference.
- * @throws {NotFoundError} Thrown if the wallet with the specified ID is not found in the database.
- * @throws {Error} Thrown if there is an issue with the database update.
- */
-const addTransactionToWallet = async (walletId, transactionId) => {
-  try {
-    const wallet = await Wallet.findByIdAndUpdate(
-      walletId,
-      { $push: { transactionRefs: transactionId } },
-      { new: true },
-    );
-    if (!wallet) {
-      throw new Error(`Wallet with ID ${walletId} not found`);
-    }
-    return wallet;
-  } catch (err) {
-    log.error(`Error in addTransactionToWallet: ${err.message}`);
     throw err;
   }
 };
@@ -154,9 +208,51 @@ const updateWalletBalanceById = async (walletId, updateData) => {
   }
 };
 
+/**
+ * Adds a UTXO reference to a wallet.
+ * This function is essential for updating the wallet's transaction history and balance.
+ *
+ * @async
+ * @function addUTXOToWallet
+ * @param {string} walletAddress - The public address of the wallet.
+ * @param {string} utxoId - The ID of the UTXO to add to the wallet.
+ * @return {Promise<Object>} The updated wallet object with the new UTXO reference.
+ * @throws {NotFoundError} Thrown if the wallet or UTXO is not found.
+ * @throws {Error} Thrown if there is an issue updating the wallet.
+ */
+const addUTXOToWallet = async (walletAddress, utxoId) => {
+  try {
+    // Retrieve the wallet by its public address
+    const wallet = await Wallet.findOne({ publicAddress: walletAddress });
+    if (!wallet) {
+      throw new NotFoundError(`Wallet with address ${walletAddress} not found`);
+    }
+
+    // Check if UTXO already exists in the wallet to avoid duplicates
+    if (!wallet.utxoRefs.includes(utxoId)) {
+      // Add the UTXO reference to the wallet's UTXO references array
+      wallet.utxoRefs.push(utxoId);
+      await wallet.save();
+      log.info(
+        `UTXO with ID ${utxoId} added to wallet: ${wallet.publicAddress}`,
+      );
+    } else {
+      log.info(
+        `UTXO with ID ${utxoId} already exists in wallet: ${wallet.publicAddress}`,
+      );
+    }
+
+    return wallet;
+  } catch (err) {
+    log.error(`Error in addUTXOToWallet: ${err.message}`);
+    throw err;
+  }
+};
+
 module.exports = {
   createSegWitWalletForEvent,
+  createRawBitcoinTransaction,
   getWalletByAddress,
-  addTransactionToWallet,
   updateWalletBalanceById,
+  addUTXOToWallet,
 };

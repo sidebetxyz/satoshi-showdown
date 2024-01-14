@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Module: utils/keyUtil</title>
+    <title>JSDoc: Module: utils/feeUtil</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Module: utils/keyUtil</h1>
+    <h1 class="page-title">Module: utils/feeUtil</h1>
 
     
 
@@ -34,10 +34,9 @@
     <div class="container-overview">
     
         
-            <div class="description"><p>Key Utility for Satoshi Showdown.
-This module provides functionalities related to cryptographic key generation and management,
-especially for Bitcoin wallets. It utilizes bitcoinjs-lib and tiny-secp256k1 for cryptographic
-operations and supports the generation of SegWit and Taproot Bitcoin wallet keys.</p></div>
+            <div class="description"><p>Utility functions for handling transaction fees in Satoshi Showdown.
+Includes functionality for fetching current network fee rates and estimating
+transaction fees based on transaction details.</p></div>
         
 
         
@@ -72,7 +71,7 @@ operations and supports the generation of SegWit and Taproot Bitcoin wallet keys
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utils_keyUtil.js.html">utils/keyUtil.js</a>, <a href="utils_keyUtil.js.html#line1">line 1</a>
+        <a href="utils_feeUtil.js.html">utils/feeUtil.js</a>, <a href="utils_feeUtil.js.html#line7">line 7</a>
     </li></ul></dd>
     
 
@@ -94,13 +93,9 @@ operations and supports the generation of SegWit and Taproot Bitcoin wallet keys
         <h3 class="subsection-title">Requires</h3>
 
         <ul>
+            <li><a href="module-utils_apiUtil.html">module:utils/apiUtil</a></li>
+        
             <li>module:bitcoinjs-lib</li>
-        
-            <li>module:ecpair</li>
-        
-            <li>module:tiny-secp256k1</li>
-        
-            <li><a href="module-utils_encryptionUtil.html">module:utils/encryptionUtil</a></li>
         </ul>
     
 
@@ -123,7 +118,7 @@ operations and supports the generation of SegWit and Taproot Bitcoin wallet keys
     
 
     
-    <h4 class="name" id="~generateSegWitBitcoinKeys"><span class="type-signature">(inner) </span>generateSegWitBitcoinKeys<span class="signature">()</span><span class="type-signature"> &rarr; {Object}</span></h4>
+    <h4 class="name" id="~adjustAmountForFee"><span class="type-signature">(inner) </span>adjustAmountForFee<span class="signature">(amount, fee)</span><span class="type-signature"> &rarr; {number}</span></h4>
     
 
     
@@ -131,9 +126,8 @@ operations and supports the generation of SegWit and Taproot Bitcoin wallet keys
 
 
 <div class="description">
-    <p>Generates a new SegWit Bitcoin wallet (P2WPKH).
-Creates a random key pair and derives the corresponding SegWit address.
-The private key is encrypted for security.</p>
+    <p>Adjusts the transaction amount to account for the transaction fee.
+This function ensures that the fee is deducted from the total amount, avoiding leaving dust in the wallet.</p>
 </div>
 
 
@@ -142,6 +136,78 @@ The private key is encrypted for security.</p>
 
 
 
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>amount</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Original transaction amount in satoshis.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>fee</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Transaction fee in satoshis.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
 
 
 
@@ -177,7 +243,7 @@ The private key is encrypted for security.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utils_keyUtil.js.html">utils/keyUtil.js</a>, <a href="utils_keyUtil.js.html#line25">line 25</a>
+        <a href="utils_feeUtil.js.html">utils/feeUtil.js</a>, <a href="utils_feeUtil.js.html#line83">line 83</a>
     </li></ul></dd>
     
 
@@ -206,7 +272,7 @@ The private key is encrypted for security.</p>
 
         
 <div class="param-desc">
-    <p>An object containing the generated SegWit address and the encrypted private key.</p>
+    <p>Adjusted amount after deducting the fee.</p>
 </div>
 
 
@@ -217,7 +283,7 @@ The private key is encrypted for security.</p>
     </dt>
     <dd>
         
-<span class="param-type">Object</span>
+<span class="param-type">number</span>
 
 
     </dd>
@@ -235,7 +301,7 @@ The private key is encrypted for security.</p>
     
 
     
-    <h4 class="name" id="~generateTaprootBitcoinKeys"><span class="type-signature">(inner) </span>generateTaprootBitcoinKeys<span class="signature">()</span><span class="type-signature"> &rarr; {Object}</span></h4>
+    <h4 class="name" id="~estimateTransactionFee"><span class="type-signature">(inner) </span>estimateTransactionFee<span class="signature">(numInputs, numOutputs, feeRate)</span><span class="type-signature"> &rarr; {number}</span></h4>
     
 
     
@@ -243,9 +309,213 @@ The private key is encrypted for security.</p>
 
 
 <div class="description">
-    <p>Generates a new Taproot Bitcoin wallet (P2TR).
-Creates a random key pair and derives the corresponding Taproot address.
-The private key is encrypted for security.</p>
+    <p>Estimates the transaction fee in satoshis based on the number of inputs, outputs, and the fee rate.
+Uses the formula for virtual size (vSize) to calculate the fee more accurately for SegWit transactions.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>numInputs</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Number of transaction inputs.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>numOutputs</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Number of transaction outputs.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>feeRate</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Fee rate in satoshis per byte.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="utils_feeUtil.js.html">utils/feeUtil.js</a>, <a href="utils_feeUtil.js.html#line48">line 48</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Estimated transaction fee in satoshis.</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">number</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="~getCurrentFeeRates"><span class="type-signature">(async, inner) </span>getCurrentFeeRates<span class="signature">()</span><span class="type-signature"> &rarr; {Promise.&lt;{highFeePerByte: number, mediumFeePerByte: number, lowFeePerByte: number}>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Fetches the current Bitcoin network fee rates (high, medium, low) from BlockCypher.</p>
 </div>
 
 
@@ -289,7 +559,7 @@ The private key is encrypted for security.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utils_keyUtil.js.html">utils/keyUtil.js</a>, <a href="utils_keyUtil.js.html#line44">line 44</a>
+        <a href="utils_feeUtil.js.html">utils/feeUtil.js</a>, <a href="utils_feeUtil.js.html#line24">line 24</a>
     </li></ul></dd>
     
 
@@ -312,13 +582,42 @@ The private key is encrypted for security.</p>
 
 
 
+<h5>Throws:</h5>
+
+        
+
+<dl>
+    <dt>
+        <div class="param-desc">
+        <p>If the request to the BlockCypher API fails.</p>
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl>
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type">Error</span>
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+
+    
 
 
 <h5>Returns:</h5>
 
         
 <div class="param-desc">
-    <p>An object containing the generated Taproot address and the encrypted private key.</p>
+    <p>An object containing high, medium, and low fee rates in satoshis per byte.</p>
 </div>
 
 
@@ -329,7 +628,7 @@ The private key is encrypted for security.</p>
     </dt>
     <dd>
         
-<span class="param-type">Object</span>
+<span class="param-type">Promise.&lt;{highFeePerByte: number, mediumFeePerByte: number, lowFeePerByte: number}></span>
 
 
     </dd>

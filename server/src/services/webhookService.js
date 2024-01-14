@@ -17,8 +17,8 @@
 const Webhook = require("../models/webhookModel");
 const { createUTXO } = require("./utxoService");
 const { updateTransactionById } = require("./transactionService");
-const { updateWalletBalanceById } = require("./walletService");
-const { postAPI, getAPI, deleteAPI } = require("../utils/apiUtil");
+const { updateWalletBalanceById, addUTXOToWallet } = require("./walletService");
+const { postAPI, deleteAPI } = require("../utils/apiUtil");
 const { NotFoundError } = require("../utils/errorUtil");
 const log = require("../utils/logUtil");
 
@@ -36,16 +36,29 @@ const apiToken = process.env.BLOCKCYPHER_TOKEN;
  * @return {Promise<Object>} A promise resolving to the newly created webhook object.
  * @throws {Error} If an error occurs during webhook creation or registration.
  */
-const createWebhook = async (address, transactionRef) => {
+const createWebhook = async (
+  monitoredAddress,
+  walletRef,
+  transactionRef,
+  userRef,
+  eventRef,
+) => {
   // Define the new webhook and save it in the database
-  const newWebhook = new Webhook({ type: "tx-confirmation", transactionRef });
+  const newWebhook = new Webhook({
+    monitoredAddress,
+    type: "tx-confirmation",
+    transactionRef,
+    walletRef,
+    userRef,
+    eventRef,
+  });
   await newWebhook.save();
 
   // Register the webhook with BlockCypher
   const callbackUrl = `${process.env.WEBHOOK_DOMAIN}/webhook/receive/${newWebhook.urlId}`;
   const webhookData = {
     event: "tx-confirmation",
-    address,
+    address: monitoredAddress,
     url: callbackUrl,
     confirmations: 6,
     token: apiToken,
@@ -176,21 +189,25 @@ const _processWebhookTransactionData = async (webhook) => {
   const transactionDetails = webhook.body;
   const monitoredAddress = webhook.response.address;
 
-  // Calculate the total amount involved for the monitored address
   const amountInvolved = transactionDetails.outputs.reduce((sum, output) => {
-    if (output.addresses.includes(monitoredAddress)) {
-      return sum + output.value;
-    }
-    return sum;
+    return output.addresses.includes(monitoredAddress)
+      ? sum + output.value
+      : sum;
   }, 0);
 
   if (amountInvolved > 0) {
     // Create UTXO records only for the first confirmation
     if (transactionDetails.confirmations === 1) {
       const utxoPromises = transactionDetails.outputs
-        .filter((output) => output.addresses.includes(monitoredAddress))
-        .map((output, index) =>
-          createUTXO({
+        .map((output, index) => ({
+          output,
+          index,
+        }))
+        .filter(({ output }) => output.addresses.includes(monitoredAddress))
+        .map(async ({ output, index }) => {
+          const utxo = await createUTXO({
+            userRef: webhook.userRef,
+            eventRef: webhook.eventRef,
             transactionHash: transactionDetails.hash,
             outputIndex: index,
             amount: output.value,
@@ -199,8 +216,12 @@ const _processWebhookTransactionData = async (webhook) => {
             scriptType: output.script_type,
             blockHeight: transactionDetails.block_height,
             timestamp: new Date(transactionDetails.received),
-          }),
-        );
+          });
+
+          // Add the UTXO to the corresponding wallet
+          await addUTXOToWallet(monitoredAddress, utxo._id);
+          return utxo;
+        });
 
       try {
         await Promise.all(utxoPromises);
@@ -209,13 +230,13 @@ const _processWebhookTransactionData = async (webhook) => {
       }
     }
 
-    // Determine the transaction status based on the number of confirmations
-    const isConfirmed = webhook.body.confirmations >= 1;
+    // Determine transaction status based on confirmation count
+    const isConfirmed = transactionDetails.confirmations >= 6;
     const transactionStatus = isConfirmed ? "completed" : "confirming";
 
     // Prepare transaction update data
     const transactionUpdate = {
-      confirmations: webhook.body.confirmations,
+      confirmations: transactionDetails.confirmations,
       status: transactionStatus,
       confirmedAmount: isConfirmed ? amountInvolved : 0,
       unconfirmedAmount: !isConfirmed ? amountInvolved : 0,

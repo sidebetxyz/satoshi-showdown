@@ -39,8 +39,6 @@
  */
 
 const Transaction = require("../models/transactionModel");
-const bitcoin = require("bitcoinjs-lib");
-const network = bitcoin.networks.testnet; // or bitcoin.networks.bitcoin for mainnet
 const { NotFoundError } = require("../utils/errorUtil");
 const log = require("../utils/logUtil");
 
@@ -70,52 +68,22 @@ const createTransactionRecord = async (transactionData) => {
 };
 
 /**
- * Creates a raw Bitcoin transaction.
- *
- * @param {Object} details - Details for the raw Bitcoin transaction.
- * @param {Array} details.utxos - Unspent transaction outputs to be used.
- * @param {string} details.recipientAddress - The recipient's Bitcoin address.
- * @param {number} details.amount - Amount to send in satoshis.
- * @param {number} details.fee - Transaction fee in satoshis.
- * @param {string} details.changeAddress - Address to send the change to.
- * @param {Array} details.privateKeys - Private keys for signing the transaction.
- * @return {string} The raw Bitcoin transaction in hex format.
+ * Creates a refund transaction record.
+ * @param {Object} refundData - Data for the refund transaction.
+ * @return {Promise&lt;Object>} The created refund transaction record.
  */
-const createRawBitcoinTransaction = ({
-  utxos,
-  recipientAddress,
-  amount,
-  fee,
-  changeAddress,
-  privateKeys,
-}) => {
-  const tx = new bitcoin.TransactionBuilder(network);
-
-  // Add inputs
-  let totalInput = 0;
-  utxos.forEach((utxo) => {
-    tx.addInput(utxo.txId, utxo.vout);
-    totalInput += utxo.amount;
-  });
-
-  // Add recipient output
-  tx.addOutput(recipientAddress, amount);
-
-  // Calculate and add change
-  const change = totalInput - amount - fee;
-  if (change > 0) {
-    tx.addOutput(changeAddress, change);
+const createRefundTransactionRecord = async (refundData) => {
+  try {
+    const refundTransaction = new Transaction({
+      ...refundData,
+    });
+    await refundTransaction.save();
+    log.info(`Refund transaction record created: ${refundTransaction._id}`);
+    return refundTransaction;
+  } catch (error) {
+    log.error(`Error creating refund transaction record: ${error.message}`);
+    throw error;
   }
-
-  // Sign each input
-  utxos.forEach((utxo, index) => {
-    const privateKey = privateKeys[index];
-    const keyPair = bitcoin.ECPair.fromWIF(privateKey, network);
-    tx.sign(index, keyPair);
-  });
-
-  // Build and return the serialized transaction
-  return tx.build().toHex();
 };
 
 /**
@@ -197,7 +165,7 @@ const updateTransactionById = async (transactionId, updateData) => {
 
 module.exports = {
   createTransactionRecord,
-  createRawBitcoinTransaction,
+  createRefundTransactionRecord,
   getTransactionRecordById,
   getAllTransactionRecords,
   updateTransactionById,
@@ -212,7 +180,7 @@ module.exports = {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-middlewares_corsSecurityMiddleware.html">middlewares/corsSecurityMiddleware</a></li><li><a href="module-middlewares_errorMiddleware.html">middlewares/errorMiddleware</a></li><li><a href="module-middlewares_httpSecurityMiddleware.html">middlewares/httpSecurityMiddleware</a></li><li><a href="module-middlewares_jsonParserMiddleware.html">middlewares/jsonParserMiddleware</a></li><li><a href="module-middlewares_requestLoggerMiddleware.html">middlewares/requestLoggerMiddleware</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#port">port</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-middlewares_corsSecurityMiddleware.html">middlewares/corsSecurityMiddleware</a></li><li><a href="module-middlewares_errorMiddleware.html">middlewares/errorMiddleware</a></li><li><a href="module-middlewares_httpSecurityMiddleware.html">middlewares/httpSecurityMiddleware</a></li><li><a href="module-middlewares_jsonParserMiddleware.html">middlewares/jsonParserMiddleware</a></li><li><a href="module-middlewares_requestLoggerMiddleware.html">middlewares/requestLoggerMiddleware</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_feeUtil.html">utils/feeUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#createUTXO">createUTXO</a></li><li><a href="global.html#findUTXOsByAddress">findUTXOsByAddress</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#markUTXOAsSpent">markUTXOAsSpent</a></li><li><a href="global.html#port">port</a></li><li><a href="global.html#selectUTXOsForTransaction">selectUTXOsForTransaction</a></li></ul>
 </nav>
 
 <br class="clear">

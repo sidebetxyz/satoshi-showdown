@@ -18,6 +18,8 @@ const {
   handleDeleteEvent,
   handleGetEvent,
   handleGetAllEvents,
+  handleJoinEvent,
+  handleRefundEventCreator,
 } = require("../controllers/eventController");
 
 const router = new express.Router();
@@ -99,5 +101,33 @@ router.get("/get/:id", handleGetEvent);
  * @access Public/Private (depending on your application's requirement)
  */
 router.get("/getAll", handleGetAllEvents);
+
+/**
+ * POST route for a user to join an event.
+ * Expects event and user IDs in the request body.
+ *
+ * @name post/join
+ * @function
+ * @memberof module:routes/eventRoutes
+ * @inner
+ * @param {string} path - Express path.
+ * @param {callback} middleware - Express middleware (controller function).
+ * @access Public/Private (as required)
+ */
+router.post("/join", handleJoinEvent);
+
+/**
+ * POST route to process a refund for the creator of an event.
+ * Expects the event ID as a URL parameter.
+ *
+ * @name post/refund
+ * @function
+ * @memberof module:routes/eventRoutes
+ * @inner
+ * @param {string} path - Express path with event ID as a parameter.
+ * @param {callback} middleware - Express middleware (controller function).
+ * @access Public/Private (as required)
+ */
+router.post("/refund/:eventId", handleRefundEventCreator);
 
 module.exports = router;

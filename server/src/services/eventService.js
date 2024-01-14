@@ -18,15 +18,24 @@
  */
 
 const Event = require("../models/eventModel");
+const { selectUTXOsForTransaction, markUTXOAsSpent } = require("./utxoService");
 const {
   createSegWitWalletForEvent,
-  addTransactionToWallet,
+  createRawBitcoinTransaction,
 } = require("./walletService");
-const { createTransactionRecord } = require("./transactionService");
+const {
+  createTransactionRecord,
+  createRefundTransactionRecord,
+  getTransactionRecordById,
+} = require("./transactionService");
 const { createWebhook } = require("./webhookService");
-const { getTransactionRecordById } = require("./transactionService");
 const { getUserById } = require("./userService");
 const { validateEvent } = require("../utils/validationUtil");
+const {
+  getCurrentFeeRates,
+  estimateTransactionFee,
+  adjustAmountForFee,
+} = require("../utils/feeUtil");
 const { ValidationError, NotFoundError } = require("../utils/errorUtil");
 const log = require("../utils/logUtil");
 
@@ -37,23 +46,29 @@ const log = require("../utils/logUtil");
  *
  * @async
  * @function createEvent
- * @param {string} userId - The ID of the user creating the event.
- * @param {string} userAddress - The Bitcoin address of the user creating the event.
- * @param {Object} eventData - The initial data for the event.
+ * @param {Object} eventData - Comprehensive data for creating the event.
  * @return {Promise<{event: Object, transaction: Object}>} An object containing the created event and transaction details.
  * @throws {ValidationError} If the event data does not pass validation.
  * @throws {NotFoundError} If the user is not found in the database.
  */
-const createEvent = async (userId, userAddress, eventData) => {
+const createEvent = async (eventData) => {
   try {
+    // Destructure all necessary fields from eventData
+    const { userId, userAddress, prizePoolContribution, ...eventDetails } =
+      eventData;
+
+    // Fetch the user based on userId
     const user = await getUserById(userId);
     if (!user) {
       throw new NotFoundError(`User with ID ${userId} not found`);
     }
 
-    eventData.creator = user._id.toString();
+    // Set the event creator and calculate the total prize pool
+    eventDetails.creator = user._id.toString();
+    eventDetails.prizePool = eventDetails.entryFee + prizePoolContribution;
 
-    const validation = validateEvent(eventData);
+    // Validate the event details
+    const validation = validateEvent(eventDetails);
     if (validation.error) {
       throw new ValidationError(
         `Invalid event data: ${validation.error.details
@@ -62,30 +77,36 @@ const createEvent = async (userId, userAddress, eventData) => {
       );
     }
 
+    // Handle the financial setup for the event
     const financialSetup = await handleFinancialSetup(
       userAddress,
       user._id,
-      eventData.entryFee,
-      eventData.prizePool,
+      eventDetails.entryFee,
+      prizePoolContribution,
     );
 
-    eventData.transactions = [financialSetup.transaction._id];
+    // Add transaction reference to event details
+    eventDetails.transactions = [financialSetup.transaction._id];
 
-    const newEvent = new Event(eventData);
+    // Create and save the new event
+    const newEvent = new Event(eventDetails);
     await newEvent.save();
 
-    // Update the user's eventsCreated array with the new event
-    user.eventsCreated.push(newEvent._id);
-    user.transactions.push(financialSetup.transaction._id);
-    await user.save(); // Saving the updated user data
-
-    // Retrieve the transaction details
-    const transactionDetails = await getTransactionRecordById(
+    // Now create a webhook for the event
+    const webhook = await createWebhook(
+      financialSetup.wallet.publicAddress,
+      financialSetup.wallet._id,
       financialSetup.transaction._id,
+      user._id,
+      newEvent._id,
     );
 
-    log.info(`New event created: ${newEvent._id}`);
-    return { event: newEvent, transaction: transactionDetails };
+    log.info(`New event created with webhook: ${newEvent._id}`);
+    return {
+      event: newEvent,
+      transaction: financialSetup.transaction,
+      webhook: webhook,
+    };
   } catch (err) {
     log.error(`Error in createEvent: ${err.message}`);
     throw err;
@@ -279,12 +300,20 @@ const handleFinancialSetup = async (
   try {
     // Calculate the total amount the user needs to send in
     const totalAmount = entryFee + prizePoolContribution;
+    let transactionPurpose;
 
+    if (prizePoolContribution > 0) {
+      transactionPurpose = "payFeeAndFundPool";
+    } else {
+      transactionPurpose = "entryFeePayment";
+    }
+
+    // MOVE THIS TO A SEPARATE FUNCTION
     // Generate a unique random amount of satoshis
     const uniqueSatoshis = Math.floor(Math.random() * 1000); // Adjust the range as needed
-
     // Add the unique amount to the total
     const expectedAmount = totalAmount + uniqueSatoshis;
+    // END OF MOVE THIS TO A SEPARATE FUNCTION
 
     // Create a SegWit wallet for the event
     const wallet = await createSegWitWalletForEvent();
@@ -297,16 +326,11 @@ const handleFinancialSetup = async (
       expectedAmount: expectedAmount,
       walletAddress: wallet.publicAddress,
       userAddress: userAddress,
+      purpose: transactionPurpose,
     };
 
     // Create a transaction record for the event
     const transaction = await createTransactionRecord(transactionData);
-
-    // Add the transaction to the wallet
-    await addTransactionToWallet(wallet._id, transaction._id);
-
-    // Create a webhook for the wallet and transaction
-    await createWebhook(wallet.publicAddress, transaction._id);
 
     log.info(
       `Financial setup completed for event: Wallet and transaction created`,
@@ -322,6 +346,104 @@ const handleFinancialSetup = async (
   }
 };
 
+/**
+ * Refunds the creator of an event.
+ * @async
+ * @function refundEventCreator
+ * @param {string} eventId - ID of the event to refund.
+ * @return {Promise<Object>} Details of the refund transaction.
+ * @throws {Error} If the refund process encounters an issue.
+ */
+const refundEventCreator = async (eventId) => {
+  try {
+    const event = await Event.findById(eventId);
+    if (!event) {
+      throw new NotFoundError(`Event with ID ${eventId} not found`);
+    }
+
+    // Retrieve the original transaction record
+    const originalTransactionId = event.transactions[0];
+    const originalTransaction = await getTransactionRecordById(
+      originalTransactionId,
+    );
+
+    const refundAmount = originalTransaction.confirmedAmount; // Assuming full refund
+    const selectedUTXOs = await selectUTXOsForTransaction(
+      event.creator,
+      eventId,
+      refundAmount,
+    );
+
+    // Fetch current fee rates and estimate transaction fee
+    const feeRates = await getCurrentFeeRates();
+    const feeRate = feeRates.lowFeePerByte;
+    const estimatedFee = estimateTransactionFee(
+      selectedUTXOs.length,
+      1,
+      feeRate,
+    ); // Assuming 1 output
+
+    console.log(feeRates);
+    console.log(feeRate);
+    console.log(estimatedFee);
+
+    const adjustedRefundAmount = adjustAmountForFee(refundAmount, estimatedFee);
+
+    // Prepare the refund transaction data
+    const refundTransactionData = {
+      userRef: originalTransaction.userRef,
+      walletRef: originalTransaction.walletRef,
+      transactionType: "outgoing",
+      purpose: "refundUser",
+      walletAddress: originalTransaction.walletAddress,
+      userAddress: originalTransaction.userAddress,
+      expectedAmount: adjustedRefundAmount,
+      unconfirmedAmount: adjustedRefundAmount,
+      confirmedAmount: 0,
+      status: "pending",
+      transactionHash: null,
+    };
+
+    const refundTransaction = await createRefundTransactionRecord(
+      refundTransactionData,
+    );
+
+    event.status = "cancelled";
+    event.transactions.push(refundTransaction._id);
+    event.prizePool = 0;
+    event.isOpen = false;
+    event.closedAt = new Date();
+
+    await event.save();
+
+    // await createWebhook(refundTransaction.walletAddress, refundTransaction._id, event.creator, event._id);
+
+    for (const utxo of selectedUTXOs) {
+      await markUTXOAsSpent(utxo.transactionHash, utxo.outputIndex);
+    }
+
+    // Specify a change address - ideally, this should be a new address generated for the event or user
+    const changeAddress =
+      event.walletAddress || originalTransaction.walletAddress;
+
+    const rawTransaction = await createRawBitcoinTransaction(
+      selectedUTXOs,
+      refundTransaction.userAddress,
+      refundAmount - estimatedFee,
+      changeAddress,
+      estimatedFee,
+    );
+
+    console.log(rawTransaction);
+
+    log.info(`Refund processed for event: ${eventId}`);
+    return refundTransaction;
+  } catch (err) {
+    log.error(`Error in refundEventCreator: ${err.message}`);
+    throw err;
+  }
+};
+
 module.exports = {
   createEvent,
   getEvent,
@@ -329,4 +451,5 @@ module.exports = {
   updateEvent,
   joinEvent,
   deleteEvent,
+  refundEventCreator,
 };

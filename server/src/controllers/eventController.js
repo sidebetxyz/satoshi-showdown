@@ -16,6 +16,8 @@ const {
   deleteEvent,
   getEvent,
   getAllEvents,
+  joinEvent,
+  refundEventCreator,
 } = require("../services/eventService");
 
 /**
@@ -33,13 +35,8 @@ const {
  */
 const handleCreateEvent = async (req, res, next) => {
   try {
-    const { userId, userAddress, eventData } = req.body;
-
-    if (!userId) {
-      throw new Error("User not authenticated");
-    }
-
-    const newEvent = await createEvent(userId, userAddress, eventData);
+    const { eventData } = req.body;
+    const newEvent = await createEvent(eventData);
     res.status(201).json(newEvent);
   } catch (err) {
     next(err);
@@ -137,10 +134,58 @@ const handleDeleteEvent = async (req, res, next) => {
   }
 };
 
+/**
+ * Handles a user joining an event.
+ * Extracts event and user IDs from the request, calls the Event Service to add the user to the event,
+ * and returns updated event details in the response.
+ *
+ * @async
+ * @function handleJoinEvent
+ * @param {express.Request} req - Express request object containing event and user IDs.
+ * @param {express.Response} res - Express response object for sending back the updated event data.
+ * @param {express.NextFunction} next - Express next middleware function for error handling.
+ * @return {Promise<void>} No explicit return value, sends response to the client.
+ * @throws {Error} If joining the event encounters issues.
+ */
+const handleJoinEvent = async (req, res, next) => {
+  try {
+    const { eventId, userId } = req.body;
+    const updatedEvent = await joinEvent(eventId, userId);
+    res.json(updatedEvent);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Handles refunding the creator of an event.
+ * Extracts the event ID from the request, invokes the Event Service to process the refund,
+ * and returns details of the refund transaction in the response.
+ *
+ * @async
+ * @function handleRefundEventCreator
+ * @param {express.Request} req - Express request object containing the event ID.
+ * @param {express.Response} res - Express response object for sending back the refund transaction data.
+ * @param {express.NextFunction} next - Express next middleware function for error handling.
+ * @return {Promise<void>} No explicit return value, sends response to the client.
+ * @throws {Error} If the refund process encounters issues.
+ */
+const handleRefundEventCreator = async (req, res, next) => {
+  try {
+    const { eventId } = req.params;
+    const refundTransaction = await refundEventCreator(eventId);
+    res.json(refundTransaction);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   handleCreateEvent,
   handleUpdateEvent,
   handleGetEvent,
   handleGetAllEvents,
   handleDeleteEvent,
+  handleJoinEvent,
+  handleRefundEventCreator,
 };

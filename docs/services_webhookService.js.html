@@ -45,8 +45,8 @@
 const Webhook = require("../models/webhookModel");
 const { createUTXO } = require("./utxoService");
 const { updateTransactionById } = require("./transactionService");
-const { updateWalletBalanceById } = require("./walletService");
-const { postAPI, getAPI, deleteAPI } = require("../utils/apiUtil");
+const { updateWalletBalanceById, addUTXOToWallet } = require("./walletService");
+const { postAPI, deleteAPI } = require("../utils/apiUtil");
 const { NotFoundError } = require("../utils/errorUtil");
 const log = require("../utils/logUtil");
 
@@ -64,16 +64,29 @@ const apiToken = process.env.BLOCKCYPHER_TOKEN;
  * @return {Promise&lt;Object>} A promise resolving to the newly created webhook object.
  * @throws {Error} If an error occurs during webhook creation or registration.
  */
-const createWebhook = async (address, transactionRef) => {
+const createWebhook = async (
+  monitoredAddress,
+  walletRef,
+  transactionRef,
+  userRef,
+  eventRef,
+) => {
   // Define the new webhook and save it in the database
-  const newWebhook = new Webhook({ type: "tx-confirmation", transactionRef });
+  const newWebhook = new Webhook({
+    monitoredAddress,
+    type: "tx-confirmation",
+    transactionRef,
+    walletRef,
+    userRef,
+    eventRef,
+  });
   await newWebhook.save();
 
   // Register the webhook with BlockCypher
   const callbackUrl = `${process.env.WEBHOOK_DOMAIN}/webhook/receive/${newWebhook.urlId}`;
   const webhookData = {
     event: "tx-confirmation",
-    address,
+    address: monitoredAddress,
     url: callbackUrl,
     confirmations: 6,
     token: apiToken,
@@ -204,21 +217,25 @@ const _processWebhookTransactionData = async (webhook) => {
   const transactionDetails = webhook.body;
   const monitoredAddress = webhook.response.address;
 
-  // Calculate the total amount involved for the monitored address
   const amountInvolved = transactionDetails.outputs.reduce((sum, output) => {
-    if (output.addresses.includes(monitoredAddress)) {
-      return sum + output.value;
-    }
-    return sum;
+    return output.addresses.includes(monitoredAddress)
+      ? sum + output.value
+      : sum;
   }, 0);
 
   if (amountInvolved > 0) {
     // Create UTXO records only for the first confirmation
     if (transactionDetails.confirmations === 1) {
       const utxoPromises = transactionDetails.outputs
-        .filter((output) => output.addresses.includes(monitoredAddress))
-        .map((output, index) =>
-          createUTXO({
+        .map((output, index) => ({
+          output,
+          index,
+        }))
+        .filter(({ output }) => output.addresses.includes(monitoredAddress))
+        .map(async ({ output, index }) => {
+          const utxo = await createUTXO({
+            userRef: webhook.userRef,
+            eventRef: webhook.eventRef,
             transactionHash: transactionDetails.hash,
             outputIndex: index,
             amount: output.value,
@@ -227,8 +244,12 @@ const _processWebhookTransactionData = async (webhook) => {
             scriptType: output.script_type,
             blockHeight: transactionDetails.block_height,
             timestamp: new Date(transactionDetails.received),
-          }),
-        );
+          });
+
+          // Add the UTXO to the corresponding wallet
+          await addUTXOToWallet(monitoredAddress, utxo._id);
+          return utxo;
+        });
 
       try {
         await Promise.all(utxoPromises);
@@ -237,13 +258,13 @@ const _processWebhookTransactionData = async (webhook) => {
       }
     }
 
-    // Determine the transaction status based on the number of confirmations
-    const isConfirmed = webhook.body.confirmations >= 1;
+    // Determine transaction status based on confirmation count
+    const isConfirmed = transactionDetails.confirmations >= 6;
     const transactionStatus = isConfirmed ? "completed" : "confirming";
 
     // Prepare transaction update data
     const transactionUpdate = {
-      confirmations: webhook.body.confirmations,
+      confirmations: transactionDetails.confirmations,
       status: transactionStatus,
       confirmedAmount: isConfirmed ? amountInvolved : 0,
       unconfirmedAmount: !isConfirmed ? amountInvolved : 0,
@@ -323,7 +344,7 @@ module.exports = {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-middlewares_corsSecurityMiddleware.html">middlewares/corsSecurityMiddleware</a></li><li><a href="module-middlewares_errorMiddleware.html">middlewares/errorMiddleware</a></li><li><a href="module-middlewares_httpSecurityMiddleware.html">middlewares/httpSecurityMiddleware</a></li><li><a href="module-middlewares_jsonParserMiddleware.html">middlewares/jsonParserMiddleware</a></li><li><a href="module-middlewares_requestLoggerMiddleware.html">middlewares/requestLoggerMiddleware</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#port">port</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-middlewares_corsSecurityMiddleware.html">middlewares/corsSecurityMiddleware</a></li><li><a href="module-middlewares_errorMiddleware.html">middlewares/errorMiddleware</a></li><li><a href="module-middlewares_httpSecurityMiddleware.html">middlewares/httpSecurityMiddleware</a></li><li><a href="module-middlewares_jsonParserMiddleware.html">middlewares/jsonParserMiddleware</a></li><li><a href="module-middlewares_requestLoggerMiddleware.html">middlewares/requestLoggerMiddleware</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_feeUtil.html">utils/feeUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#createUTXO">createUTXO</a></li><li><a href="global.html#findUTXOsByAddress">findUTXOsByAddress</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#markUTXOAsSpent">markUTXOAsSpent</a></li><li><a href="global.html#port">port</a></li><li><a href="global.html#selectUTXOsForTransaction">selectUTXOsForTransaction</a></li></ul>
 </nav>
 
 <br class="clear">

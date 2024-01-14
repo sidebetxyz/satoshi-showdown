@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Module: utils/keyUtil</title>
+    <title>JSDoc: Source: utils/feeUtil.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,339 +17,109 @@
 
 <div id="main">
 
-    <h1 class="page-title">Module: utils/keyUtil</h1>
-
-    
-
-
-
-
-<section>
-
-<header>
-    
-</header>
-
-<article>
-    <div class="container-overview">
-    
-        
-            <div class="description"><p>Key Utility for Satoshi Showdown.
-This module provides functionalities related to cryptographic key generation and management,
-especially for Bitcoin wallets. It utilizes bitcoinjs-lib and tiny-secp256k1 for cryptographic
-operations and supports the generation of SegWit and Taproot Bitcoin wallet keys.</p></div>
-        
-
-        
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utils_keyUtil.js.html">utils/keyUtil.js</a>, <a href="utils_keyUtil.js.html#line1">line 1</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-        
-    
-    </div>
-
-    
-
-    
-        <h3 class="subsection-title">Requires</h3>
-
-        <ul>
-            <li>module:bitcoinjs-lib</li>
-        
-            <li>module:ecpair</li>
-        
-            <li>module:tiny-secp256k1</li>
-        
-            <li><a href="module-utils_encryptionUtil.html">module:utils/encryptionUtil</a></li>
-        </ul>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-        <h3 class="subsection-title">Methods</h3>
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="~generateSegWitBitcoinKeys"><span class="type-signature">(inner) </span>generateSegWitBitcoinKeys<span class="signature">()</span><span class="type-signature"> &rarr; {Object}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Generates a new SegWit Bitcoin wallet (P2WPKH).
-Creates a random key pair and derives the corresponding SegWit address.
-The private key is encrypted for security.</p>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utils_keyUtil.js.html">utils/keyUtil.js</a>, <a href="utils_keyUtil.js.html#line25">line 25</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>An object containing the generated SegWit address and the encrypted private key.</p>
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Object</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="~generateTaprootBitcoinKeys"><span class="type-signature">(inner) </span>generateTaprootBitcoinKeys<span class="signature">()</span><span class="type-signature"> &rarr; {Object}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Generates a new Taproot Bitcoin wallet (P2TR).
-Creates a random key pair and derives the corresponding Taproot address.
-The private key is encrypted for security.</p>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utils_keyUtil.js.html">utils/keyUtil.js</a>, <a href="utils_keyUtil.js.html#line44">line 44</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>An object containing the generated Taproot address and the encrypted private key.</p>
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Object</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-    
-
-    
-
-    
-</article>
-
-</section>
+    <h1 class="page-title">Source: utils/feeUtil.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const { getAPI } = require("./apiUtil");
+const bitcoin = require("bitcoinjs-lib");
+
+// Configuration for BlockCypher API
+const apiBaseUrl = process.env.BLOCKCYPHER_BASE_URL;
+
+/**
+ * @fileoverview Utility functions for handling transaction fees in Satoshi Showdown.
+ * Includes functionality for fetching current network fee rates and estimating
+ * transaction fees based on transaction details.
+ *
+ * @module utils/feeUtil
+ * @requires utils/apiUtil - For making API requests.
+ * @requires bitcoinjs-lib - For transaction calculations.
+ */
+
+/**
+ * Fetches the current Bitcoin network fee rates (high, medium, low) from BlockCypher.
+ * @async
+ * @return {Promise&lt;{highFeePerByte: number, mediumFeePerByte: number, lowFeePerByte: number}>}
+ *          An object containing high, medium, and low fee rates in satoshis per byte.
+ * @throws {Error} If the request to the BlockCypher API fails.
+ */
+const getCurrentFeeRates = async () => {
+  try {
+    const url = `${apiBaseUrl}`;
+    const data = await getAPI(url);
+
+    return {
+      highFeePerByte: Math.ceil(data.high_fee_per_kb / 1024),
+      mediumFeePerByte: Math.ceil(data.medium_fee_per_kb / 1024),
+      lowFeePerByte: Math.ceil(data.low_fee_per_kb / 1024),
+    };
+  } catch (error) {
+    throw new Error(`Error fetching current fee rates: ${error.message}`);
+  }
+};
+
+/**
+ * Estimates the transaction fee in satoshis based on the number of inputs, outputs, and the fee rate.
+ * Uses the formula for virtual size (vSize) to calculate the fee more accurately for SegWit transactions.
+ *
+ * @param {number} numInputs - Number of transaction inputs.
+ * @param {number} numOutputs - Number of transaction outputs.
+ * @param {number} feeRate - Fee rate in satoshis per byte.
+ * @return {number} Estimated transaction fee in satoshis.
+ */
+const estimateTransactionFee = (numInputs, numOutputs, feeRate) => {
+  // Create a dummy transaction to estimate its size
+  const tx = new bitcoin.Transaction();
+
+  // Dummy hash for inputs (32-byte zero buffer)
+  const dummyHash = Buffer.alloc(32); // 32-byte buffer of zeros
+
+  for (let i = 0; i &lt; numInputs; i++) {
+    // Add dummy inputs using a buffer of 32 bytes of zeros
+    tx.addInput(dummyHash, 0); // Zero for index
+  }
+
+  for (let i = 0; i &lt; numOutputs; i++) {
+    // Add dummy outputs (script and value are irrelevant for size calculation)
+    // Using a 22-byte buffer as a placeholder for the script
+    tx.addOutput(Buffer.alloc(22), 0); // Zero for amount
+  }
+
+  // Calculate the virtual size (vSize) of the transaction
+  const vSize = tx.virtualSize();
+
+  console.log("vSize:", vSize);
+
+  // Estimate fee = vSize * feeRate
+  return Math.ceil(vSize * feeRate);
+};
+
+/**
+ * Adjusts the transaction amount to account for the transaction fee.
+ * This function ensures that the fee is deducted from the total amount, avoiding leaving dust in the wallet.
+ *
+ * @param {number} amount - Original transaction amount in satoshis.
+ * @param {number} fee - Transaction fee in satoshis.
+ * @return {number} Adjusted amount after deducting the fee.
+ */
+const adjustAmountForFee = (amount, fee) => {
+  return Math.max(amount - fee, 0);
+};
+
+module.exports = {
+  getCurrentFeeRates,
+  estimateTransactionFee,
+  adjustAmountForFee,
+};
+</code></pre>
+        </article>
+    </section>
 
 
 

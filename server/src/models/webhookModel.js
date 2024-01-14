@@ -38,17 +38,13 @@ const { v4: uuidv4 } = require("uuid");
 const webhookSchema = new mongoose.Schema(
   {
     urlId: { type: String, default: uuidv4, unique: true },
+    monitoredAddress: { type: String, required: true },
     response: Object,
     headers: Map,
     body: mongoose.Schema.Types.Mixed,
     type: {
       type: String,
       enum: ["tx-confirmation"],
-      required: true,
-    },
-    transactionRef: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Transaction",
       required: true,
     },
     status: {
@@ -67,6 +63,31 @@ const webhookSchema = new mongoose.Schema(
     isDeleted: { type: Boolean, default: false },
     deletedAt: Date,
     lastAttempt: Date,
+    utxoRef: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "UTXO",
+      default: null,
+    },
+    transactionRef: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Transaction",
+      required: true,
+    },
+    walletRef: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Wallet",
+      required: true,
+    },
+    userRef: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    eventRef: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Event",
+      required: true,
+    },
   },
   { timestamps: true },
 );

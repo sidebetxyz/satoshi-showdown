@@ -122,7 +122,7 @@ ensuring data integrity and consistency.</p></div>
     
 
     
-    <h4 class="name" id="~createRawBitcoinTransaction"><span class="type-signature">(inner) </span>createRawBitcoinTransaction<span class="signature">(details)</span><span class="type-signature"> &rarr; {string}</span></h4>
+    <h4 class="name" id="~createRefundTransactionRecord"><span class="type-signature">(async, inner) </span>createRefundTransactionRecord<span class="signature">(refundData)</span><span class="type-signature"> &rarr; {Promise.&lt;Object>}</span></h4>
     
 
     
@@ -130,7 +130,7 @@ ensuring data integrity and consistency.</p></div>
 
 
 <div class="description">
-    <p>Creates a raw Bitcoin transaction.</p>
+    <p>Creates a refund transaction record.</p>
 </div>
 
 
@@ -166,7 +166,7 @@ ensuring data integrity and consistency.</p></div>
 
         <tr>
             
-                <td class="name"><code>details</code></td>
+                <td class="name"><code>refundData</code></td>
             
 
             <td class="type">
@@ -182,171 +182,7 @@ ensuring data integrity and consistency.</p></div>
 
             
 
-            <td class="description last"><p>Details for the raw Bitcoin transaction.</p>
-                <h6>Properties</h6>
-                
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>utxos</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Array</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Unspent transaction outputs to be used.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>recipientAddress</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>The recipient's Bitcoin address.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>amount</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">number</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Amount to send in satoshis.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>fee</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">number</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Transaction fee in satoshis.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>changeAddress</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Address to send the change to.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>privateKeys</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Array</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Private keys for signing the transaction.</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-            </td>
+            <td class="description last"><p>Data for the refund transaction.</p></td>
         </tr>
 
     
@@ -387,7 +223,7 @@ ensuring data integrity and consistency.</p></div>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="services_transactionService.js.html">services/transactionService.js</a>, <a href="services_transactionService.js.html#line56">line 56</a>
+        <a href="services_transactionService.js.html">services/transactionService.js</a>, <a href="services_transactionService.js.html#line47">line 47</a>
     </li></ul></dd>
     
 
@@ -416,7 +252,7 @@ ensuring data integrity and consistency.</p></div>
 
         
 <div class="param-desc">
-    <p>The raw Bitcoin transaction in hex format.</p>
+    <p>The created refund transaction record.</p>
 </div>
 
 
@@ -427,7 +263,7 @@ ensuring data integrity and consistency.</p></div>
     </dt>
     <dd>
         
-<span class="param-type">string</span>
+<span class="param-type">Promise.&lt;Object></span>
 
 
     </dd>
@@ -710,7 +546,7 @@ ensuring data integrity and consistency.</p></div>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="services_transactionService.js.html">services/transactionService.js</a>, <a href="services_transactionService.js.html#line33">line 33</a>
+        <a href="services_transactionService.js.html">services/transactionService.js</a>, <a href="services_transactionService.js.html#line31">line 31</a>
     </li></ul></dd>
     
 
@@ -849,7 +685,7 @@ ensuring data integrity and consistency.</p></div>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="services_transactionService.js.html">services/transactionService.js</a>, <a href="services_transactionService.js.html#line115">line 115</a>
+        <a href="services_transactionService.js.html">services/transactionService.js</a>, <a href="services_transactionService.js.html#line83">line 83</a>
     </li></ul></dd>
     
 
@@ -1008,7 +844,7 @@ ensuring data integrity and consistency.</p></div>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="services_transactionService.js.html">services/transactionService.js</a>, <a href="services_transactionService.js.html#line101">line 101</a>
+        <a href="services_transactionService.js.html">services/transactionService.js</a>, <a href="services_transactionService.js.html#line69">line 69</a>
     </li></ul></dd>
     
 
@@ -1222,7 +1058,7 @@ and maintains data integrity. If there are no changes, the update is skipped.</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="services_transactionService.js.html">services/transactionService.js</a>, <a href="services_transactionService.js.html#line119">line 119</a>
+        <a href="services_transactionService.js.html">services/transactionService.js</a>, <a href="services_transactionService.js.html#line87">line 87</a>
     </li></ul></dd>
     
 
@@ -1346,7 +1182,7 @@ and maintains data integrity. If there are no changes, the update is skipped.</p
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-middlewares_corsSecurityMiddleware.html">middlewares/corsSecurityMiddleware</a></li><li><a href="module-middlewares_errorMiddleware.html">middlewares/errorMiddleware</a></li><li><a href="module-middlewares_httpSecurityMiddleware.html">middlewares/httpSecurityMiddleware</a></li><li><a href="module-middlewares_jsonParserMiddleware.html">middlewares/jsonParserMiddleware</a></li><li><a href="module-middlewares_requestLoggerMiddleware.html">middlewares/requestLoggerMiddleware</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#port">port</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-middlewares_corsSecurityMiddleware.html">middlewares/corsSecurityMiddleware</a></li><li><a href="module-middlewares_errorMiddleware.html">middlewares/errorMiddleware</a></li><li><a href="module-middlewares_httpSecurityMiddleware.html">middlewares/httpSecurityMiddleware</a></li><li><a href="module-middlewares_jsonParserMiddleware.html">middlewares/jsonParserMiddleware</a></li><li><a href="module-middlewares_requestLoggerMiddleware.html">middlewares/requestLoggerMiddleware</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_feeUtil.html">utils/feeUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#createUTXO">createUTXO</a></li><li><a href="global.html#findUTXOsByAddress">findUTXOsByAddress</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#markUTXOAsSpent">markUTXOAsSpent</a></li><li><a href="global.html#port">port</a></li><li><a href="global.html#selectUTXOsForTransaction">selectUTXOsForTransaction</a></li></ul>
 </nav>
 
 <br class="clear">

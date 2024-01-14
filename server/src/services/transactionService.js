@@ -11,8 +11,6 @@
  */
 
 const Transaction = require("../models/transactionModel");
-const bitcoin = require("bitcoinjs-lib");
-const network = bitcoin.networks.testnet; // or bitcoin.networks.bitcoin for mainnet
 const { NotFoundError } = require("../utils/errorUtil");
 const log = require("../utils/logUtil");
 
@@ -42,52 +40,22 @@ const createTransactionRecord = async (transactionData) => {
 };
 
 /**
- * Creates a raw Bitcoin transaction.
- *
- * @param {Object} details - Details for the raw Bitcoin transaction.
- * @param {Array} details.utxos - Unspent transaction outputs to be used.
- * @param {string} details.recipientAddress - The recipient's Bitcoin address.
- * @param {number} details.amount - Amount to send in satoshis.
- * @param {number} details.fee - Transaction fee in satoshis.
- * @param {string} details.changeAddress - Address to send the change to.
- * @param {Array} details.privateKeys - Private keys for signing the transaction.
- * @return {string} The raw Bitcoin transaction in hex format.
+ * Creates a refund transaction record.
+ * @param {Object} refundData - Data for the refund transaction.
+ * @return {Promise<Object>} The created refund transaction record.
  */
-const createRawBitcoinTransaction = ({
-  utxos,
-  recipientAddress,
-  amount,
-  fee,
-  changeAddress,
-  privateKeys,
-}) => {
-  const tx = new bitcoin.TransactionBuilder(network);
-
-  // Add inputs
-  let totalInput = 0;
-  utxos.forEach((utxo) => {
-    tx.addInput(utxo.txId, utxo.vout);
-    totalInput += utxo.amount;
-  });
-
-  // Add recipient output
-  tx.addOutput(recipientAddress, amount);
-
-  // Calculate and add change
-  const change = totalInput - amount - fee;
-  if (change > 0) {
-    tx.addOutput(changeAddress, change);
+const createRefundTransactionRecord = async (refundData) => {
+  try {
+    const refundTransaction = new Transaction({
+      ...refundData,
+    });
+    await refundTransaction.save();
+    log.info(`Refund transaction record created: ${refundTransaction._id}`);
+    return refundTransaction;
+  } catch (error) {
+    log.error(`Error creating refund transaction record: ${error.message}`);
+    throw error;
   }
-
-  // Sign each input
-  utxos.forEach((utxo, index) => {
-    const privateKey = privateKeys[index];
-    const keyPair = bitcoin.ECPair.fromWIF(privateKey, network);
-    tx.sign(index, keyPair);
-  });
-
-  // Build and return the serialized transaction
-  return tx.build().toHex();
 };
 
 /**
@@ -169,7 +137,7 @@ const updateTransactionById = async (transactionId, updateData) => {
 
 module.exports = {
   createTransactionRecord,
-  createRawBitcoinTransaction,
+  createRefundTransactionRecord,
   getTransactionRecordById,
   getAllTransactionRecords,
   updateTransactionById,
