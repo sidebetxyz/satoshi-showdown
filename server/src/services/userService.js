@@ -16,65 +16,54 @@
 
 const User = require("../models/userModel");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const { validateUser } = require("../utils/validationUtil");
 const { ValidationError, NotFoundError } = require("../utils/errorUtil");
 const log = require("../utils/logUtil");
 
-/**
- * Creates a new user with the provided details.
- * This function validates the user data, securely hashes the password,
- * and then saves the new user to the database.
- *
- * @async
- * @function createUser
- * @param {Object} userData - Data for creating a new user.
- * @param {string} userData.username - Username of the user.
- * @param {string} userData.email - Email address of the user.
- * @param {string} userData.password - Password of the user.
- * @param {Date} userData.lastActive - Timestamp of the user's last activity.
- * @param {string} userData.role - Role of the user within the platform.
- * @param {Object} userData.profileInfo - Additional profile information (structure can vary).
- * @param {string} userData.ipAddress - IP address of the user.
- * @param {ObjectID} userData.organization - Reference to an Organization, if applicable.
- * @param {Array} userData.eventsCreated - Events created by the user.
- * @param {Array} userData.eventsParticipated - Events in which the user has participated.
- * @param {Array} userData.transactions - Transactions associated with the user.
- * @return {Promise<Object>} The created user object with sensitive data (e.g., password hash) excluded.
- * @throws {ValidationError} When user data validation fails or if the username/email is already in use.
- */
-const createUser = async (userData) => {
-  try {
-    const { error } = validateUser(userData);
-
-    if (error) {
-      throw new ValidationError(error.details.map((d) => d.message).join("; "));
-    }
-
-    // Check if the user already exists
-    if (await checkUserExists(userData.username, userData.email)) {
-      throw new ValidationError("Username or email already exists");
-    }
-
-    // Hash password
-    const passwordHash = await bcrypt.hash(userData.password, 10);
-
-    // Create new user
-    const newUser = new User({
-      ...userData,
-      passwordHash,
-    });
-
-    await newUser.save();
-
-    // Exclude sensitive data before returning user data
-    const userDataWithoutSensitiveInfo = excludeSensitiveData(newUser);
-    log.info(`User created: ${JSON.stringify(userDataWithoutSensitiveInfo)}`);
-
-    return userDataWithoutSensitiveInfo;
-  } catch (err) {
-    log.error(`Error in createUser: ${err.message}`);
-    throw err;
+// Register User
+const registerUser = async (userData) => {
+  // Validate user data
+  const { error } = validateUser(userData);
+  if (error) {
+    throw new ValidationError(error.details.map((d) => d.message).join("; "));
   }
+
+  // Check if user already exists
+  if (
+    await User.findOne({
+      $or: [{ username: userData.username }, { email: userData.email }],
+    })
+  ) {
+    throw new ValidationError("Username or email already exists");
+  }
+
+  // Hash password
+  const passwordHash = await bcrypt.hash(userData.password, 10);
+
+  // Create new user
+  const newUser = new User({
+    ...userData,
+    passwordHash,
+  });
+
+  await newUser.save();
+
+  // Exclude sensitive data before returning
+  return excludeSensitiveData(newUser);
+};
+
+// Login User
+const loginUser = async (username, password) => {
+  const user = await User.findOne({ username });
+  if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+    throw new Error("Invalid username or password");
+  }
+
+  const token = jwt.sign({ userId: user.userId }, process.env.JWT_SECRET, {
+    expiresIn: "1h",
+  });
+  return { token };
 };
 
 /**
@@ -254,11 +243,18 @@ async function checkUserExists(username, email) {
 const excludeSensitiveData = (user) => {
   const userObject = user.toObject();
   delete userObject.passwordHash;
+  delete userObject.__v;
+  delete userObject.lastActive;
+  delete userObject.createdAt;
+  delete userObject.updatedAt;
+  delete userObject._id;
+  delete userObject.ipAddress;
   return userObject;
 };
 
 module.exports = {
-  createUser,
+  registerUser,
+  loginUser,
   getUserById,
   getUserByUsername,
   getUserByEmail,

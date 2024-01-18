@@ -10,24 +10,17 @@
  */
 
 const express = require("express");
-const { handleCreateUser } = require("../controllers/userController");
+const {
+  handleRegisterUser,
+  handleLoginUser,
+} = require("../controllers/userController");
 
 const router = new express.Router();
 
-/**
- * POST route for user creation.
- * Receives user data in the request body and invokes the handleCreateUser
- * controller function to process the user creation operation. Suitable for
- * both registered users and guest user creation based on application requirements.
- *
- * @name post/create
- * @function
- * @memberof module:routes/userRoutes
- * @inner
- * @param {string} path - Express path
- * @param {callback} middleware - Express middleware (controller function).
- * @access Public/Private (depending on your application's requirement)
- */
-router.post("/create", handleCreateUser);
+// POST route for user registration.
+router.post("/register", handleRegisterUser);
+
+// POST route for user login.
+router.post("/login", handleLoginUser);
 
 module.exports = router;

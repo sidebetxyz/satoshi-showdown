@@ -163,14 +163,15 @@ const updateEvent = async (eventId, updateData) => {
 };
 
 /**
- * Adds a user to an event if there is space available. Manages the event's status based on participant count.
+ * Adds a user to an event if there is space available, creates a transaction record,
+ * and sets up a webhook for transaction monitoring.
  * Throws an error if the event is full or closed, or if the event or user does not exist.
  *
  * @async
  * @function joinEvent
  * @param {string} eventId - The unique identifier of the event to join.
  * @param {string} userId - The unique identifier of the user attempting to join the event.
- * @return {Promise<Object>} The updated event object reflecting the new participant.
+ * @return {Promise<Object>} The updated event object reflecting the new participant and transaction.
  * @throws {NotFoundError} If the specified event or user is not found.
  * @throws {Error} If the event is already full or closed for new participants.
  */
@@ -178,7 +179,6 @@ const joinEvent = async (eventId, userId) => {
   // Find the event by its ID.
   const event = await Event.findById(eventId);
   if (!event) {
-    // If the event does not exist, throw an error.
     throw new NotFoundError(`Event with ID ${eventId} not found`);
   }
 
@@ -190,15 +190,36 @@ const joinEvent = async (eventId, userId) => {
   // Retrieve the user based on the provided userId.
   const user = await getUserById(userId);
   if (!user) {
-    // If the user does not exist, throw an error.
     throw new NotFoundError(`User with ID ${userId} not found`);
   }
 
+  // Handle the financial transaction for joining the event
+  const entryFee = event.entryFee; // Assuming entryFee is defined in the event model
+  const transactionData = {
+    userRef: userId,
+    walletRef: event.walletId, // Assuming event has a walletId field
+    transactionType: "incoming",
+    expectedAmount: entryFee,
+    walletAddress: event.walletAddress, // Assuming event has a walletAddress field
+    userAddress: user.walletAddress, // Assuming user has a walletAddress field
+  };
+  const transaction = await createTransactionRecord(transactionData);
+
+  // Create a webhook for the transaction
+  const webhook = await createWebhook(
+    event.walletAddress,
+    event.walletId,
+    transaction._id,
+    userId,
+    eventId,
+  );
+
   // Add the user to the event's participants list with the current timestamp.
   event.participants.push({ userId: user._id, joinedAt: new Date() });
+  event.transactions.push(transaction._id); // Add transaction ID to event's transactions
 
-  // Update event status to 'ready' if it reaches the maximum number of participants.
-  if (event.participants.length === event.maxParticipants) {
+  // Update event status to 'ready' if it reaches the minimum number of participants.
+  if (event.participants.length === event.minParticipants) {
     event.isOpen = false;
     event.status = "ready";
   }
@@ -206,8 +227,12 @@ const joinEvent = async (eventId, userId) => {
   // Save the updated event information to the database.
   await event.save();
 
-  // Return the updated event object.
-  return event;
+  // Return the updated event object including transaction details.
+  return {
+    event: event,
+    transaction: transaction,
+    webhook: webhook,
+  };
 };
 
 /**
@@ -444,12 +469,109 @@ const refundEventCreator = async (eventId) => {
   }
 };
 
+/**
+ * Refunds a user associated with an event or a specific transaction.
+ * @async
+ * @function refundUser
+ * @param {string} userId - ID of the user to refund.
+ * @param {string} eventId - ID of the event associated with the refund.
+ * @param {number} [refundAmount] - Amount to refund. If not provided, full amount is refunded.
+ * @return {Promise<Object>} Details of the refund transaction.
+ * @throws {Error} If the refund process encounters an issue.
+ */
+const refundUser = async (userId, eventId, refundAmount = null) => {
+  try {
+    const event = await Event.findById(eventId);
+    if (!event) {
+      throw new NotFoundError(`Event with ID ${eventId} not found`);
+    }
+
+    // Determine the transaction to refund
+    let transactionToRefund;
+    for (const transactionId of event.transactions) {
+      const transaction = await getTransactionRecordById(transactionId);
+      if (transaction.userRef.toString() === userId.toString()) {
+        transactionToRefund = transaction;
+        break;
+      }
+    }
+
+    if (!transactionToRefund) {
+      throw new Error(
+        `No transaction found for user ID ${userId} in event ID ${eventId}`,
+      );
+    }
+
+    // If refundAmount not specified, refund the full transaction amount
+    refundAmount = refundAmount || transactionToRefund.confirmedAmount;
+
+    // Select UTXOs for the refund transaction
+    const selectedUTXOs = await selectUTXOsForTransaction(
+      userId,
+      eventId,
+      refundAmount,
+    );
+
+    // Estimate transaction fee and adjust refund amount
+    const feeRates = await getCurrentFeeRates();
+    const estimatedFee = estimateTransactionFee(
+      selectedUTXOs.length,
+      1,
+      feeRates.lowFeePerByte,
+    );
+    const adjustedRefundAmount = adjustAmountForFee(refundAmount, estimatedFee);
+
+    // Prepare the refund transaction data
+    const refundTransactionData = {
+      userRef: userId,
+      walletRef: transactionToRefund.walletRef,
+      transactionType: "outgoing",
+      purpose: "refundUser",
+      walletAddress: transactionToRefund.walletAddress,
+      userAddress: transactionToRefund.userAddress,
+      expectedAmount: adjustedRefundAmount,
+      unconfirmedAmount: adjustedRefundAmount,
+      confirmedAmount: 0,
+      status: "pending",
+      transactionHash: null,
+    };
+
+    const refundTransaction = await createRefundTransactionRecord(
+      refundTransactionData,
+    );
+
+    // Update the event's transactions to include the refund transaction
+    event.transactions.push(refundTransaction._id);
+    await event.save();
+
+    // Specify a change address - ideally, this should be a new address generated for the user or event
+    const changeAddress =
+      event.walletAddress || transactionToRefund.walletAddress;
+
+    // Create the raw Bitcoin transaction
+    const rawTransaction = await createRawBitcoinTransaction(
+      selectedUTXOs,
+      refundTransaction.userAddress,
+      adjustedRefundAmount - estimatedFee,
+      changeAddress,
+      estimatedFee,
+    );
+
+    log.info(`Refund processed for user ${userId} in event ${eventId}`);
+    return { refundTransaction, rawTransaction };
+  } catch (err) {
+    log.error("Error in refundUser: ${err.message}");
+    throw err;
+  }
+};
+
 module.exports = {
   createEvent,
-  getEvent,
-  getAllEvents,
   updateEvent,
   joinEvent,
+  getEvent,
+  getAllEvents,
   deleteEvent,
+  refundUser,
   refundEventCreator,
 };

@@ -43,8 +43,8 @@ const userSchema = new mongoose.Schema(
     lastActive: { type: Date, default: Date.now },
     role: {
       type: String,
-      enum: ["participant", "organizer", "admin"],
-      default: "participant",
+      enum: ["User", "Sponsor", "Admin"],
+      default: "User",
     },
     profileInfo: Object,
     ipAddress: String,

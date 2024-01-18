@@ -12,6 +12,7 @@
  */
 
 const express = require("express");
+const authenticate = require("../middlewares/jwtAuthenticateMiddleware");
 const {
   handleCreateEvent,
   handleUpdateEvent,
@@ -38,7 +39,7 @@ const router = new express.Router();
  * @param {callback} middleware - Express middleware (controller function).
  * @access Public/Private (depending on your application's requirement)
  */
-router.post("/create", handleCreateEvent);
+router.post("/create", authenticate, handleCreateEvent);
 
 /**
  * PUT route to update an existing event identified by its ID.
@@ -114,7 +115,7 @@ router.get("/getAll", handleGetAllEvents);
  * @param {callback} middleware - Express middleware (controller function).
  * @access Public/Private (as required)
  */
-router.post("/join", handleJoinEvent);
+router.post("/join", authenticate, handleJoinEvent);
 
 /**
  * POST route to process a refund for the creator of an event.
