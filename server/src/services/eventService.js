@@ -87,9 +87,13 @@ const createEvent = async (eventData) => {
 
     // Add transaction reference to event details
     eventDetails.transactions = [financialSetup.transaction._id];
+    eventDetails.walletRef = financialSetup.wallet._id;
+    eventDetails.walletAddress = financialSetup.wallet.publicAddress;
 
     // Create and save the new event
     const newEvent = new Event(eventDetails);
+    // Automatically add event creator as a participant
+    newEvent.participants.push({ userId: user._id, joinedAt: new Date() });
     await newEvent.save();
 
     // Now create a webhook for the event
@@ -165,21 +169,39 @@ const updateEvent = async (eventId, updateData) => {
 /**
  * Adds a user to an event if there is space available, creates a transaction record,
  * and sets up a webhook for transaction monitoring.
- * Throws an error if the event is full or closed, or if the event or user does not exist.
+ * Also handles optional prize pool contribution by the user.
  *
  * @async
  * @function joinEvent
  * @param {string} eventId - The unique identifier of the event to join.
- * @param {string} userId - The unique identifier of the user attempting to join the event.
+ * @param {string} userId - The unique identifier (UUID) of the user attempting to join the event.
+ * @param {string} userWalletAddress - The wallet address of the user.
+ * @param {number} [prizePoolContribution=0] - Optional contribution to the prize pool by the user.
  * @return {Promise<Object>} The updated event object reflecting the new participant and transaction.
  * @throws {NotFoundError} If the specified event or user is not found.
  * @throws {Error} If the event is already full or closed for new participants.
  */
-const joinEvent = async (eventId, userId) => {
+const joinEvent = async (
+  eventId,
+  userId,
+  userWalletAddress,
+  prizePoolContribution = 0,
+) => {
   // Find the event by its ID.
-  const event = await Event.findById(eventId);
+  const event = await Event.findOne({ eventId: eventId });
   if (!event) {
     throw new NotFoundError(`Event with ID ${eventId} not found`);
+  }
+
+  if (
+    event.creator.toString() === userId ||
+    event.participants.some(
+      (participant) => participant.userId.toString() === userId,
+    )
+  ) {
+    throw new Error(
+      "Event creator or an already participating user cannot join the event",
+    );
   }
 
   // Check if the event is open for new participants and not already full.
@@ -193,30 +215,33 @@ const joinEvent = async (eventId, userId) => {
     throw new NotFoundError(`User with ID ${userId} not found`);
   }
 
-  // Handle the financial transaction for joining the event
-  const entryFee = event.entryFee; // Assuming entryFee is defined in the event model
+  // Calculate total transaction amount (entry fee + optional prize pool contribution)
+  const totalAmount = event.entryFee + prizePoolContribution;
+
+  // Assuming walletRef is an ObjectId and walletAddress is a UUID or ObjectId
   const transactionData = {
-    userRef: userId,
-    walletRef: event.walletId, // Assuming event has a walletId field
+    userRef: user._id,
+    walletRef: event.walletRef,
     transactionType: "incoming",
-    expectedAmount: entryFee,
-    walletAddress: event.walletAddress, // Assuming event has a walletAddress field
-    userAddress: user.walletAddress, // Assuming user has a walletAddress field
+    expectedAmount: totalAmount,
+    walletAddress: event.walletAddress,
+    userAddress: userWalletAddress || user.walletAddress,
+    purpose:
+      prizePoolContribution > 0 ? "payFeeAndFundPool" : "entryFeePayment",
   };
+
   const transaction = await createTransactionRecord(transactionData);
 
-  // Create a webhook for the transaction
-  const webhook = await createWebhook(
-    event.walletAddress,
-    event.walletId,
-    transaction._id,
-    userId,
-    eventId,
-  );
+  // Update the prize pool if there's a contribution
+  if (prizePoolContribution > 0) {
+    event.prizePool += prizePoolContribution;
+  }
 
-  // Add the user to the event's participants list with the current timestamp.
+  event.prizePool += event.entryFee;
+
+  // Add the user to the event's participants list
   event.participants.push({ userId: user._id, joinedAt: new Date() });
-  event.transactions.push(transaction._id); // Add transaction ID to event's transactions
+  event.transactions.push(transaction._id);
 
   // Update event status to 'ready' if it reaches the minimum number of participants.
   if (event.participants.length === event.minParticipants) {
@@ -226,6 +251,15 @@ const joinEvent = async (eventId, userId) => {
 
   // Save the updated event information to the database.
   await event.save();
+
+  // Create a webhook for the transaction
+  const webhook = await createWebhook(
+    transaction.walletAddress,
+    transaction.walletRef,
+    transaction._id,
+    user._id,
+    event._id,
+  );
 
   // Return the updated event object including transaction details.
   return {
@@ -565,6 +599,199 @@ const refundUser = async (userId, eventId, refundAmount = null) => {
   }
 };
 
+/**
+ * Settles an event based on participant votes.
+ * @param {string} eventId - ID of the event to settle.
+ */
+async function settleEvent(eventId) {
+  try {
+    const event = await Event.findById(eventId);
+    if (!event) {
+      throw new NotFoundError(`Event with ID ${eventId} not found`);
+    }
+
+    // Trigger settling process only if the event is active and the current time is past the end time
+    if (event.status === "active" && new Date() > event.endTime) {
+      event.status = "settling";
+      event.settlementStatus = "processing";
+      await event.save();
+      log.info(`Event ${eventId} status updated to settling`);
+    } else {
+      throw new Error(
+        "Event is not in a state to be settled or end time not reached",
+      );
+    }
+  } catch (err) {
+    log.error(`Error in settleEvent: ${err.message}`);
+    throw err;
+  }
+}
+
+const castVote = async (eventId, userId, vote) => {
+  try {
+    const event = await Event.findOne({ eventId: eventId });
+    if (!event) {
+      throw new NotFoundError(`Event with ID ${eventId} not found`);
+    }
+
+    // Check if voting is open
+    if (
+      event.status !== "settling" &&
+      event.settlementStatus !== "processing"
+    ) {
+      throw new Error("Voting is not open for this event");
+    }
+
+    // Verify participant and ensure they haven't voted
+    const isParticipant = event.participants.some(
+      (p) => p.userId.toString() === userId,
+    );
+    const hasVoted = event.voteResults.some(
+      (v) => v.userId.toString() === userId,
+    );
+    if (!isParticipant || hasVoted) {
+      throw new Error("Invalid voting attempt");
+    }
+
+    // Record the vote
+    event.voteResults.push({ userId, vote, timestamp: new Date() });
+
+    // Check if all participants have voted
+    if (event.voteResults.length === event.participants.length) {
+      // All participants have voted, proceed to determine the outcome
+      const outcome = determineOutcome(event.voteResults);
+      if (outcome.isDisputed) {
+        event.isDisputed = true;
+        event.disputeResolutionStatus = "pending";
+        event.settlementStatus = "contested";
+        // Additional logic for dispute resolution
+      } else {
+        event.finalOutcome = {
+          winners: [outcome.winner],
+          settledAt: new Date(),
+        };
+        event.settlementStatus = "settled";
+        // Award the winner
+        const { transaction, rawTransaction } = await awardWinner(
+          eventId,
+          outcome.winner,
+        );
+        console.log("Transaction Details:", transaction);
+        console.log("Raw Transaction:", rawTransaction);
+      }
+    }
+
+    await event.save();
+    log.info(`Vote recorded for user ${userId} in event ${eventId}`);
+
+    return { message: "Vote cast successfully" };
+  } catch (err) {
+    log.error(`Error in castVote: ${err.message}`);
+    throw err;
+  }
+};
+
+const determineOutcome = (voteResults) => {
+  if (voteResults.length !== 2) {
+    // For a 1v1 event, exactly two votes are expected
+    throw new Error("Invalid number of votes for a 1v1 event");
+  }
+
+  const [vote1, vote2] = voteResults;
+
+  if (vote1.vote === "win" && vote2.vote === "loss") {
+    return { winner: vote1.userId, isDisputed: false };
+  } else if (vote1.vote === "loss" && vote2.vote === "win") {
+    return { winner: vote2.userId, isDisputed: false };
+  } else if (vote1.vote === "draw" && vote2.vote === "draw") {
+    return { isDraw: true, isDisputed: false };
+  } else {
+    // Any other combination is considered a dispute
+    return { isDisputed: true };
+  }
+};
+
+const awardWinner = async (eventId, winnerId) => {
+  try {
+    const event = await Event.findOne({ eventId: eventId });
+    if (!event) {
+      throw new NotFoundError(`Event with ID ${eventId} not found`);
+    }
+
+    // Ensure the event is in the 'settling' state and settlement status is 'settled'
+    if (event.status !== "settling" || event.settlementStatus !== "settled") {
+      throw new Error("Event is not in a state to award the winner");
+    }
+
+    const winner = await getUserById(winnerId);
+    if (!winner) {
+      throw new NotFoundError(`User with ID ${winnerId} not found`);
+    }
+
+    // Retrieve the transaction where the winner paid the entry fee to find their refund address
+    const entryTransaction = await Transaction.findOne({
+      userRef: winner._id,
+      purpose: "entryFeePayment",
+    });
+    if (!entryTransaction) {
+      throw new Error(`Entry transaction for user ID ${winnerId} not found`);
+    }
+
+    // Collect all UTXOs associated with the event
+    const eventUTXOs = await UTXO.find({ eventRef: event._id, spent: false });
+
+    // Calculate the total prize amount and fetch current fee rates
+    const totalPrizeAmount = event.prizePool;
+    const feeRates = await getCurrentFeeRates();
+    const estimatedFee = estimateTransactionFee(
+      eventUTXOs.length,
+      1,
+      feeRates.lowFeePerByte,
+    );
+
+    // Adjust the prize amount by deducting the transaction fee
+    const prizeAmountAfterFee = totalPrizeAmount - estimatedFee;
+
+    // Create the raw Bitcoin transaction for prize distribution
+    const rawTransaction = await createRawBitcoinTransaction(
+      eventUTXOs,
+      entryTransaction.userAddress, // Refund address of the winner
+      prizeAmountAfterFee,
+      event.walletAddress, // Assuming the event has a dedicated wallet address
+      estimatedFee,
+    );
+
+    // Create a new transaction record for the prize distribution
+    const prizeDistributionTransaction = new Transaction({
+      userRef: winner._id,
+      walletRef: event.walletId,
+      transactionType: "outgoing",
+      expectedAmount: prizeAmountAfterFee,
+      walletAddress: event.walletAddress,
+      userAddress: entryTransaction.userAddress,
+      transactionHash: rawTransaction, // Actual transaction hash after broadcast
+    });
+
+    await prizeDistributionTransaction.save();
+
+    // Mark the used UTXOs as spent
+    await UTXO.updateMany(
+      { _id: { $in: eventUTXOs.map((utxo) => utxo._id) } },
+      { spent: true },
+    );
+
+    // Update the event status to 'completed' after awarding the prize
+    event.status = "completed";
+    await event.save();
+
+    log.info(`Prize awarded to user ${winnerId} for event ${eventId}`);
+    return { transaction: prizeDistributionTransaction, rawTransaction };
+  } catch (err) {
+    log.error(`Error in awardWinner: ${err.message}`);
+    throw err;
+  }
+};
+
 module.exports = {
   createEvent,
   updateEvent,
@@ -574,4 +801,6 @@ module.exports = {
   deleteEvent,
   refundUser,
   refundEventCreator,
+  settleEvent,
+  castVote,
 };

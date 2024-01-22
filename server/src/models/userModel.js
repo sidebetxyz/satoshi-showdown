@@ -43,7 +43,7 @@ const userSchema = new mongoose.Schema(
     lastActive: { type: Date, default: Date.now },
     role: {
       type: String,
-      enum: ["User", "Sponsor", "Admin"],
+      enum: ["User", "Organizer", "Oracle", "Staff", "Admin", "SuperAdmin"],
       default: "User",
     },
     profileInfo: Object,

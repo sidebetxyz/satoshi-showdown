@@ -39,14 +39,11 @@ const validateUser = (data) =>
     password: validatePassword.required(), // Validate plain text password
     lastActive: validateDate.optional(),
     role: Joi.string()
-      .valid("participant", "organizer", "admin")
-      .default("participant"),
+      .valid("User", "Organizer", "Oracle", "Staff", "Admin", "SuperAdmin")
+      .default("User"),
     profileInfo: Joi.object().optional(),
     ipAddress: validateString.optional(),
     organization: validateObjectId.optional(),
-    eventsCreated: Joi.array().items(validateObjectId).optional(),
-    eventsParticipated: Joi.array().items(validateObjectId).optional(),
-    transactions: Joi.array().items(validateObjectId).optional(),
   }).validate(data, { abortEarly: false });
 
 /**

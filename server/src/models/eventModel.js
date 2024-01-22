@@ -44,6 +44,13 @@ const { v4: uuidv4 } = require("uuid");
  * @property {Array} socialSharingLinks - Social sharing links.
  * @property {number} ageRestriction - Age restriction for participation.
  * @property {Array} geographicRestrictions - Geographic limitations.
+ * @property {string} settlementType - Method used to determine the outcome of the event.
+ * @property {Array} voteResults - Voting results from participants.
+ * @property {boolean} isDisputed - Whether the event result is disputed.
+ * @property {Array} disputeEvidence - Evidence submitted for disputed results.
+ * @property {string} disputeResolutionStatus - Status of dispute resolution.
+ * @property {string} settlementStatus - Status of event settlement.
+ * @property {Object} finalOutcome - Final outcome details with winners and settlement time.
  */
 const eventSchema = new mongoose.Schema(
   {
@@ -55,19 +62,18 @@ const eventSchema = new mongoose.Schema(
     endTime: Date,
     status: {
       type: String,
-      enum: ["planning", "ready", "active", "completed", "cancelled"],
+      enum: [
+        "planning",
+        "ready",
+        "active",
+        "settling",
+        "completed",
+        "cancelled",
+      ],
       default: "planning",
     },
-    entryFee: {
-      type: Number,
-      required: true,
-      default: 0,
-    },
-    prizePool: {
-      type: Number,
-      required: true,
-      default: 0,
-    },
+    entryFee: { type: Number, required: true, default: 0 },
+    prizePool: { type: Number, required: true, default: 0 },
     creator: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -83,6 +89,12 @@ const eventSchema = new mongoose.Schema(
     minParticipants: { type: Number, required: true },
     isOpen: { type: Boolean, default: true },
     closedAt: Date,
+    walletAddress: { type: String, required: true },
+    walletRef: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Wallet",
+      required: true,
+    },
     transactions: [
       { type: mongoose.Schema.Types.ObjectId, ref: "Transaction" },
     ],
@@ -102,6 +114,41 @@ const eventSchema = new mongoose.Schema(
     socialSharingLinks: [String],
     ageRestriction: Number,
     geographicRestrictions: [String],
+    settlementType: {
+      type: String,
+      enum: ["voting", "oracle", "referee", "automatic"],
+      default: "voting",
+      required: true,
+    },
+    voteResults: [
+      {
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        vote: { type: String, enum: ["win", "loss", "draw", "dispute"] },
+        timestamp: { type: Date, default: Date.now },
+      },
+    ],
+    isDisputed: { type: Boolean, default: false },
+    disputeEvidence: [
+      {
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        evidenceUrl: String,
+        submittedAt: { type: Date, default: Date.now },
+      },
+    ],
+    disputeResolutionStatus: {
+      type: String,
+      enum: ["pending", "resolved", "escalated"],
+      default: "pending",
+    },
+    settlementStatus: {
+      type: String,
+      enum: ["unsettled", "processing", "settled", "contested"],
+      default: "unsettled",
+    },
+    finalOutcome: {
+      winners: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+      settledAt: Date,
+    },
   },
   { timestamps: true },
 );
@@ -115,8 +162,5 @@ const eventSchema = new mongoose.Schema(
  * @typedef {mongoose.Model<module:models/Event~EventSchema>} EventModel
  */
 
-/**
- * @type {EventModel}
- */
 const Event = mongoose.model("Event", eventSchema);
 module.exports = Event;

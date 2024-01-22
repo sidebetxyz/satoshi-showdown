@@ -20,6 +20,8 @@ const {
   handleGetEvent,
   handleGetAllEvents,
   handleJoinEvent,
+  handleSettleEvent,
+  handleCastVote,
   handleRefundEventCreator,
 } = require("../controllers/eventController");
 
@@ -116,6 +118,34 @@ router.get("/getAll", handleGetAllEvents);
  * @access Public/Private (as required)
  */
 router.post("/join", authenticate, handleJoinEvent);
+
+/**
+ * POST route to settle an event.
+ * Expects the event ID as a URL parameter.
+ *
+ * @name post/settle
+ * @function
+ * @memberof module:routes/eventRoutes
+ * @inner
+ * @param {string} path - Express path with event ID as a parameter.
+ * @param {callback} middleware - Express middleware (controller function).
+ * @access Public/Private (as required)
+ */
+router.post("/settle/:eventId", authenticate, handleSettleEvent);
+
+/**
+ * POST route to cast a vote for a user.
+ * Expects the user ID and vote data in the request body.
+ *
+ * @name post/vote
+ * @function
+ * @memberof module:routes/eventRoutes
+ * @inner
+ * @param {string} path - Express path.
+ * @param {callback} middleware - Express middleware (controller function).
+ * @access Public/Private (as required)
+ */
+router.post("/vote", authenticate, handleCastVote);
 
 /**
  * POST route to process a refund for the creator of an event.

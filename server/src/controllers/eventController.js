@@ -149,9 +149,41 @@ const handleDeleteEvent = async (req, res, next) => {
  */
 const handleJoinEvent = async (req, res, next) => {
   try {
-    const { eventId, userId } = req.body;
-    const updatedEvent = await joinEvent(eventId, userId);
+    const { eventId, userId, userWalletAddress, prizePoolContribution } =
+      req.body;
+    const updatedEvent = await joinEvent(
+      eventId,
+      userId,
+      userWalletAddress,
+      prizePoolContribution,
+    );
     res.json(updatedEvent);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Controller for handling the settlement of an event.
+ */
+const handleSettleEvent = async (req, res, next) => {
+  try {
+    const { eventId } = req.params;
+    await settleEvent(eventId);
+    res.status(200).send(`Event with ID ${eventId} has been settled`);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Controller for handling a user's vote in an event.
+ */
+const handleCastVote = async (req, res, next) => {
+  try {
+    const { eventId, userId, vote } = req.body;
+    const response = await castVote(eventId, userId, vote);
+    res.json(response);
   } catch (err) {
     next(err);
   }
@@ -187,5 +219,7 @@ module.exports = {
   handleGetAllEvents,
   handleDeleteEvent,
   handleJoinEvent,
+  handleSettleEvent,
+  handleCastVote,
   handleRefundEventCreator,
 };

@@ -75,14 +75,6 @@ const createWebhook = async (
 };
 
 /**
- * Retrieves all webhook objects currently stored in the Satoshi Showdown database.
- *
- * @async
- * @return {Promise<Array>} A promise resolving to an array of webhook objects.
- */
-const getAllWebhooks = async () => await Webhook.find({});
-
-/**
  * Processes a received webhook by updating its status and associated transaction and wallet records.
  * Efficiently handles the headers, body, and confirmation status of the incoming webhook data.
  *
@@ -112,10 +104,7 @@ const processWebhook = async (urlId, headers, data) => {
     webhook.transactionRef,
     transactionUpdate,
   );
-  const wallet = await updateWalletBalanceById(
-    transaction.walletRef,
-    walletUpdate,
-  );
+  const wallet = await updateWalletBalanceById(webhook.walletRef, walletUpdate);
 
   log.info(
     `Webhook processed: Transaction - ${transaction._id}, Wallet - ${wallet._id}`,
@@ -303,6 +292,5 @@ const _deleteWebhook = async (blockcypherId, webhookId) => {
 
 module.exports = {
   createWebhook,
-  getAllWebhooks,
   processWebhook,
 };
