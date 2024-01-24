@@ -17,7 +17,7 @@ const {
   getEvent,
   getAllEvents,
   joinEvent,
-  refundEventCreator,
+  refundUser,
 } = require("../services/eventService");
 
 /**
@@ -189,26 +189,26 @@ const handleCastVote = async (req, res, next) => {
   }
 };
 
-/**
- * Handles refunding the creator of an event.
- * Extracts the event ID from the request, invokes the Event Service to process the refund,
- * and returns details of the refund transaction in the response.
- *
- * @async
- * @function handleRefundEventCreator
- * @param {express.Request} req - Express request object containing the event ID.
- * @param {express.Response} res - Express response object for sending back the refund transaction data.
- * @param {express.NextFunction} next - Express next middleware function for error handling.
- * @return {Promise<void>} No explicit return value, sends response to the client.
- * @throws {Error} If the refund process encounters issues.
- */
-const handleRefundEventCreator = async (req, res, next) => {
+const handleRefundUser = async (req, res) => {
   try {
-    const { eventId } = req.params;
-    const refundTransaction = await refundEventCreator(eventId);
-    res.json(refundTransaction);
-  } catch (err) {
-    next(err);
+    const { userId, eventId, refundAmount } = req.body;
+
+    // Call the refundUser function from eventService
+    const { refundTransaction, rawTransaction } = await refundUser(
+      userId,
+      eventId,
+      refundAmount,
+    );
+
+    // Return success response
+    res.status(200).json({
+      message: "Refund processed successfully",
+      refundTransaction,
+      rawTransaction,
+    });
+  } catch (error) {
+    // Handle errors and return an error response
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -221,5 +221,5 @@ module.exports = {
   handleJoinEvent,
   handleSettleEvent,
   handleCastVote,
-  handleRefundEventCreator,
+  handleRefundUser,
 };

@@ -82,6 +82,8 @@ const eventSchema = new mongoose.Schema(
     participants: [
       {
         userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        depositAddress: String,
+        userAddress: String,
         joinedAt: { type: Date, default: Date.now },
       },
     ],
@@ -89,7 +91,6 @@ const eventSchema = new mongoose.Schema(
     minParticipants: { type: Number, required: true },
     isOpen: { type: Boolean, default: true },
     closedAt: Date,
-    walletAddress: { type: String, required: true },
     walletRef: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Wallet",

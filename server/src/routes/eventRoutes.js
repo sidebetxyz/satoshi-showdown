@@ -22,7 +22,7 @@ const {
   handleJoinEvent,
   handleSettleEvent,
   handleCastVote,
-  handleRefundEventCreator,
+  handleRefundUser,
 } = require("../controllers/eventController");
 
 const router = new express.Router();
@@ -147,18 +147,6 @@ router.post("/settle/:eventId", authenticate, handleSettleEvent);
  */
 router.post("/vote", authenticate, handleCastVote);
 
-/**
- * POST route to process a refund for the creator of an event.
- * Expects the event ID as a URL parameter.
- *
- * @name post/refund
- * @function
- * @memberof module:routes/eventRoutes
- * @inner
- * @param {string} path - Express path with event ID as a parameter.
- * @param {callback} middleware - Express middleware (controller function).
- * @access Public/Private (as required)
- */
-router.post("/refund/:eventId", handleRefundEventCreator);
+router.post("/refund", handleRefundUser);
 
 module.exports = router;

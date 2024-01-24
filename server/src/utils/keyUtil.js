@@ -1,66 +1,73 @@
-/**
- * @fileoverview Key Utility for Satoshi Showdown.
- * This module provides functionalities related to cryptographic key generation and management,
- * especially for Bitcoin wallets. It utilizes bitcoinjs-lib and tiny-secp256k1 for cryptographic
- * operations and supports the generation of SegWit and Taproot Bitcoin wallet keys.
- *
- * @module utils/keyUtil
- * @requires bitcoinjs-lib - A JavaScript Bitcoin library for node.js and browsers.
- * @requires ecpair - Factory for creating Elliptic Curve pairs for Bitcoin.
- * @requires tiny-secp256k1 - A small elliptic curve library optimized for secp256k1 in JavaScript.
- * @requires utils/encryptionUtil - Utility for encrypting private keys.
- */
-
 const bitcoin = require("bitcoinjs-lib");
-const ecPairFactory = require("ecpair").default;
+const { BIP32Factory } = require("bip32");
+const bip39 = require("bip39");
 const ecc = require("tiny-secp256k1");
 const { encryptPrivateKey } = require("./encryptionUtil");
 
-// Initialize ECPair factory with tiny-secp256k1
-const ecPair = ecPairFactory(ecc);
-
-// Define the network for which to generate wallets (testnet or mainnet)
+// Define the network for testnet
 const network = bitcoin.networks.testnet;
 
+// Initialize bip32 with tiny-secp256k1
+const bip32 = BIP32Factory(ecc);
+
 /**
- * Generates a new SegWit Bitcoin wallet (P2WPKH).
- * Creates a random key pair and derives the corresponding SegWit address.
- * The private key is encrypted for security.
+ * Generates a new HD wallet using BIP84 standard including the seed.
+ * Uses BIP39 for mnemonic generation and BIP32 for key derivation.
  *
- * @function generateSegWitBitcoinKeys
- * @return {Object} An object containing the generated SegWit address and the encrypted private key.
+ * @function generateHDSegWitWalletWithSeed
+ * @return {Object} An object containing the master public key, encrypted master private key,
+ *                  encrypted seed, and derivation path.
  */
-const generateSegWitBitcoinKeys = () => {
-  const keyPair = ecPair.makeRandom({ network });
-  const { address } = bitcoin.payments.p2wpkh({
-    pubkey: keyPair.publicKey,
-    network,
-  });
-  const privateKey = keyPair.toWIF();
-  const encryptedPrivateKey = encryptPrivateKey(privateKey);
-  return { address, encryptedPrivateKey };
+const generateHDSegWitWalletWithSeed = () => {
+  const mnemonic = bip39.generateMnemonic();
+  const seed = bip39.mnemonicToSeedSync(mnemonic);
+  const root = bip32.fromSeed(seed, network);
+  const path = "m/84'/1'/0'/0/0";
+  // const child = root.derivePath(path);
+  const masterPublicKey = root.neutered().toBase58();
+  const encryptedMasterPrivateKey = encryptPrivateKey(root.toBase58());
+  const encryptedSeed = encryptPrivateKey(mnemonic);
+
+  return {
+    masterPublicKey,
+    encryptedMasterPrivateKey,
+    encryptedSeed,
+    derivationPath: path,
+  };
 };
 
 /**
- * Generates a new Taproot Bitcoin wallet (P2TR).
- * Creates a random key pair and derives the corresponding Taproot address.
- * The private key is encrypted for security.
+ * Generate a child address from the master key using a specified derivation path.
+ * This function supports generating P2WSH addresses.
  *
- * @function generateTaprootBitcoinKeys
- * @return {Object} An object containing the generated Taproot address and the encrypted private key.
+ * @function generateChildAddress
+ * @param {string} masterPublicKey - The master public key of the HD wallet.
+ * @param {number} childIndex - The index of the child key to generate.
+ * @return {Object} An object containing the child address and derivation path.
  */
-const generateTaprootBitcoinKeys = () => {
-  const keyPair = ecPair.makeRandom({ network, compressed: false });
-  const { address } = bitcoin.payments.p2tr({
-    pubkey: keyPair.publicKey,
+const generateChildAddress = (masterPublicKey, childIndex) => {
+  const node = bip32.fromBase58(masterPublicKey, network);
+
+  // Adjust the derivation path to include the child index for non-hardened derivation
+  const derivationPath = `m/84/1/0/0/${childIndex}`; // Updated for BIP84 (P2WSH)
+  const child = node.derivePath(derivationPath);
+
+  // Create the witness script (This is a simple example, using a single pubkey)
+  const witnessScript = bitcoin.payments.p2wpkh({
+    pubkey: child.publicKey,
     network,
-  });
-  const privateKey = keyPair.toWIF();
-  const encryptedPrivateKey = encryptPrivateKey(privateKey);
-  return { address, encryptedPrivateKey };
+  }).output;
+
+  // Generate the P2WSH address
+  const address = bitcoin.payments.p2wsh({
+    redeem: { output: witnessScript, network },
+    network,
+  }).address;
+
+  return { address, path: derivationPath };
 };
 
 module.exports = {
-  generateSegWitBitcoinKeys,
-  generateTaprootBitcoinKeys,
+  generateHDSegWitWalletWithSeed,
+  generateChildAddress,
 };

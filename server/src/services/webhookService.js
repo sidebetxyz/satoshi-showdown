@@ -100,10 +100,12 @@ const processWebhook = async (urlId, headers, data) => {
   // Process transaction and wallet updates based on webhook data
   const { transactionUpdate, walletUpdate } =
     await _processWebhookTransactionData(webhook);
+
   const transaction = await updateTransactionById(
     webhook.transactionRef,
     transactionUpdate,
   );
+
   const wallet = await updateWalletBalanceById(webhook.walletRef, walletUpdate);
 
   log.info(
@@ -208,7 +210,9 @@ const _processWebhookTransactionData = async (webhook) => {
           });
 
           // Add the UTXO to the corresponding wallet
-          await addUTXOToWallet(monitoredAddress, utxo._id);
+          await addUTXOToWallet(webhook.walletRef, utxo._id);
+          webhook.utxoRef = utxo._id;
+          await webhook.save();
           return utxo;
         });
 

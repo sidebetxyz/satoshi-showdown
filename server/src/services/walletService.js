@@ -1,9 +1,8 @@
 /**
  * @fileoverview Wallet Service for Satoshi Showdown.
- * Provides functionalities for managing cryptocurrency wallets, specifically for Bitcoin SegWit wallets.
- * It includes operations such as wallet creation, retrieval, balance update, and transaction association.
- * This service is essential for financial transactions within the platform, ensuring secure and efficient
- * management of user and event-related wallets.
+ * Provides functionalities for managing cryptocurrency wallets, specifically focusing on HD SegWit Bitcoin wallets.
+ * It includes operations such as wallet creation, retrieval, balance update, transaction association, and generating new addresses.
+ * This service is essential for financial transactions within the platform, ensuring secure and efficient management of wallets.
  *
  * @module services/walletService
  * @requires models/walletModel - Wallet data model for database interactions.
@@ -13,13 +12,17 @@
  */
 
 const Wallet = require("../models/walletModel");
-const { decryptPrivateKey } = require("../utils/encryptionUtil");
-const { generateSegWitBitcoinKeys } = require("../utils/keyUtil");
+const {
+  decryptPrivateKey,
+  generateHDSegWitWalletWithSeed,
+  generateChildAddress,
+} = require("../utils/keyUtil");
 const { NotFoundError } = require("../utils/errorUtil");
 const log = require("../utils/logUtil");
 
 const bitcoin = require("bitcoinjs-lib");
 const network = bitcoin.networks.testnet;
+
 const ecPairFactory = require("ecpair").default;
 const ecc = require("tiny-secp256k1");
 
@@ -27,30 +30,73 @@ const ecc = require("tiny-secp256k1");
 const ecPair = ecPairFactory(ecc);
 
 /**
- * Creates a new Segregated Witness (SegWit) Bitcoin wallet, primarily for event-related financial activities.
- * Generates a unique Bitcoin address and corresponding encrypted private key.
- * This wallet type is optimized for Satoshi Showdown's transaction processing needs, ensuring security and efficiency.
+ * Creates a new HD SegWit wallet for an event, including the seed.
  *
  * @async
- * @function createSegWitWalletForEvent
- * @return {Promise<Object>} The created wallet object, including public address and encrypted private key details.
- * @throws {Error} If there's an issue in key generation or saving the wallet to the database.
+ * @function createHDSegWitWalletForEvent
+ * @return {Promise<Object>} The created wallet object, including master public key, encrypted master private key, and encrypted seed.
+ * @throws {Error} If there's an issue in wallet generation or saving the wallet to the database.
  */
-const createSegWitWalletForEvent = async () => {
-  const { address, encryptedPrivateKey } = generateSegWitBitcoinKeys();
+const createHDSegWitWalletForEvent = async () => {
+  const {
+    masterPublicKey,
+    encryptedMasterPrivateKey,
+    encryptedSeed,
+    derivationPath,
+  } = generateHDSegWitWalletWithSeed();
+
+  console.log("Master Public Key:", masterPublicKey);
+  console.log("Encrypted Master Private Key:", encryptedMasterPrivateKey);
+  console.log("Encrypted Seed:", encryptedSeed);
+  console.log("Derivation Path:", derivationPath);
 
   const wallet = new Wallet({
-    publicAddress: address,
-    encryptedPrivateKey,
-    walletType: "SegWit",
+    walletType: "HD-SegWit",
+    masterPublicKey,
+    encryptedMasterPrivateKey,
+    encryptedSeed,
+    derivationPath,
   });
+
+  // Generate the initial address and path for the wallet
+  const initialAddressData = await generateChildAddressForWallet(
+    masterPublicKey,
+    0,
+  );
+
+  // Add the initial address and path to the addresses array
+  wallet.addresses.push(initialAddressData);
 
   try {
     await wallet.save();
-    log.info(`Wallet created with address: ${wallet.publicAddress}`);
+    log.info(`HD Wallet created for event`);
     return wallet;
   } catch (err) {
-    log.error(`Error in createSegWitWalletForEvent: ${err.message}`);
+    log.error(`Error in createHDSegWitWalletForEvent: ${err.message}`);
+    throw err;
+  }
+};
+
+/**
+ * Generates a new child address from a given HD wallet's master public key.
+ *
+ * @async
+ * @function generateChildAddressForWallet
+ * @param {string} masterPublicKey - The master public key of the HD wallet.
+ * @param {string} path - The derivation path for the child address.
+ * @return {Promise<Object>} An object containing the child address and path.
+ * @throws {Error} If there's an issue in address generation.
+ */
+const generateChildAddressForWallet = async (masterPublicKey, path) => {
+  try {
+    const { address, path: derivedPath } = generateChildAddress(
+      masterPublicKey,
+      path,
+    );
+    log.info(`Child address generated at path ${derivedPath}`);
+    return { address, path: derivedPath };
+  } catch (err) {
+    log.error(`Error in generateChildAddressForWallet: ${err.message}`);
     throw err;
   }
 };
@@ -214,18 +260,18 @@ const updateWalletBalanceById = async (walletId, updateData) => {
  *
  * @async
  * @function addUTXOToWallet
- * @param {string} walletAddress - The public address of the wallet.
+ * @param {string} walletRef - The MongoDB ObjectId of the wallet.
  * @param {string} utxoId - The ID of the UTXO to add to the wallet.
  * @return {Promise<Object>} The updated wallet object with the new UTXO reference.
  * @throws {NotFoundError} Thrown if the wallet or UTXO is not found.
  * @throws {Error} Thrown if there is an issue updating the wallet.
  */
-const addUTXOToWallet = async (walletAddress, utxoId) => {
+const addUTXOToWallet = async (walletRef, utxoId) => {
   try {
-    // Retrieve the wallet by its public address
-    const wallet = await Wallet.findOne({ publicAddress: walletAddress });
+    // Retrieve the wallet by its MongoDB ObjectId
+    const wallet = await Wallet.findById(walletRef);
     if (!wallet) {
-      throw new NotFoundError(`Wallet with address ${walletAddress} not found`);
+      throw new NotFoundError(`Wallet with ID ${walletRef} not found`);
     }
 
     // Check if UTXO already exists in the wallet to avoid duplicates
@@ -233,13 +279,9 @@ const addUTXOToWallet = async (walletAddress, utxoId) => {
       // Add the UTXO reference to the wallet's UTXO references array
       wallet.utxoRefs.push(utxoId);
       await wallet.save();
-      log.info(
-        `UTXO with ID ${utxoId} added to wallet: ${wallet.publicAddress}`,
-      );
+      log.info(`UTXO with ID ${utxoId} added to wallet with ID ${walletRef}`);
     } else {
-      log.info(
-        `UTXO with ID ${utxoId} already exists in wallet: ${wallet.publicAddress}`,
-      );
+      log.info(`UTXO with ID ${utxoId} already exists in wallet with ID ${walletRef}`);
     }
 
     return wallet;
@@ -250,9 +292,11 @@ const addUTXOToWallet = async (walletAddress, utxoId) => {
 };
 
 module.exports = {
-  createSegWitWalletForEvent,
+  createHDSegWitWalletForEvent,
   createRawBitcoinTransaction,
   getWalletByAddress,
   updateWalletBalanceById,
   addUTXOToWallet,
+  createHDSegWitWalletForEvent,
+  generateChildAddressForWallet,
 };

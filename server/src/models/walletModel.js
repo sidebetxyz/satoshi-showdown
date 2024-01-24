@@ -33,19 +33,37 @@ const mongoose = require("mongoose");
  */
 const walletSchema = new mongoose.Schema(
   {
-    publicAddress: { type: String, required: true, unique: true },
-    encryptedPrivateKey: {
+    walletType: {
+      type: String,
+      enum: ["HD-SegWit"],
+      required: true,
+    },
+    masterPublicKey: {
+      type: String,
+      required: true,
+    },
+    encryptedMasterPrivateKey: {
       iv: { type: String, required: true },
       content: { type: String, required: true },
       tag: { type: String, required: true },
     },
-    walletType: {
+    encryptedSeed: {
+      iv: { type: String, required: true },
+      content: { type: String, required: true },
+      tag: { type: String, required: true },
+    },
+    derivationPath: {
       type: String,
-      enum: ["SegWit", "Taproot"],
       required: true,
     },
-    confirmedBalance: { type: Number, default: null },
-    unconfirmedBalance: { type: Number, default: null },
+    addresses: [
+      {
+        address: String,
+        path: String,
+      },
+    ],
+    confirmedBalance: { type: Number, default: 0 },
+    unconfirmedBalance: { type: Number, default: 0 },
     utxoRefs: [
       {
         type: mongoose.Schema.Types.ObjectId,

@@ -28,6 +28,7 @@ const UTXOSchema = new mongoose.Schema(
   {
     userRef: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     eventRef: { type: mongoose.Schema.Types.ObjectId, ref: "Event" },
+    txRef: { type: mongoose.Schema.Types.ObjectId, ref: "Transaction" },
     address: { type: String, required: true },
     amount: { type: Number, required: true },
     transactionHash: { type: String, required: true },
