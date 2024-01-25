@@ -159,7 +159,7 @@ const _processWebhookStatus = async (webhook, currentConfirmations) => {
     statusUpdate.status = "success";
 
     // Delete the webhook from BlockCypher
-    await _deleteWebhook(webhook.response.id);
+    await _deleteWebhook(webhook.response.id, webhook._id);
   }
 
   return statusUpdate;

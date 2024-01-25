@@ -18,6 +18,7 @@
  */
 
 const Event = require("../models/eventModel");
+const Wallet = require("../models/walletModel");
 const { selectUTXOsForTransaction, markUTXOAsSpent } = require("./utxoService");
 const {
   createHDSegWitWalletForEvent,
@@ -185,7 +186,7 @@ const updateEvent = async (eventId, updateData) => {
  * @throws {NotFoundError} If the specified event or user is not found.
  * @throws {Error} If the event is already full or closed for new participants.
  */
-const joinEvent = async (eventId, userId, prizePoolContribution = 0) => {
+const joinEvent = async (eventId, userId, userWalletAddress, prizePoolContribution = 0) => {
   try {
     // Find the event by its ID.
     const event = await Event.findOne({ eventId: eventId });
@@ -215,34 +216,37 @@ const joinEvent = async (eventId, userId, prizePoolContribution = 0) => {
       throw new NotFoundError(`User with ID ${userId} not found`);
     }
 
-    // Calculate total transaction amount (entry fee + optional prize pool contribution)
-    const totalAmount = event.entryFee + prizePoolContribution;
-
-    // Find the associated wallet using the walletRef field in the event.
+    // Retrieve the wallet
     const wallet = await Wallet.findById(event.walletRef);
     if (!wallet) {
       throw new NotFoundError(`Wallet with ID ${event.walletRef} not found`);
     }
 
+    // Calculate total transaction amount (entry fee + optional prize pool contribution)
+    const totalAmount = event.entryFee + prizePoolContribution;
+
+    // Determine the next child index for the new address
+    const childIndex = wallet.addresses.length;
+
     // Generate a new address based on the wallet
-    const userAddressData = await generateChildAddressForWallet(
+    const userDepositAddressData = await generateChildAddressForWallet(
       wallet.masterPublicKey,
-      wallet.derivationPath
+      childIndex
     );
 
-    // Add the address and path to the wallet
-    wallet.addresses.push({
-      address: userAddressData.address,
-      path: userAddressData.path,
-    });
+    // Add the new address and path to the wallet
+    wallet.addresses.push(userDepositAddressData);
+
+    // Save the updated wallet
+    await wallet.save();
 
     const transactionData = {
       userRef: user._id,
       walletRef: event.walletRef,
       transactionType: "incoming",
       expectedAmount: totalAmount,
-      walletAddress: wallet.publicAddress,
-      userAddress: userAddressData.address,
+      walletAddress: userDepositAddressData.address,
+      userAddress: userWalletAddress,
       purpose:
         prizePoolContribution > 0 ? "payFeeAndFundPool" : "entryFeePayment",
     };
@@ -259,7 +263,8 @@ const joinEvent = async (eventId, userId, prizePoolContribution = 0) => {
     // Add the user to the event's participants list
     event.participants.push({
       userId: user._id,
-      address: userAddressData.address,
+      depositAddress: userDepositAddressData.address,
+      userAddress: userWalletAddress,
       joinedAt: new Date(),
     });
     event.transactions.push(transaction._id);
