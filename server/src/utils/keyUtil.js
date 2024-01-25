@@ -22,17 +22,16 @@ const generateHDSegWitWalletWithSeed = () => {
   const mnemonic = bip39.generateMnemonic();
   const seed = bip39.mnemonicToSeedSync(mnemonic);
   const root = bip32.fromSeed(seed, network);
-  const path = "m/84'/1'/0'/0/0";
-  // const child = root.derivePath(path);
   const masterPublicKey = root.neutered().toBase58();
   const encryptedMasterPrivateKey = encryptPrivateKey(root.toBase58());
   const encryptedSeed = encryptPrivateKey(mnemonic);
+  const derivationPath = "m/84'/1'/0'"; // For reference (P2WSH) BIP84 Testnet Hardened Derivation Path
 
   return {
     masterPublicKey,
     encryptedMasterPrivateKey,
     encryptedSeed,
-    derivationPath: path,
+    derivationPath,
   };
 };
 

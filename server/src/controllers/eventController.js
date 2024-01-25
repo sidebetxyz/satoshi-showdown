@@ -17,6 +17,10 @@ const {
   getEvent,
   getAllEvents,
   joinEvent,
+  settleEvent,
+  castVote,
+  determineOutcome,
+  awardWinner,
   refundUser,
 } = require("../services/eventService");
 
@@ -155,7 +159,7 @@ const handleJoinEvent = async (req, res, next) => {
       eventId,
       userId,
       userWalletAddress,
-      prizePoolContribution,
+      prizePoolContribution
     );
     res.json(updatedEvent);
   } catch (err) {
@@ -189,6 +193,39 @@ const handleCastVote = async (req, res, next) => {
   }
 };
 
+/**
+ * Handles determining the outcome of an event.
+ * Retrieves the event ID from the request parameters, invokes the Event Service to determine the outcome,
+ * and sends the outcome details in the response.
+ *
+ * @async
+ * @function handleDetermineOutcome
+ * @param {express.Request} req - Express request object containing the event ID in parameters.
+ * @param {express.Response} res - Express response object for sending back the outcome data.
+ * @param {express.NextFunction} next - Express next middleware function for error handling.
+ * @return {Promise<void>} No explicit return value, sends response to the client.
+ * @throws {Error} If the outcome determination encounters issues.
+ */
+const handleDetermineOutcome = async (req, res, next) => {
+  try {
+    const { eventId } = req.params;
+    const outcome = await determineOutcome(eventId);
+    res.json(outcome);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const handleAwardWinner = async (req, res, next) => {
+  try {
+    const { eventId } = req.params;
+    const result = await awardWinner(eventId);
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
 const handleRefundUser = async (req, res) => {
   try {
     const { userId, eventId, refundAmount } = req.body;
@@ -197,7 +234,7 @@ const handleRefundUser = async (req, res) => {
     const { refundTransaction, rawTransaction } = await refundUser(
       userId,
       eventId,
-      refundAmount,
+      refundAmount
     );
 
     // Return success response
@@ -221,5 +258,7 @@ module.exports = {
   handleJoinEvent,
   handleSettleEvent,
   handleCastVote,
+  handleDetermineOutcome,
+  handleAwardWinner,
   handleRefundUser,
 };

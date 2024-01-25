@@ -19,7 +19,7 @@
 
 const Event = require("../models/eventModel");
 const Wallet = require("../models/walletModel");
-const { selectUTXOsForTransaction, markUTXOAsSpent } = require("./utxoService");
+const { selectUTXOsForTransaction, selectUTXOsForAward, markUTXOAsSpent } = require("./utxoService");
 const {
   createHDSegWitWalletForEvent,
   generateChildAddressForWallet,
@@ -186,7 +186,12 @@ const updateEvent = async (eventId, updateData) => {
  * @throws {NotFoundError} If the specified event or user is not found.
  * @throws {Error} If the event is already full or closed for new participants.
  */
-const joinEvent = async (eventId, userId, userWalletAddress, prizePoolContribution = 0) => {
+const joinEvent = async (
+  eventId,
+  userId,
+  userWalletAddress,
+  prizePoolContribution = 0
+) => {
   try {
     // Find the event by its ID.
     const event = await Event.findOne({ eventId: eventId });
@@ -413,6 +418,7 @@ const handleFinancialSetup = async (
       walletRef: wallet._id,
       transactionType: "incoming",
       expectedAmount: expectedAmount,
+      unconfirmedAmount: expectedAmount,
       walletAddress: wallet.addresses[0].address,
       userAddress: userAddress,
       purpose: transactionPurpose,
@@ -643,7 +649,7 @@ async function settleEvent(eventId) {
     // Trigger settling process only if the event is active and the current time is past the end time
     if (event.status === "active" && new Date() > event.endTime) {
       event.status = "settling";
-      event.settlementStatus = "processing";
+      event.settlementStatus = "voting";
       await event.save();
       log.info(`Event ${eventId} status updated to settling`);
     } else {
@@ -657,6 +663,18 @@ async function settleEvent(eventId) {
   }
 }
 
+/**
+ * Casts a vote for an event participant.
+ *
+ * @async
+ * @function castVote
+ * @param {string} eventId - The event's unique identifier.
+ * @param {string} userId - The user's unique identifier.
+ * @param {string} vote - The vote cast by the user.
+ * @return {Promise<Object>} Confirmation message.
+ * @throws {NotFoundError} If the event or user is not found.
+ * @throws {Error} If voting is not open or if invalid voting attempt.
+ */
 const castVote = async (eventId, userId, vote) => {
   try {
     const event = await Event.findOne({ eventId: eventId });
@@ -664,7 +682,6 @@ const castVote = async (eventId, userId, vote) => {
       throw new NotFoundError(`Event with ID ${eventId} not found`);
     }
 
-    // Check if voting is open
     if (
       event.status !== "settling" &&
       event.settlementStatus !== "processing"
@@ -672,48 +689,26 @@ const castVote = async (eventId, userId, vote) => {
       throw new Error("Voting is not open for this event");
     }
 
-    // Verify participant and ensure they haven't voted
+    const user = await getUserById(userId);
+    if (!user) {
+      throw new NotFoundError(`User with ID ${userId} not found`);
+    }
+
     const isParticipant = event.participants.some(
-      (p) => p.userId.toString() === userId
+      (p) => p.userId.toString() === user._id.toString()
     );
     const hasVoted = event.voteResults.some(
-      (v) => v.userId.toString() === userId
+      (v) => v.userId.toString() === user._id.toString()
     );
+
     if (!isParticipant || hasVoted) {
       throw new Error("Invalid voting attempt");
     }
 
-    // Record the vote
-    event.voteResults.push({ userId, vote, timestamp: new Date() });
-
-    // Check if all participants have voted
-    if (event.voteResults.length === event.participants.length) {
-      // All participants have voted, proceed to determine the outcome
-      const outcome = determineOutcome(event.voteResults);
-      if (outcome.isDisputed) {
-        event.isDisputed = true;
-        event.disputeResolutionStatus = "pending";
-        event.settlementStatus = "contested";
-        // Additional logic for dispute resolution
-      } else {
-        event.finalOutcome = {
-          winners: [outcome.winner],
-          settledAt: new Date(),
-        };
-        event.settlementStatus = "settled";
-        // Award the winner
-        const { transaction, rawTransaction } = await awardWinner(
-          eventId,
-          outcome.winner
-        );
-        console.log("Transaction Details:", transaction);
-        console.log("Raw Transaction:", rawTransaction);
-      }
-    }
-
+    event.voteResults.push({ userId: user._id, vote, timestamp: new Date() });
     await event.save();
-    log.info(`Vote recorded for user ${userId} in event ${eventId}`);
 
+    log.info(`Vote recorded for user ${userId} in event ${eventId}`);
     return { message: "Vote cast successfully" };
   } catch (err) {
     log.error(`Error in castVote: ${err.message}`);
@@ -721,106 +716,164 @@ const castVote = async (eventId, userId, vote) => {
   }
 };
 
-const determineOutcome = (voteResults) => {
-  if (voteResults.length !== 2) {
-    // For a 1v1 event, exactly two votes are expected
-    throw new Error("Invalid number of votes for a 1v1 event");
-  }
+/**
+ * Determines the outcome of an event based on participant votes.
+ * Retrieves the event from the database, checks the vote results against the number of participants,
+ * and updates the event document accordingly.
+ *
+ * @async
+ * @function determineOutcome
+ * @param {string} eventId - The ID of the event to determine the outcome for.
+ * @return {Promise<Object>} An object representing the outcome of the event.
+ * @throws {Error} If the event is not found or if there's an error in processing the votes.
+ */
+const determineOutcome = async (eventId) => {
+  try {
+    // Retrieve the event from the database
+    const event = await Event.findById(eventId);
+    if (!event) {
+      throw new Error(`Event with ID ${eventId} not found`);
+    }
 
-  const [vote1, vote2] = voteResults;
+    // Ensure the number of votes is equal to the number of participants
+    if (event.voteResults.length !== event.participants.length) {
+      throw new Error("Not all participants have voted");
+    }
 
-  if (vote1.vote === "win" && vote2.vote === "loss") {
-    return { winner: vote1.userId, isDisputed: false };
-  } else if (vote1.vote === "loss" && vote2.vote === "win") {
-    return { winner: vote2.userId, isDisputed: false };
-  } else if (vote1.vote === "draw" && vote2.vote === "draw") {
-    return { isDraw: true, isDisputed: false };
-  } else {
-    // Any other combination is considered a dispute
-    return { isDisputed: true };
+    // Extract votes from the event document
+    const { voteResults } = event;
+    const voteCount = voteResults.reduce((acc, vote) => {
+      acc[vote.vote] = (acc[vote.vote] || 0) + 1;
+      return acc;
+    }, {});
+
+    // Determine outcome based on votes
+    if (voteCount.win === 1 && voteCount.loss === 1) {
+      const winnerVote = voteResults.find((v) => v.vote === "win");
+      event.winners = [winnerVote.userId];
+      event.isDisputed = false;
+      event.settlementStatus = "processing";
+      await event.save(); // Save the updated event
+      return { winner: winnerVote.userId, isDisputed: false };
+    } else if (voteCount.draw === event.participants.length) {
+      event.isDisputed = false;
+      await event.save(); // Save the updated event
+      return { isDraw: true, isDisputed: false };
+    } else {
+      event.isDisputed = true;
+      await event.save(); // Save the updated event
+      // Any other combination is considered a dispute
+      return { isDisputed: true };
+    }
+  } catch (err) {
+    throw new Error(`Error in determineOutcome: ${err.message}`);
   }
 };
 
-const awardWinner = async (eventId, winnerId) => {
+/**
+ * Awards the prize to the winner of an event. This function is called after an event
+ * has been settled and a winner has been determined. It retrieves the event's UTXOs,
+ * calculates the total prize amount, creates a raw Bitcoin transaction for prize distribution,
+ * and updates the event status to 'completed'.
+ *
+ * The function fetches the winner's user address from the participants array in the event document
+ * using the winner's user ID stored in the winners field. It ensures that the event is in the
+ * appropriate state for awarding the prize and that a winner is present. The prize is then
+ * sent to the winner's user address.
+ *
+ * @async
+ * @function awardWinner
+ * @param {string} eventId - The unique identifier of the event whose winner is to be awarded.
+ * @return {Promise<Object>} An object containing details of the prize distribution transaction and the raw transaction.
+ * @throws {NotFoundError} If the event or the winner is not found.
+ * @throws {Error} If the event is not in the correct state to award the winner or if there are issues in creating the transaction.
+ */
+const awardWinner = async (eventId) => {
   try {
-    const event = await Event.findOne({ eventId: eventId });
+    const event = await Event.findById(eventId);
     if (!event) {
       throw new NotFoundError(`Event with ID ${eventId} not found`);
     }
 
-    // Ensure the event is in the 'settling' state and settlement status is 'settled'
-    if (event.status !== "settling" || event.settlementStatus !== "settled") {
+    if (
+      event.status !== "settling" ||
+      event.settlementStatus !== "processing"
+    ) {
       throw new Error("Event is not in a state to award the winner");
     }
 
-    const winner = await getUserById(winnerId);
-    if (!winner) {
-      throw new NotFoundError(`User with ID ${winnerId} not found`);
+    if (event.winners.length === 0) {
+      throw new Error("No winners to award in this event");
     }
 
-    // Retrieve the transaction where the winner paid the entry fee to find their refund address
-    const entryTransaction = await Transaction.findOne({
-      userRef: winner._id,
-      purpose: "entryFeePayment",
-    });
-    if (!entryTransaction) {
-      throw new Error(`Entry transaction for user ID ${winnerId} not found`);
+    const winnerId = event.winners[0];
+    const winnerParticipant = event.participants.find((p) =>
+      p.userId.equals(winnerId)
+    );
+    if (!winnerParticipant) {
+      throw new NotFoundError(
+        `Winner with ID ${winnerId} not found in participants`
+      );
     }
 
-    // Collect all UTXOs associated with the event
-    const eventUTXOs = await UTXO.find({ eventRef: event._id, spent: false });
+    const prizeAmount = event.prizePool;
 
-    // Calculate the total prize amount and fetch current fee rates
-    const totalPrizeAmount = event.prizePool;
-    const feeRates = await getCurrentFeeRates();
+    // Select UTXOs specifically for awarding the prize
+    const selectedUTXOs = await selectUTXOsForAward(eventId, prizeAmount);
+
+    // Estimate transaction fee (1 satoshi per byte on testnet)
+    const testnetFeeRate = 1;
     const estimatedFee = estimateTransactionFee(
-      eventUTXOs.length,
+      selectedUTXOs.length,
       1,
-      feeRates.lowFeePerByte
+      testnetFeeRate
     );
 
-    // Adjust the prize amount by deducting the transaction fee
-    const prizeAmountAfterFee = totalPrizeAmount - estimatedFee;
+    // Adjust prize amount after fee
+    const prizeAmountAfterFee = prizeAmount - estimatedFee;
 
     // Create the raw Bitcoin transaction for prize distribution
     const rawTransaction = await createRawBitcoinTransaction(
-      eventUTXOs,
-      entryTransaction.userAddress, // Refund address of the winner
+      selectedUTXOs,
+      winnerParticipant.userAddress,
       prizeAmountAfterFee,
-      event.walletAddress, // Assuming the event has a dedicated wallet address
+      event.walletAddress, // Assuming the event's wallet address is used for change
       estimatedFee
     );
 
-    // Create a new transaction record for the prize distribution
-    const prizeDistributionTransaction = new Transaction({
-      userRef: winner._id,
+    const prizeDistributionTransaction = {
+      userRef: winnerId,
       walletRef: event.walletId,
       transactionType: "outgoing",
+      purpose: "winnerPayout",
+      walletAddresses: selectedUTXOs.map((utxo) => utxo.address),
+      userAddress: winnerParticipant.userAddress,
       expectedAmount: prizeAmountAfterFee,
-      walletAddress: event.walletAddress,
-      userAddress: entryTransaction.userAddress,
-      transactionHash: rawTransaction, // Actual transaction hash after broadcast
-    });
+      unconfirmedAmount: prizeAmountAfterFee,
+      confirmedAmount: 0,
+      status: "pending",
+      transactionHash: null,
+    };
 
-    await prizeDistributionTransaction.save();
+    await createTransactionRecord(prizeDistributionTransaction);
 
     // Mark the used UTXOs as spent
-    await UTXO.updateMany(
-      { _id: { $in: eventUTXOs.map((utxo) => utxo._id) } },
-      { spent: true }
-    );
+    for (const utxo of selectedUTXOs) {
+      await markUTXOAsSpent(utxo.transactionHash, utxo.outputIndex);
+    }
 
-    // Update the event status to 'completed' after awarding the prize
     event.status = "completed";
+    event.settlementStatus = "settled";
     await event.save();
 
-    log.info(`Prize awarded to user ${winnerId} for event ${eventId}`);
+    log.info(`Prize awarded to winner for event ${eventId}`);
     return { transaction: prizeDistributionTransaction, rawTransaction };
   } catch (err) {
     log.error(`Error in awardWinner: ${err.message}`);
     throw err;
   }
 };
+
 
 module.exports = {
   createEvent,
@@ -833,4 +886,6 @@ module.exports = {
   refundEventCreator,
   settleEvent,
   castVote,
+  determineOutcome,
+  awardWinner,
 };

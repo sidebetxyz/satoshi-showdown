@@ -54,7 +54,7 @@ const transactionSchema = new mongoose.Schema(
       ],
       required: true,
     },
-    walletAddress: { type: String, required: true },
+    walletAddresses: [{ type: String, required: true }], // Updated to handle multiple addresses
     userAddress: { type: String, required: true },
     expectedAmount: { type: Number, required: true },
     unconfirmedAmount: { type: Number, default: null },
@@ -67,7 +67,7 @@ const transactionSchema = new mongoose.Schema(
     confirmations: { type: Number, default: null },
     transactionHash: { type: String },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 /**

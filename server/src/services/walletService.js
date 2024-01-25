@@ -13,10 +13,10 @@
 
 const Wallet = require("../models/walletModel");
 const {
-  decryptPrivateKey,
   generateHDSegWitWalletWithSeed,
   generateChildAddress,
 } = require("../utils/keyUtil");
+const { decryptPrivateKey } = require("../utils/encryptionUtil");
 const { NotFoundError } = require("../utils/errorUtil");
 const log = require("../utils/logUtil");
 
@@ -61,7 +61,7 @@ const createHDSegWitWalletForEvent = async () => {
   // Generate the initial address and path for the wallet
   const initialAddressData = await generateChildAddressForWallet(
     masterPublicKey,
-    0,
+    0
   );
 
   // Add the initial address and path to the addresses array
@@ -91,7 +91,7 @@ const generateChildAddressForWallet = async (masterPublicKey, path) => {
   try {
     const { address, path: derivedPath } = generateChildAddress(
       masterPublicKey,
-      path,
+      path
     );
     log.info(`Child address generated at path ${derivedPath}`);
     return { address, path: derivedPath };
@@ -120,20 +120,27 @@ const createRawBitcoinTransaction = async (
   toAddress,
   amountToSend,
   changeAddress,
-  transactionFee,
+  transactionFee
 ) => {
   try {
     const psbt = new bitcoin.Psbt({ network: network });
 
     // Add inputs with necessary UTXO details
     for (const utxo of selectedUTXOs) {
+      const utxoData = await UTXO.findById(utxo._id); // Assuming _id is the MongoDB ID of the UTXO
+      if (!utxoData) {
+        throw new Error(`UTXO not found with ID ${utxo._id}`);
+      }
+
+      const witnessUtxo = {
+        script: Buffer.from(utxoData.scriptPubKey, "hex"),
+        value: utxoData.amount,
+      };
+
       psbt.addInput({
         hash: utxo.transactionHash,
         index: utxo.outputIndex,
-        witnessUtxo: {
-          script: Buffer.from(utxo.scriptPubKey, "hex"), // scriptPubKey as a Buffer
-          value: utxo.amount, // Amount in satoshis
-        },
+        witnessUtxo: witnessUtxo,
       });
     }
 
@@ -143,10 +150,11 @@ const createRawBitcoinTransaction = async (
       value: amountToSend,
     });
 
-    const changeAmount =
-      selectedUTXOs.reduce((acc, utxo) => acc + utxo.amount, 0) -
-      amountToSend -
-      transactionFee;
+    const totalAmount = selectedUTXOs.reduce(
+      (acc, utxo) => acc + utxo.amount,
+      0
+    );
+    const changeAmount = totalAmount - amountToSend - transactionFee;
     if (changeAmount > 0) {
       psbt.addOutput({
         address: changeAddress,
@@ -155,14 +163,27 @@ const createRawBitcoinTransaction = async (
     }
 
     // Sign each input
-    for (const utxo of selectedUTXOs) {
-      const wallet = await Wallet.findOne({ publicAddress: utxo.address });
+    for (const [index, utxo] of selectedUTXOs.entries()) {
+      const wallet = await Wallet.findOne({
+        "addresses.address": utxo.address,
+      });
       if (!wallet) {
         throw new Error(`Wallet not found for address ${utxo.address}`);
       }
-      const privateKey = decryptPrivateKey(wallet.encryptedPrivateKey);
-      const keyPair = ecPair.fromWIF(privateKey, network);
-      psbt.signInput(selectedUTXOs.indexOf(utxo), keyPair);
+
+      // Decrypt the master private key
+      const decryptedMasterPrivateKey = decryptPrivateKey(
+        wallet.encryptedMasterPrivateKey
+      );
+
+      // Derive the private key for the UTXO
+      const node = bip32.fromBase58(decryptedMasterPrivateKey, network);
+      const child = node.derivePath(utxo.keyPath); // Assuming keyPath is provided in UTXO data
+
+      const keyPair = bitcoin.ECPair.fromPrivateKey(child.privateKey, {
+        network: network,
+      });
+      psbt.signInput(index, keyPair);
     }
 
     // Finalize and extract transaction
@@ -172,8 +193,31 @@ const createRawBitcoinTransaction = async (
     return transaction.toHex();
   } catch (error) {
     throw new Error(
-      `Error in creating raw Bitcoin transaction: ${error.message}`,
+      `Error in creating raw Bitcoin transaction: ${error.message}`
     );
+  }
+};
+
+/**
+ * Retrieves a wallet by its MongoDB ObjectId from the database.
+ * This function is essential for operations that require wallet details based on its unique ID.
+ *
+ * @async
+ * @function getWalletById
+ * @param {string} walletId - The MongoDB ObjectId of the wallet to retrieve.
+ * @return {Promise<Wallet>} A promise that resolves to the wallet object.
+ * @throws {NotFoundError} Thrown if no wallet is found with the given ID.
+ */
+const getWalletById = async (walletId) => {
+  try {
+    const wallet = await Wallet.findById(walletId);
+    if (!wallet) {
+      throw new NotFoundError(`Wallet with ID ${walletId} not found`);
+    }
+    return wallet;
+  } catch (err) {
+    log.error(`Error in getWalletById: ${err.message}`);
+    throw err;
   }
 };
 
@@ -238,7 +282,7 @@ const updateWalletBalanceById = async (walletId, updateData) => {
       const updatedWallet = await Wallet.findByIdAndUpdate(
         walletId,
         updatesToApply,
-        { new: true },
+        { new: true }
       );
       log.info(`Wallet balance with ID ${walletId} updated`);
       return updatedWallet;
@@ -281,7 +325,9 @@ const addUTXOToWallet = async (walletRef, utxoId) => {
       await wallet.save();
       log.info(`UTXO with ID ${utxoId} added to wallet with ID ${walletRef}`);
     } else {
-      log.info(`UTXO with ID ${utxoId} already exists in wallet with ID ${walletRef}`);
+      log.info(
+        `UTXO with ID ${utxoId} already exists in wallet with ID ${walletRef}`
+      );
     }
 
     return wallet;
@@ -294,6 +340,7 @@ const addUTXOToWallet = async (walletRef, utxoId) => {
 module.exports = {
   createHDSegWitWalletForEvent,
   createRawBitcoinTransaction,
+  getWalletById,
   getWalletByAddress,
   updateWalletBalanceById,
   addUTXOToWallet,

@@ -143,7 +143,7 @@ const eventSchema = new mongoose.Schema(
     },
     settlementStatus: {
       type: String,
-      enum: ["unsettled", "processing", "settled", "contested"],
+      enum: ["unsettled", "voting", "processing", "settled", "contested"],
       default: "unsettled",
     },
     finalOutcome: {

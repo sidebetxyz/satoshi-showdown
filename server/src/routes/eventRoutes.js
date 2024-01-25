@@ -12,7 +12,7 @@
  */
 
 const express = require("express");
-const authenticate = require("../middlewares/jwtAuthenticateMiddleware");
+const { authorizeUser, authorizeAdmin } = require("../middlewares/jwtAuthorizeMiddleware");
 const {
   handleCreateEvent,
   handleUpdateEvent,
@@ -22,6 +22,8 @@ const {
   handleJoinEvent,
   handleSettleEvent,
   handleCastVote,
+  handleDetermineOutcome,
+  handleAwardWinner,
   handleRefundUser,
 } = require("../controllers/eventController");
 
@@ -41,7 +43,7 @@ const router = new express.Router();
  * @param {callback} middleware - Express middleware (controller function).
  * @access Public/Private (depending on your application's requirement)
  */
-router.post("/create", authenticate, handleCreateEvent);
+router.post("/create", authorizeUser, handleCreateEvent);
 
 /**
  * PUT route to update an existing event identified by its ID.
@@ -117,7 +119,7 @@ router.get("/getAll", handleGetAllEvents);
  * @param {callback} middleware - Express middleware (controller function).
  * @access Public/Private (as required)
  */
-router.post("/join", authenticate, handleJoinEvent);
+router.post("/join", authorizeUser, handleJoinEvent);
 
 /**
  * POST route to settle an event.
@@ -131,7 +133,7 @@ router.post("/join", authenticate, handleJoinEvent);
  * @param {callback} middleware - Express middleware (controller function).
  * @access Public/Private (as required)
  */
-router.post("/settle/:eventId", authenticate, handleSettleEvent);
+router.post("/settle/:eventId", authorizeUser, handleSettleEvent);
 
 /**
  * POST route to cast a vote for a user.
@@ -145,7 +147,36 @@ router.post("/settle/:eventId", authenticate, handleSettleEvent);
  * @param {callback} middleware - Express middleware (controller function).
  * @access Public/Private (as required)
  */
-router.post("/vote", authenticate, handleCastVote);
+router.post("/vote", authorizeUser, handleCastVote);
+
+/**
+ * POST route to determine the outcome of an event.
+ * This route calls the handleDetermineOutcome controller to process the event outcome determination.
+ * The event ID is expected as a URL parameter.
+ *
+ * @name post/outcome
+ * @function
+ * @memberof module:routes/eventRoutes
+ * @inner
+ * @param {string} path - Express path with event ID as a parameter.
+ * @param {callback} middleware - Express middleware (controller function).
+ * @access Public/Private (depending on your application's requirement)
+ */
+router.post("/outcome/:eventId", authorizeUser, handleDetermineOutcome);
+
+/**
+ * POST route to award the winner of an event.
+ * This route is used to process the prize distribution for the winner of a specified event.
+ *
+ * @name post/awardWinner
+ * @function
+ * @memberof module:routes/eventRoutes
+ * @inner
+ * @param {string} path - Express path with event ID as a parameter.
+ * @param {callback} middleware - Express middleware (controller function).
+ * @access Private (Admins or authorized personnel only)
+ */
+router.post("/award/:eventId", authorizeUser, authorizeAdmin, handleAwardWinner);
 
 router.post("/refund", handleRefundUser);
 
