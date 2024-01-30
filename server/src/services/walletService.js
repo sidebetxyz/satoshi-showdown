@@ -12,6 +12,7 @@
  */
 
 const Wallet = require("../models/walletModel");
+const { createUTXO } = require("../services/utxoService");
 const {
   generateHDSegWitWalletWithSeed,
   generateChildAddress,
@@ -267,18 +268,26 @@ const updateWalletBalanceById = async (walletId, updateData) => {
       throw new NotFoundError(`Wallet with ID ${walletId} not found`);
     }
 
-    const updatesToApply = {
-      confirmedBalance:
-        updateData.confirmedBalance ?? existingWallet.confirmedBalance,
-      unconfirmedBalance:
-        updateData.unconfirmedBalance ?? existingWallet.unconfirmedBalance,
-    };
+    // Calculate potential new balances
+    const updatedConfirmedBalance =
+      existingWallet.confirmedBalance +
+      (updateData.confirmedIncrement || 0) -
+      (updateData.confirmedDecrement || 0);
+    const updatedUnconfirmedBalance =
+      existingWallet.unconfirmedBalance +
+      (updateData.unconfirmedIncrement || 0) -
+      (updateData.unconfirmedDecrement || 0);
 
-    // Update only if there's a change in balance
+    // Check if there are actual changes to apply
     if (
-      updatesToApply.confirmedBalance !== existingWallet.confirmedBalance ||
-      updatesToApply.unconfirmedBalance !== existingWallet.unconfirmedBalance
+      existingWallet.confirmedBalance !== updatedConfirmedBalance ||
+      existingWallet.unconfirmedBalance !== updatedUnconfirmedBalance
     ) {
+      const updatesToApply = {
+        confirmedBalance: updatedConfirmedBalance,
+        unconfirmedBalance: updatedUnconfirmedBalance,
+      };
+
       const updatedWallet = await Wallet.findByIdAndUpdate(
         walletId,
         updatesToApply,
@@ -310,7 +319,7 @@ const updateWalletBalanceById = async (walletId, updateData) => {
  * @throws {NotFoundError} Thrown if the wallet or UTXO is not found.
  * @throws {Error} Thrown if there is an issue updating the wallet.
  */
-const addUTXOToWallet = async (walletRef, utxoId) => {
+const addUTXOToWallet = async (walletRef, utxoData) => {
   try {
     // Retrieve the wallet by its MongoDB ObjectId
     const wallet = await Wallet.findById(walletRef);
@@ -318,15 +327,29 @@ const addUTXOToWallet = async (walletRef, utxoId) => {
       throw new NotFoundError(`Wallet with ID ${walletRef} not found`);
     }
 
+    // Find the address data within the wallet to get the keyPath
+    const addressData = wallet.addresses.find(
+      (a) => a.address === utxoData.address
+    );
+    if (!addressData) {
+      throw new Error(`Address data not found for ${utxoData.address}`);
+    }
+
+    // Add keyPath to the UTXO data
+    utxoData.keyPath = addressData.path;
+
+    // Create UTXO with complete data
+    const utxo = await createUTXO(utxoData);
+
     // Check if UTXO already exists in the wallet to avoid duplicates
-    if (!wallet.utxoRefs.includes(utxoId)) {
+    if (!wallet.utxoRefs.includes(utxo._id)) {
       // Add the UTXO reference to the wallet's UTXO references array
-      wallet.utxoRefs.push(utxoId);
+      wallet.utxoRefs.push(utxo._id);
       await wallet.save();
-      log.info(`UTXO with ID ${utxoId} added to wallet with ID ${walletRef}`);
+      log.info(`UTXO with ID ${utxo._id} added to wallet with ID ${walletRef}`);
     } else {
       log.info(
-        `UTXO with ID ${utxoId} already exists in wallet with ID ${walletRef}`
+        `UTXO with ID ${utxo._id} already exists in wallet with ID ${walletRef}`
       );
     }
 
@@ -343,7 +366,7 @@ module.exports = {
   getWalletById,
   getWalletByAddress,
   updateWalletBalanceById,
-  addUTXOToWallet,
   createHDSegWitWalletForEvent,
   generateChildAddressForWallet,
+  addUTXOToWallet,
 };

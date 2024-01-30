@@ -15,13 +15,8 @@
  */
 
 const Webhook = require("../models/webhookModel");
-const { createUTXO } = require("./utxoService");
 const { updateTransactionById } = require("./transactionService");
-const {
-  getWalletById,
-  updateWalletBalanceById,
-  addUTXOToWallet,
-} = require("./walletService");
+const { updateWalletBalanceById, addUTXOToWallet } = require("./walletService");
 const { postAPI, deleteAPI } = require("../utils/apiUtil");
 const { NotFoundError } = require("../utils/errorUtil");
 const log = require("../utils/logUtil");
@@ -170,84 +165,84 @@ const _processWebhookStatus = async (webhook, currentConfirmations) => {
 };
 
 /**
- * Processes the transaction and wallet update data based on the webhook's transaction details.
- * Creates UTXO records on the first confirmation and updates the transaction and wallet balances.
- * The function ensures that the wallet balance is updated only once upon the first confirmation
- * and then adjusts the confirmed balance when the transaction is fully confirmed.
+ * Prepares the transaction and wallet update data based on the transaction details from the webhook body.
+ * Calculates the amount involved for the monitored address and determines the necessary updates.
  *
  * @async
- * @function _processWebhookTransactionData
- * @param {Webhook} webhook - The webhook document containing the transaction details.
- * @return {Promise<Object>} An object containing updates for the transaction and wallet.
+ * @private
+ * @param {Webhook} webhook - The webhook document containing response data.
+ * @return {Object} An object containing updates for the transaction and wallet.
  * @throws {Error} Thrown if there is an issue in processing the transaction or wallet update data.
+ * @note This function does not directly update the database but prepares data for subsequent updates.
  */
 const _processWebhookTransactionData = async (webhook) => {
   const transactionDetails = webhook.body;
-  const monitoredAddress = webhook.monitoredAddress;
+  const monitoredAddress = webhook.response.address;
 
-  // Retrieve the wallet to calculate its total balance
-  const wallet = await getWalletById(webhook.walletRef);
-  if (!wallet) {
-    throw new Error(`Wallet with ID ${webhook.walletRef} not found`);
-  }
+  const amountInvolved = transactionDetails.outputs.reduce((sum, output) => {
+    return output.addresses.includes(monitoredAddress)
+      ? sum + output.value
+      : sum;
+  }, 0);
 
-  let totalReceived = 0;
+  if (amountInvolved > 0) {
+    // Create UTXO records only for the first confirmation
+    if (transactionDetails.confirmations === 1) {
+      const utxoPromises = transactionDetails.outputs
+        .filter((output) => output.addresses.includes(monitoredAddress))
+        .map(async (output, index) => {
+          // Prepare UTXO data
+          const utxoData = {
+            userRef: webhook.userRef,
+            eventRef: webhook.eventRef,
+            transactionHash: transactionDetails.hash,
+            outputIndex: index,
+            amount: output.value,
+            address: monitoredAddress,
+            scriptPubKey: output.script,
+            scriptType: output.script_type,
+            blockHeight: transactionDetails.block_height,
+            timestamp: new Date(transactionDetails.received),
+          };
 
-  // Calculate the total amount received for the monitored address
-  if (transactionDetails.confirmations === 1) {
-    transactionDetails.outputs.forEach((output) => {
-      if (output.addresses.includes(monitoredAddress)) {
-        totalReceived += output.value;
+          // Add UTXO to wallet
+          await addUTXOToWallet(webhook.walletRef, utxoData);
+        });
+
+      try {
+        await Promise.all(utxoPromises);
+      } catch (error) {
+        log.error("Error creating UTXOs:", error);
       }
-    });
-
-    // Create UTXO records for the relevant outputs
-    const utxoPromises = transactionDetails.outputs
-      .filter((output) => output.addresses.includes(monitoredAddress))
-      .map(async (output, index) => {
-        const addressData = wallet.addresses.find(
-          (a) => a.address === monitoredAddress
-        );
-        if (!addressData) {
-          throw new Error(`Address data not found for ${monitoredAddress}`);
-        }
-
-        const utxoData = {
-          // Rest of the code for creating UTXO remains the same...
-        };
-
-        const utxo = await createUTXO(utxoData);
-        await addUTXOToWallet(webhook.walletRef, utxo._id);
-        return utxo;
-      });
-
-    try {
-      await Promise.all(utxoPromises);
-    } catch (error) {
-      log.error("Error creating UTXOs:", error);
     }
 
-    // Update unconfirmed balance
-    wallet.unconfirmedBalance += totalReceived;
+    // Determine transaction status based on confirmation count
+    const isConfirmed = transactionDetails.confirmations >= 6;
+    const transactionStatus = isConfirmed ? "completed" : "confirming";
+
+    // Prepare transaction update data
+    const transactionUpdate = {
+      confirmations: transactionDetails.confirmations,
+      status: transactionStatus,
+      confirmedAmount: isConfirmed ? amountInvolved : 0,
+      unconfirmedAmount: !isConfirmed ? amountInvolved : 0,
+    };
+
+    // Prepare wallet update data
+    const walletUpdate = {
+      confirmedIncrement: isConfirmed ? amountInvolved : 0,
+      unconfirmedIncrement:
+        transactionDetails.confirmations === 1 ? amountInvolved : 0,
+      unconfirmedDecrement: isConfirmed ? amountInvolved : 0,
+    };
+
+    return { transactionUpdate, walletUpdate };
+  } else {
+    log.info(
+      `No transaction amount for monitored address: ${monitoredAddress}`
+    );
+    return { transactionUpdate: null, walletUpdate: null };
   }
-
-  // Check if transaction is fully confirmed
-  const isConfirmed = transactionDetails.confirmations >= 6;
-  if (isConfirmed) {
-    // Move the amount from unconfirmed to confirmed balance
-    wallet.confirmedBalance += totalReceived;
-    wallet.unconfirmedBalance -= totalReceived;
-  }
-
-  // Prepare transaction update data
-  const transactionUpdate = {
-    confirmations: transactionDetails.confirmations,
-    status: isConfirmed ? "completed" : "confirming",
-    confirmedAmount: isConfirmed ? totalReceived : 0,
-    unconfirmedAmount: !isConfirmed ? totalReceived : 0,
-  };
-
-  return { transactionUpdate, wallet };
 };
 
 /**

@@ -127,6 +127,8 @@ const selectUTXOsForAward = async (eventId, requiredAmount) => {
   }
 };
 
+
+
 module.exports = {
   createUTXO,
   findUTXOsByAddress,

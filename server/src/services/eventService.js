@@ -19,7 +19,11 @@
 
 const Event = require("../models/eventModel");
 const Wallet = require("../models/walletModel");
-const { selectUTXOsForTransaction, selectUTXOsForAward, markUTXOAsSpent } = require("./utxoService");
+const {
+  selectUTXOsForTransaction,
+  selectUTXOsForAward,
+  markUTXOAsSpent,
+} = require("./utxoService");
 const {
   createHDSegWitWalletForEvent,
   generateChildAddressForWallet,
@@ -419,7 +423,7 @@ const handleFinancialSetup = async (
       transactionType: "incoming",
       expectedAmount: expectedAmount,
       unconfirmedAmount: expectedAmount,
-      walletAddress: wallet.addresses[0].address,
+      walletAddresses: [wallet.addresses[0].address],
       userAddress: userAddress,
       purpose: transactionPurpose,
     };
@@ -873,7 +877,6 @@ const awardWinner = async (eventId) => {
     throw err;
   }
 };
-
 
 module.exports = {
   createEvent,
