@@ -159,7 +159,7 @@ const handleJoinEvent = async (req, res, next) => {
       eventId,
       userId,
       userWalletAddress,
-      prizePoolContribution
+      prizePoolContribution,
     );
     res.json(updatedEvent);
   } catch (err) {
@@ -234,7 +234,7 @@ const handleRefundUser = async (req, res) => {
     const { refundTransaction, rawTransaction } = await refundUser(
       userId,
       eventId,
-      refundAmount
+      refundAmount,
     );
 
     // Return success response

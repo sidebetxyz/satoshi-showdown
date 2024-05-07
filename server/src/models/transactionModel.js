@@ -67,7 +67,7 @@ const transactionSchema = new mongoose.Schema(
     confirmations: { type: Number, default: null },
     transactionHash: { type: String },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 /**

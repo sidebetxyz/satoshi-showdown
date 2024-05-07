@@ -12,7 +12,10 @@
  */
 
 const express = require("express");
-const { authorizeUser, authorizeAdmin } = require("../middlewares/jwtAuthorizeMiddleware");
+const {
+  authorizeUser,
+  authorizeAdmin,
+} = require("../middlewares/jwtAuthorizeMiddleware");
 const {
   handleCreateEvent,
   handleUpdateEvent,
@@ -176,7 +179,7 @@ router.post("/outcome/:eventId", authorizeUser, handleDetermineOutcome);
  * @param {callback} middleware - Express middleware (controller function).
  * @access Private (Admins or authorized personnel only)
  */
-router.post("/award/:eventId", authorizeUser, authorizeAdmin, handleAwardWinner);
+router.post("/award/:eventId", authorizeUser, handleAwardWinner);
 
 router.post("/refund", handleRefundUser);
 

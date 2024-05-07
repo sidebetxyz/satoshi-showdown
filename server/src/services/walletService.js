@@ -12,6 +12,7 @@
  */
 
 const Wallet = require("../models/walletModel");
+const UTXO = require("../models/utxoModel");
 const { createUTXO } = require("../services/utxoService");
 const {
   generateHDSegWitWalletWithSeed,
@@ -25,7 +26,11 @@ const bitcoin = require("bitcoinjs-lib");
 const network = bitcoin.networks.testnet;
 
 const ecPairFactory = require("ecpair").default;
+const { BIP32Factory } = require("bip32");
 const ecc = require("tiny-secp256k1");
+
+// Initialize bip32 with tiny-secp256k1
+const bip32 = BIP32Factory(ecc);
 
 // Initialize ECPair factory with tiny-secp256k1
 const ecPair = ecPairFactory(ecc);
@@ -62,7 +67,7 @@ const createHDSegWitWalletForEvent = async () => {
   // Generate the initial address and path for the wallet
   const initialAddressData = await generateChildAddressForWallet(
     masterPublicKey,
-    0
+    0,
   );
 
   // Add the initial address and path to the addresses array
@@ -92,7 +97,7 @@ const generateChildAddressForWallet = async (masterPublicKey, path) => {
   try {
     const { address, path: derivedPath } = generateChildAddress(
       masterPublicKey,
-      path
+      path,
     );
     log.info(`Child address generated at path ${derivedPath}`);
     return { address, path: derivedPath };
@@ -104,7 +109,7 @@ const generateChildAddressForWallet = async (masterPublicKey, path) => {
 
 /**
  * Creates a raw Bitcoin transaction using UTXOs, target address, amount, change address, and a pre-calculated transaction fee.
- * It signs the transaction inputs with the corresponding decrypted private keys from the wallets.
+ * It signs the transaction inputs with the corresponding decrypted private keys from the wallets and includes the necessary witness scripts for SegWit transactions.
  *
  * @async
  * @function createRawBitcoinTransaction
@@ -121,80 +126,82 @@ const createRawBitcoinTransaction = async (
   toAddress,
   amountToSend,
   changeAddress,
-  transactionFee
+  transactionFee,
 ) => {
   try {
     const psbt = new bitcoin.Psbt({ network: network });
 
     // Add inputs with necessary UTXO details
     for (const utxo of selectedUTXOs) {
-      const utxoData = await UTXO.findById(utxo._id); // Assuming _id is the MongoDB ID of the UTXO
-      if (!utxoData) {
-        throw new Error(`UTXO not found with ID ${utxo._id}`);
-      }
-
-      const witnessUtxo = {
-        script: Buffer.from(utxoData.scriptPubKey, "hex"),
-        value: utxoData.amount,
-      };
-
-      psbt.addInput({
-        hash: utxo.transactionHash,
-        index: utxo.outputIndex,
-        witnessUtxo: witnessUtxo,
-      });
-    }
-
-    // Add outputs
-    psbt.addOutput({
-      address: toAddress,
-      value: amountToSend,
-    });
-
-    const totalAmount = selectedUTXOs.reduce(
-      (acc, utxo) => acc + utxo.amount,
-      0
-    );
-    const changeAmount = totalAmount - amountToSend - transactionFee;
-    if (changeAmount > 0) {
-      psbt.addOutput({
-        address: changeAddress,
-        value: changeAmount,
-      });
-    }
-
-    // Sign each input
-    for (const [index, utxo] of selectedUTXOs.entries()) {
+      console.log(utxo);
       const wallet = await Wallet.findOne({
         "addresses.address": utxo.address,
       });
       if (!wallet) {
         throw new Error(`Wallet not found for address ${utxo.address}`);
       }
-
-      // Decrypt the master private key
       const decryptedMasterPrivateKey = decryptPrivateKey(
-        wallet.encryptedMasterPrivateKey
+        wallet.encryptedMasterPrivateKey,
       );
-
-      // Derive the private key for the UTXO
       const node = bip32.fromBase58(decryptedMasterPrivateKey, network);
-      const child = node.derivePath(utxo.keyPath); // Assuming keyPath is provided in UTXO data
+      const child = node.derivePath(utxo.keyPath);
+      const pubkey = child.publicKey;
 
-      const keyPair = bitcoin.ECPair.fromPrivateKey(child.privateKey, {
+      const p2wpkh = bitcoin.payments.p2wpkh({ pubkey, network });
+      psbt.addInput({
+        hash: utxo.transactionHash,
+        index: utxo.outputIndex,
+        witnessUtxo: {
+          script: Buffer.from(utxo.scriptPubKey, "hex"),
+          value: utxo.amount,
+        },
+      });
+      console.log(psbt.data.inputs);
+    }
+
+    // Add outputs for toAddress and changeAddress
+    psbt.addOutput({
+      address: toAddress,
+      value: amountToSend,
+    });
+
+    const totalAmount = selectedUTXOs.reduce(
+      (sum, utxo) => sum + utxo.amount,
+      0,
+    );
+    const changeAmount = totalAmount - amountToSend - transactionFee;
+    if (changeAmount > 0) {
+      psbt.addOutput({ address: changeAddress, value: changeAmount });
+    }
+    console.log("totalAmount:", totalAmount);
+    console.log("changeAmount:", changeAmount);
+
+    // Sign each input
+    for (const [index, utxo] of selectedUTXOs.entries()) {
+      const wallet = await Wallet.findOne({
+        "addresses.address": utxo.address,
+      });
+      const decryptedMasterPrivateKey = decryptPrivateKey(
+        wallet.encryptedMasterPrivateKey,
+      );
+      const node = bip32.fromBase58(decryptedMasterPrivateKey, network);
+      const child = node.derivePath(utxo.keyPath);
+      const keyPair = ecPair.fromPrivateKey(child.privateKey, {
         network: network,
       });
       psbt.signInput(index, keyPair);
     }
 
+    console.log(psbt.data.inputs);
+    console.log("OUTPUTS:", psbt.data.outputs);
+
     // Finalize and extract transaction
     psbt.finalizeAllInputs();
     const transaction = psbt.extractTransaction();
-
     return transaction.toHex();
   } catch (error) {
     throw new Error(
-      `Error in creating raw Bitcoin transaction: ${error.message}`
+      `Error in creating raw Bitcoin transaction: ${error.message}`,
     );
   }
 };
@@ -291,7 +298,7 @@ const updateWalletBalanceById = async (walletId, updateData) => {
       const updatedWallet = await Wallet.findByIdAndUpdate(
         walletId,
         updatesToApply,
-        { new: true }
+        { new: true },
       );
       log.info(`Wallet balance with ID ${walletId} updated`);
       return updatedWallet;
@@ -329,7 +336,7 @@ const addUTXOToWallet = async (walletRef, utxoData) => {
 
     // Find the address data within the wallet to get the keyPath
     const addressData = wallet.addresses.find(
-      (a) => a.address === utxoData.address
+      (a) => a.address === utxoData.address,
     );
     if (!addressData) {
       throw new Error(`Address data not found for ${utxoData.address}`);
@@ -349,7 +356,7 @@ const addUTXOToWallet = async (walletRef, utxoData) => {
       log.info(`UTXO with ID ${utxo._id} added to wallet with ID ${walletRef}`);
     } else {
       log.info(
-        `UTXO with ID ${utxo._id} already exists in wallet with ID ${walletRef}`
+        `UTXO with ID ${utxo._id} already exists in wallet with ID ${walletRef}`,
       );
     }
 
@@ -359,6 +366,84 @@ const addUTXOToWallet = async (walletRef, utxoData) => {
     throw err;
   }
 };
+
+/**
+ * Creates a raw Bitcoin transaction with an accurately calculated fee.
+ *
+ * @async
+ * @function createAccurateFeeBitcoinTransaction
+ * @param {Array} selectedUTXOs - Array of UTXOs to be used in the transaction.
+ * @param {string} toAddress - The Bitcoin address to send the amount to.
+ * @param {number} amountToSend - The amount to send in satoshis.
+ * @param {string} changeAddress - The address where the change will be sent.
+ * @param {number} feeRate - The fee rate in satoshis per byte.
+ * @return {Promise<string>} - A promise that resolves to the raw transaction hex string.
+ * @throws {Error} - Throws an error if transaction creation fails.
+ */
+const createAccurateFeeBitcoinTransaction = async (
+  selectedUTXOs,
+  toAddress,
+  amountToSend,
+  changeAddress,
+  feeRate,
+) => {
+  try {
+    const psbt = new bitcoin.Psbt({ network: network });
+
+    // Add inputs
+    selectedUTXOs.forEach((utxo) => {
+      psbt.addInput({
+        hash: utxo.transactionHash,
+        index: utxo.outputIndex,
+        witnessUtxo: {
+          script: Buffer.from(utxo.scriptPubKey, "hex"),
+          value: utxo.amount,
+        },
+      });
+    });
+
+    // Add outputs (initially without considering the transaction fee)
+    psbt.addOutput({ address: toAddress, value: amountToSend });
+
+    // Total amount from all UTXOs
+    const totalInputAmount = selectedUTXOs.reduce(
+      (acc, utxo) => acc + utxo.amount,
+      0,
+    );
+
+    // Adding a dummy output for change to calculate the transaction size
+    psbt.addOutput({
+      address: changeAddress,
+      value: totalInputAmount - amountToSend,
+    });
+
+    // Calculate the size of the transaction to estimate the fee
+    const virtualSize = psbt.__CACHE.__TX.virtualSize();
+    const estimatedFee = Math.ceil(virtualSize * feeRate);
+
+    // Recalculate and update the change output considering the estimated fee
+    const changeValue = totalInputAmount - amountToSend - estimatedFee;
+    psbt.updateOutput(1, { address: changeAddress, value: changeValue });
+
+    // Sign each input
+    selectedUTXOs.forEach((utxo, index) => {
+      const keyPair = ecPair.fromWIF(utxo.privateKeyWIF, network);
+      psbt.signInput(index, keyPair);
+    });
+
+    // Finalize and extract the transaction
+    psbt.finalizeAllInputs();
+    const transaction = psbt.extractTransaction();
+
+    return transaction.toHex();
+  } catch (error) {
+    throw new Error(
+      `Error in creating accurate fee Bitcoin transaction: ${error.message}`,
+    );
+  }
+};
+
+module.exports = { createAccurateFeeBitcoinTransaction };
 
 module.exports = {
   createHDSegWitWalletForEvent,

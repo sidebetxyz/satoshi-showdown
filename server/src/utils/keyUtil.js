@@ -37,7 +37,7 @@ const generateHDSegWitWalletWithSeed = () => {
 
 /**
  * Generate a child address from the master key using a specified derivation path.
- * This function supports generating P2WSH addresses.
+ * This function supports generating P2WPKH addresses.
  *
  * @function generateChildAddress
  * @param {string} masterPublicKey - The master public key of the HD wallet.
@@ -48,20 +48,14 @@ const generateChildAddress = (masterPublicKey, childIndex) => {
   const node = bip32.fromBase58(masterPublicKey, network);
 
   // Adjust the derivation path to include the child index for non-hardened derivation
-  const derivationPath = `m/84/1/0/0/${childIndex}`; // Updated for BIP84 (P2WSH)
+  const derivationPath = `m/84/1/0/0/${childIndex}`; // BIP84 for P2WPKH (SegWit) derivation path for Testnet
   const child = node.derivePath(derivationPath);
 
-  // Create the witness script (This is a simple example, using a single pubkey)
-  const witnessScript = bitcoin.payments.p2wpkh({
+  // Create a P2WPKH address
+  const { address } = bitcoin.payments.p2wpkh({
     pubkey: child.publicKey,
     network,
-  }).output;
-
-  // Generate the P2WSH address
-  const address = bitcoin.payments.p2wsh({
-    redeem: { output: witnessScript, network },
-    network,
-  }).address;
+  });
 
   return { address, path: derivationPath };
 };

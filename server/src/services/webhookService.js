@@ -40,7 +40,7 @@ const createWebhook = async (
   walletRef,
   transactionRef,
   userRef,
-  eventRef
+  eventRef,
 ) => {
   // Define the new webhook and save it in the database
   const newWebhook = new Webhook({
@@ -64,7 +64,7 @@ const createWebhook = async (
   };
   const response = await postAPI(
     `${apiBaseUrl}/hooks?token=${apiToken}`,
-    webhookData
+    webhookData,
   );
 
   // Update the local webhook record with the response
@@ -102,13 +102,13 @@ const processWebhook = async (urlId, headers, data) => {
 
   const transaction = await updateTransactionById(
     webhook.transactionRef,
-    transactionUpdate
+    transactionUpdate,
   );
 
   const wallet = await updateWalletBalanceById(webhook.walletRef, walletUpdate);
 
   log.info(
-    `Webhook processed: Transaction - ${transaction._id}, Wallet - ${wallet._id}`
+    `Webhook processed: Transaction - ${transaction._id}, Wallet - ${wallet._id}`,
   );
 };
 
@@ -189,25 +189,28 @@ const _processWebhookTransactionData = async (webhook) => {
     // Create UTXO records only for the first confirmation
     if (transactionDetails.confirmations === 1) {
       const utxoPromises = transactionDetails.outputs
-        .filter((output) => output.addresses.includes(monitoredAddress))
-        .map(async (output, index) => {
-          // Prepare UTXO data
-          const utxoData = {
-            userRef: webhook.userRef,
-            eventRef: webhook.eventRef,
-            transactionHash: transactionDetails.hash,
-            outputIndex: index,
-            amount: output.value,
-            address: monitoredAddress,
-            scriptPubKey: output.script,
-            scriptType: output.script_type,
-            blockHeight: transactionDetails.block_height,
-            timestamp: new Date(transactionDetails.received),
-          };
+        .map((output, index) => {
+          if (output.addresses.includes(monitoredAddress)) {
+            // Prepare UTXO data with the correct output index
+            const utxoData = {
+              userRef: webhook.userRef,
+              eventRef: webhook.eventRef,
+              transactionHash: transactionDetails.hash,
+              outputIndex: index,
+              amount: output.value,
+              address: monitoredAddress,
+              scriptPubKey: output.script,
+              scriptType: output.script_type,
+              blockHeight: transactionDetails.block_height,
+              timestamp: new Date(transactionDetails.received),
+            };
 
-          // Add UTXO to wallet
-          await addUTXOToWallet(webhook.walletRef, utxoData);
-        });
+            // Add UTXO to wallet
+            return addUTXOToWallet(webhook.walletRef, utxoData);
+          }
+          return null;
+        })
+        .filter((promise) => promise !== null);
 
       try {
         await Promise.all(utxoPromises);
@@ -239,7 +242,7 @@ const _processWebhookTransactionData = async (webhook) => {
     return { transactionUpdate, walletUpdate };
   } else {
     log.info(
-      `No transaction amount for monitored address: ${monitoredAddress}`
+      `No transaction amount for monitored address: ${monitoredAddress}`,
     );
     return { transactionUpdate: null, walletUpdate: null };
   }
@@ -262,7 +265,7 @@ const _updateWebhook = async (urlId, updateData) => {
   });
   if (!updatedWebhook)
     throw new NotFoundError(
-      `Webhook with URL ID ${urlId} not found for update`
+      `Webhook with URL ID ${urlId} not found for update`,
     );
   return updatedWebhook;
 };

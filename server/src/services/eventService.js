@@ -79,7 +79,7 @@ const createEvent = async (eventData) => {
       throw new ValidationError(
         `Invalid event data: ${validation.error.details
           .map((d) => d.message)
-          .join("; ")}`
+          .join("; ")}`,
       );
     }
 
@@ -88,7 +88,7 @@ const createEvent = async (eventData) => {
       userAddress,
       user._id,
       eventDetails.entryFee,
-      prizePoolContribution
+      prizePoolContribution,
     );
 
     // Add transaction reference to event details
@@ -112,7 +112,7 @@ const createEvent = async (eventData) => {
       financialSetup.wallet._id,
       financialSetup.transaction._id,
       user._id,
-      newEvent._id
+      newEvent._id,
     );
 
     log.info(`New event created with webhook: ${newEvent._id}`);
@@ -194,7 +194,7 @@ const joinEvent = async (
   eventId,
   userId,
   userWalletAddress,
-  prizePoolContribution = 0
+  prizePoolContribution = 0,
 ) => {
   try {
     // Find the event by its ID.
@@ -206,11 +206,11 @@ const joinEvent = async (
     if (
       event.creator.toString() === userId ||
       event.participants.some(
-        (participant) => participant.userId.toString() === userId
+        (participant) => participant.userId.toString() === userId,
       )
     ) {
       throw new Error(
-        "Event creator or an already participating user cannot join the event"
+        "Event creator or an already participating user cannot join the event",
       );
     }
 
@@ -240,7 +240,7 @@ const joinEvent = async (
     // Generate a new address based on the wallet
     const userDepositAddressData = await generateChildAddressForWallet(
       wallet.masterPublicKey,
-      childIndex
+      childIndex,
     );
 
     // Add the new address and path to the wallet
@@ -254,7 +254,7 @@ const joinEvent = async (
       walletRef: event.walletRef,
       transactionType: "incoming",
       expectedAmount: totalAmount,
-      walletAddress: userDepositAddressData.address,
+      walletAddresses: [userDepositAddressData.address], // Add address to the first slot in the array      userAddress: userWalletAddress,
       userAddress: userWalletAddress,
       purpose:
         prizePoolContribution > 0 ? "payFeeAndFundPool" : "entryFeePayment",
@@ -278,10 +278,10 @@ const joinEvent = async (
     });
     event.transactions.push(transaction._id);
 
-    // Update event status to 'ready' if it reaches the minimum number of participants.
+    // Update event status to 'active' if it reaches the minimum number of participants.
     if (event.participants.length === event.minParticipants) {
       event.isOpen = false;
-      event.status = "ready";
+      event.status = "active";
     }
 
     // Save the updated event information to the database.
@@ -289,11 +289,11 @@ const joinEvent = async (
 
     // Create a webhook for the transaction
     const webhook = await createWebhook(
-      transaction.walletAddress,
-      transaction.walletRef,
+      userDepositAddressData.address,
+      wallet._id,
       transaction._id,
       user._id,
-      event._id
+      event._id,
     );
 
     // Return the updated event object including transaction details.
@@ -393,7 +393,7 @@ const handleFinancialSetup = async (
   userAddress,
   userRef,
   entryFee,
-  prizePoolContribution
+  prizePoolContribution,
 ) => {
   try {
     // Calculate the total amount the user needs to send in
@@ -432,7 +432,7 @@ const handleFinancialSetup = async (
     const transaction = await createTransactionRecord(transactionData);
 
     log.info(
-      `Financial setup completed for event: Wallet and transaction created`
+      `Financial setup completed for event: Wallet and transaction created`,
     );
 
     // Return an object containing wallet and transaction details
@@ -440,7 +440,7 @@ const handleFinancialSetup = async (
   } catch (err) {
     log.error(`Error in handleFinancialSetup: ${err.message}`);
     throw new Error(
-      `Failed to set up financial aspects of the event: ${err.message}`
+      `Failed to set up financial aspects of the event: ${err.message}`,
     );
   }
 };
@@ -463,14 +463,14 @@ const refundEventCreator = async (eventId) => {
     // Retrieve the original transaction record
     const originalTransactionId = event.transactions[0];
     const originalTransaction = await getTransactionRecordById(
-      originalTransactionId
+      originalTransactionId,
     );
 
     const refundAmount = originalTransaction.confirmedAmount; // Assuming full refund
     const selectedUTXOs = await selectUTXOsForTransaction(
       event.creator,
       eventId,
-      refundAmount
+      refundAmount,
     );
 
     // Fetch current fee rates and estimate transaction fee
@@ -479,7 +479,7 @@ const refundEventCreator = async (eventId) => {
     const estimatedFee = estimateTransactionFee(
       selectedUTXOs.length,
       1,
-      feeRate
+      feeRate,
     ); // Assuming 1 output
 
     console.log(feeRates);
@@ -504,7 +504,7 @@ const refundEventCreator = async (eventId) => {
     };
 
     const refundTransaction = await createRefundTransactionRecord(
-      refundTransactionData
+      refundTransactionData,
     );
 
     event.status = "cancelled";
@@ -530,7 +530,7 @@ const refundEventCreator = async (eventId) => {
       refundTransaction.userAddress,
       refundAmount - estimatedFee,
       changeAddress,
-      estimatedFee
+      estimatedFee,
     );
 
     console.log(rawTransaction);
@@ -572,7 +572,7 @@ const refundUser = async (userId, eventId, refundAmount = null) => {
 
     if (!transactionToRefund) {
       throw new Error(
-        `No transaction found for user ID ${userId} in event ID ${eventId}`
+        `No transaction found for user ID ${userId} in event ID ${eventId}`,
       );
     }
 
@@ -583,7 +583,7 @@ const refundUser = async (userId, eventId, refundAmount = null) => {
     const selectedUTXOs = await selectUTXOsForTransaction(
       userId,
       eventId,
-      refundAmount
+      refundAmount,
     );
 
     // Estimate transaction fee and adjust refund amount
@@ -591,7 +591,7 @@ const refundUser = async (userId, eventId, refundAmount = null) => {
     const estimatedFee = estimateTransactionFee(
       selectedUTXOs.length,
       1,
-      feeRates.lowFeePerByte
+      feeRates.lowFeePerByte,
     );
     const adjustedRefundAmount = adjustAmountForFee(refundAmount, estimatedFee);
 
@@ -611,7 +611,7 @@ const refundUser = async (userId, eventId, refundAmount = null) => {
     };
 
     const refundTransaction = await createRefundTransactionRecord(
-      refundTransactionData
+      refundTransactionData,
     );
 
     // Update the event's transactions to include the refund transaction
@@ -628,7 +628,7 @@ const refundUser = async (userId, eventId, refundAmount = null) => {
       refundTransaction.userAddress,
       adjustedRefundAmount - estimatedFee,
       changeAddress,
-      estimatedFee
+      estimatedFee,
     );
 
     log.info(`Refund processed for user ${userId} in event ${eventId}`);
@@ -643,14 +643,13 @@ const refundUser = async (userId, eventId, refundAmount = null) => {
  * Settles an event based on participant votes.
  * @param {string} eventId - ID of the event to settle.
  */
-async function settleEvent(eventId) {
+const settleEvent = async (eventId) => {
   try {
     const event = await Event.findById(eventId);
     if (!event) {
       throw new NotFoundError(`Event with ID ${eventId} not found`);
     }
 
-    // Trigger settling process only if the event is active and the current time is past the end time
     if (event.status === "active" && new Date() > event.endTime) {
       event.status = "settling";
       event.settlementStatus = "voting";
@@ -658,14 +657,14 @@ async function settleEvent(eventId) {
       log.info(`Event ${eventId} status updated to settling`);
     } else {
       throw new Error(
-        "Event is not in a state to be settled or end time not reached"
+        "Event is not in a state to be settled or end time not reached",
       );
     }
   } catch (err) {
     log.error(`Error in settleEvent: ${err.message}`);
     throw err;
   }
-}
+};
 
 /**
  * Casts a vote for an event participant.
@@ -686,10 +685,7 @@ const castVote = async (eventId, userId, vote) => {
       throw new NotFoundError(`Event with ID ${eventId} not found`);
     }
 
-    if (
-      event.status !== "settling" &&
-      event.settlementStatus !== "processing"
-    ) {
+    if (event.status !== "settling" && event.settlementStatus !== "voting") {
       throw new Error("Voting is not open for this event");
     }
 
@@ -699,10 +695,10 @@ const castVote = async (eventId, userId, vote) => {
     }
 
     const isParticipant = event.participants.some(
-      (p) => p.userId.toString() === user._id.toString()
+      (p) => p.userId.toString() === user._id.toString(),
     );
     const hasVoted = event.voteResults.some(
-      (v) => v.userId.toString() === user._id.toString()
+      (v) => v.userId.toString() === user._id.toString(),
     );
 
     if (!isParticipant || hasVoted) {
@@ -812,42 +808,42 @@ const awardWinner = async (eventId) => {
 
     const winnerId = event.winners[0];
     const winnerParticipant = event.participants.find((p) =>
-      p.userId.equals(winnerId)
+      p.userId.equals(winnerId),
     );
     if (!winnerParticipant) {
       throw new NotFoundError(
-        `Winner with ID ${winnerId} not found in participants`
+        `Winner with ID ${winnerId} not found in participants`,
       );
     }
 
-    const prizeAmount = event.prizePool;
+    // Since the UTXOs now directly reflect the prize pool, we don't need to pass the required amount
+    const selectedUTXOs = await selectUTXOsForAward(eventId);
 
-    // Select UTXOs specifically for awarding the prize
-    const selectedUTXOs = await selectUTXOsForAward(eventId, prizeAmount);
-
-    // Estimate transaction fee (1 satoshi per byte on testnet)
-    const testnetFeeRate = 1;
+    // Estimate transaction fee
+    const testnetFeeRate = 22; // Assuming testnet usage
     const estimatedFee = estimateTransactionFee(
       selectedUTXOs.length,
       1,
-      testnetFeeRate
+      testnetFeeRate,
     );
 
-    // Adjust prize amount after fee
-    const prizeAmountAfterFee = prizeAmount - estimatedFee;
+    console.log("estimatedFee:", estimatedFee);
 
-    // Create the raw Bitcoin transaction for prize distribution
+    // Adjust prize amount after fee
+    const prizeAmountAfterFee = event.prizePool - estimatedFee;
+
+    // Create the raw Bitcoin transaction
     const rawTransaction = await createRawBitcoinTransaction(
       selectedUTXOs,
       winnerParticipant.userAddress,
       prizeAmountAfterFee,
-      event.walletAddress, // Assuming the event's wallet address is used for change
-      estimatedFee
+      winnerParticipant.userAddress, // If there's change just send to user for now
+      estimatedFee,
     );
 
     const prizeDistributionTransaction = {
       userRef: winnerId,
-      walletRef: event.walletId,
+      walletRef: event.walletRef,
       transactionType: "outgoing",
       purpose: "winnerPayout",
       walletAddresses: selectedUTXOs.map((utxo) => utxo.address),
@@ -862,13 +858,13 @@ const awardWinner = async (eventId) => {
     await createTransactionRecord(prizeDistributionTransaction);
 
     // Mark the used UTXOs as spent
-    for (const utxo of selectedUTXOs) {
-      await markUTXOAsSpent(utxo.transactionHash, utxo.outputIndex);
-    }
+    // for (const utxo of selectedUTXOs) {
+    //   await markUTXOAsSpent(utxo.transactionHash, utxo.outputIndex);
+    // }
 
-    event.status = "completed";
-    event.settlementStatus = "settled";
-    await event.save();
+    // event.status = "completed";
+    // event.settlementStatus = "settled";
+    // await event.save();
 
     log.info(`Prize awarded to winner for event ${eventId}`);
     return { transaction: prizeDistributionTransaction, rawTransaction };

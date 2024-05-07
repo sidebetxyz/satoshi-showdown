@@ -93,41 +93,28 @@ const selectUTXOsForTransaction = async (userId, eventId, requiredAmount) => {
 };
 
 /**
- * Selects UTXOs for awarding a winner based on the event's ID and the required amount.
- * This function is tailored for selecting UTXOs for the purpose of awarding event winners.
- * It aggregates UTXOs related to an event until the required amount is met or exceeded.
+ * Selects UTXOs for awarding a winner based on the event's ID.
+ * Assumes all UTXOs associated with the event contribute to the prize pool.
  * @param {string} eventId - The event's ID to select UTXOs for.
- * @param {number} requiredAmount - The minimum total amount needed from the UTXOs.
  * @return {Promise<Array>} An array of selected UTXO objects.
  */
-const selectUTXOsForAward = async (eventId, requiredAmount) => {
+const selectUTXOsForAward = async (eventId) => {
   try {
     const utxos = await UTXO.find({
       eventRef: eventId,
-      spent: false
+      spent: false,
     });
 
-    const selectedUTXOs = [];
-    let totalAmount = 0;
-
-    for (const utxo of utxos) {
-      if (totalAmount >= requiredAmount) break;
-      selectedUTXOs.push(utxo);
-      totalAmount += utxo.amount;
+    if (utxos.length === 0) {
+      throw new Error("No UTXOs found for the event.");
     }
 
-    if (totalAmount < requiredAmount) {
-      throw new Error("Insufficient funds: Unable to select enough UTXOs.");
-    }
-
-    return selectedUTXOs;
+    return utxos;
   } catch (error) {
     log.error("Error selecting UTXOs for award:", error);
     throw error;
   }
 };
-
-
 
 module.exports = {
   createUTXO,
