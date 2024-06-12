@@ -70,7 +70,7 @@ Located in the `server` directory, this application handles critical functionali
 
 ## API Documentation
 
-Refer to `[link-to-api-documentation]` for detailed API documentation.
+Refer to `[[link-to-api-documentation]](https://sidebetxyz.github.io/satoshi-showdown/)` for detailed API documentation.
 
 ## Development
 
