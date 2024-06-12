@@ -61,7 +61,7 @@ Located in the `server` directory, this application handles critical functionali
 
 ### Installation
 
-1. Clone the repository: `git clone [repository-url]`
+1. Clone the repository: `git clone git@github.com:sidebetxyz/satoshi-showdown.git`
 2. Navigate to the project directory: `cd satoshi-showdown-server`
 3. Install dependencies: `npm install`
 4. Set up environment variables in `.env` file
