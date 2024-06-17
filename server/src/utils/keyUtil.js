@@ -25,7 +25,7 @@ const generateHDSegWitWalletWithSeed = () => {
   const masterPublicKey = root.neutered().toBase58();
   const encryptedMasterPrivateKey = encryptPrivateKey(root.toBase58());
   const encryptedSeed = encryptPrivateKey(mnemonic);
-  const derivationPath = "m/84'/1'/0'"; // For reference (P2WSH) BIP84 Testnet Hardened Derivation Path
+  const derivationPath = "m/84'/1'/0'"; // For reference (Native Segwit P2PKH) BIP84 Testnet Hardened Derivation Path
 
   return {
     masterPublicKey,
