@@ -1,3 +1,13 @@
+/**
+ * @fileoverview Transaction Model for Satoshi Showdown.
+ * This model defines the structure and constraints for Transactions on the platform.
+ *
+ *
+ * @module models/Transaction
+ * @requires mongoose - Mongoose library for MongoDB object modeling, offering schema definition and data validation.
+ * @requires uuid - UUID library for generating unique identifiers, utilized for creating distinct transaction IDs.
+ */
+
 const mongoose = require("mongoose");
 const { v4: uuidv4 } = require("uuid");
 
@@ -67,7 +77,7 @@ const transactionSchema = new mongoose.Schema(
     confirmations: { type: Number, default: null },
     transactionHash: { type: String },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 /**

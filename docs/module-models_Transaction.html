@@ -35,11 +35,7 @@
     
         
             <div class="description"><p>Transaction Model for Satoshi Showdown.
-This model defines the structure and constraints for handling cryptocurrency transactions
-within the platform. It is essential for managing and tracking the details of transactions,
-such as transaction types, amounts, status, confirmations, and associated references to users
-and wallets. The model plays a critical role in ensuring accurate and secure transaction processing
-and record-keeping for financial activities on the platform.</p></div>
+This model defines the structure and constraints for Transactions on the platform.</p></div>
         
 
         
@@ -111,78 +107,6 @@ and record-keeping for financial activities on the platform.</p></div>
     
 
     
-        <h3 class="subsection-title">Members</h3>
-
-        
-            
-<h4 class="name" id="~Transaction"><span class="type-signature">(inner, constant) </span>Transaction<span class="type-signature"> :TransactionModel</span></h4>
-
-
-
-
-
-
-    <h5>Type:</h5>
-    <ul>
-        <li>
-            
-<span class="param-type">TransactionModel</span>
-
-
-        </li>
-    </ul>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="models_transactionModel.js.html">models/transactionModel.js</a>, <a href="models_transactionModel.js.html#line88">line 88</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-        
-    
 
     
 
@@ -198,9 +122,9 @@ and record-keeping for financial activities on the platform.</p></div>
 
 <div class="description">
     <p>Transaction model based on the defined schema.
-Represents a cryptocurrency transaction within the Satoshi Showdown platform, encapsulating
-all data and behavior related to financial transactions, including tracking, processing,
-and verification of cryptocurrency movements.</p>
+Represents a cryptocurrency transaction within the Satoshi Showdown platform,
+encapsulating key data and processes related to financial transactions, such as tracking,
+processing, and verification of cryptocurrency movements.</p>
 </div>
 
 
@@ -209,7 +133,7 @@ and verification of cryptocurrency movements.</p>
     <ul>
         <li>
             
-<span class="param-type">mongoose.Model.&lt;<a href="module-models_Transaction.html#~TransactionSchema">module:models/Transaction~TransactionSchema</a>></span>
+<span class="param-type">mongoose.Model.&lt;TransactionSchema></span>
 
 
         </li>
@@ -248,7 +172,7 @@ and verification of cryptocurrency movements.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="models_transactionModel.js.html">models/transactionModel.js</a>, <a href="models_transactionModel.js.html#line76">line 76</a>
+        <a href="models_transactionModel.js.html">models/transactionModel.js</a>, <a href="models_transactionModel.js.html#line83">line 83</a>
     </li></ul></dd>
     
 
@@ -273,10 +197,10 @@ and verification of cryptocurrency movements.</p>
 
 <div class="description">
     <p>Schema definition for the Transaction model.
-Specifies the structure, data types, and validation rules for fields associated with a cryptocurrency transaction.
-Fields include transaction identifiers, references to related user and wallet, transaction type, amounts,
-status, and other relevant transaction data. This schema is designed to comprehensively capture all
-necessary details for transaction management and auditing within the platform.</p>
+Specifies the structure, data types, and validation rules for fields associated
+with a cryptocurrency transaction. The schema captures essential transaction details
+such as identifiers, references, type, amounts, status, confirmations, and blockchain
+transaction hash.</p>
 </div>
 
 
@@ -321,7 +245,7 @@ necessary details for transaction management and auditing within the platform.</
 
         <tr>
             
-                <td class="name"><code>transactionId</code></td>
+                <td class="name"><code>transactionUUID</code></td>
             
 
             <td class="type">
@@ -360,7 +284,7 @@ necessary details for transaction management and auditing within the platform.</
 
             
 
-            <td class="description last"><p>Reference to the User model for transaction association.</p></td>
+            <td class="description last"><p>Reference to the User model.</p></td>
         </tr>
 
     
@@ -383,7 +307,7 @@ necessary details for transaction management and auditing within the platform.</
 
             
 
-            <td class="description last"><p>Reference to the Wallet model for transaction association.</p></td>
+            <td class="description last"><p>Reference to the Wallet model.</p></td>
         </tr>
 
     
@@ -406,7 +330,76 @@ necessary details for transaction management and auditing within the platform.</
 
             
 
-            <td class="description last"><p>Enum to represent the direction of the transaction.</p></td>
+            <td class="description last"><p>Direction of the transaction (incoming/outgoing).</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>purpose</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The intended use of the transaction, categorized by type.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>walletAddress</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Address of the wallet involved.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>userAddress</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Address of the user involved.</p></td>
         </tr>
 
     
@@ -430,75 +423,6 @@ necessary details for transaction management and auditing within the platform.</
             
 
             <td class="description last"><p>Expected amount of the transaction.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>receivedAmount</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">number</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Actual received amount (useful for incoming transactions).</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>walletAddress</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Address of the wallet involved in the transaction.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>userAddress</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Address of the user involved in the transaction.</p></td>
         </tr>
 
     
@@ -590,7 +514,7 @@ necessary details for transaction management and auditing within the platform.</
 
             
 
-            <td class="description last"><p>Number of network confirmations for the transaction.</p></td>
+            <td class="description last"><p>Number of network confirmations.</p></td>
         </tr>
 
     
@@ -613,7 +537,7 @@ necessary details for transaction management and auditing within the platform.</
 
             
 
-            <td class="description last"><p>Hash of the transaction as recorded on the blockchain.</p></td>
+            <td class="description last"><p>Blockchain hash of the transaction.</p></td>
         </tr>
 
     
@@ -652,7 +576,7 @@ necessary details for transaction management and auditing within the platform.</
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="models_transactionModel.js.html">models/transactionModel.js</a>, <a href="models_transactionModel.js.html#line17">line 17</a>
+        <a href="models_transactionModel.js.html">models/transactionModel.js</a>, <a href="models_transactionModel.js.html#line14">line 14</a>
     </li></ul></dd>
     
 
@@ -682,7 +606,7 @@ necessary details for transaction management and auditing within the platform.</
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-middlewares_corsSecurityMiddleware.html">middlewares/corsSecurityMiddleware</a></li><li><a href="module-middlewares_errorMiddleware.html">middlewares/errorMiddleware</a></li><li><a href="module-middlewares_httpSecurityMiddleware.html">middlewares/httpSecurityMiddleware</a></li><li><a href="module-middlewares_jsonParserMiddleware.html">middlewares/jsonParserMiddleware</a></li><li><a href="module-middlewares_requestLoggerMiddleware.html">middlewares/requestLoggerMiddleware</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_Transaction.html">models/Transaction</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#port">port</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-middlewares_corsSecurityMiddleware.html">middlewares/corsSecurityMiddleware</a></li><li><a href="module-middlewares_errorMiddleware.html">middlewares/errorMiddleware</a></li><li><a href="module-middlewares_httpSecurityMiddleware.html">middlewares/httpSecurityMiddleware</a></li><li><a href="module-middlewares_jsonParserMiddleware.html">middlewares/jsonParserMiddleware</a></li><li><a href="module-middlewares_requestLoggerMiddleware.html">middlewares/requestLoggerMiddleware</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_Transaction.html">models/Transaction</a></li><li><a href="module-models_UTXO.html">models/UTXO</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_feeUtil.html">utils/feeUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#createUTXO">createUTXO</a></li><li><a href="global.html#findUTXOsByAddress">findUTXOsByAddress</a></li><li><a href="global.html#generateChildAddress">generateChildAddress</a></li><li><a href="global.html#generateHDSegWitWalletWithSeed">generateHDSegWitWalletWithSeed</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#markUTXOAsSpent">markUTXOAsSpent</a></li><li><a href="global.html#port">port</a></li><li><a href="global.html#selectUTXOsForAward">selectUTXOsForAward</a></li><li><a href="global.html#selectUTXOsForTransaction">selectUTXOsForTransaction</a></li></ul>
 </nav>
 
 <br class="clear">
