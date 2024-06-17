@@ -1,3 +1,12 @@
+/**
+ * @fileoverview UTXO Model for Satoshi Showdown.
+ * This model defines the structure and constraints for UTXOs on the platform.
+ * 
+ *
+ * @module models/UTXO
+ * @requires mongoose - Mongoose library for MongoDB object modeling, offering schema definition and data validation.
+ */
+
 const mongoose = require("mongoose");
 
 /**
@@ -43,7 +52,7 @@ const UTXOSchema = new mongoose.Schema(
     refundTxHash: String,
     keyPath: { type: String, required: false },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 const UTXO = mongoose.model("UTXO", UTXOSchema);

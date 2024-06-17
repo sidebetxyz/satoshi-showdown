@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Module: utils/formatUtil</title>
+    <title>JSDoc: Module: models/UTXO</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Module: utils/formatUtil</h1>
+    <h1 class="page-title">Module: models/UTXO</h1>
 
     
 
@@ -34,10 +34,8 @@
     <div class="container-overview">
     
         
-            <div class="description"><p>Formatting Utility for Satoshi Showdown.
-This module provides functions for standardizing and formatting data across the application,
-such as dates, currencies, and other domain-specific data. It ensures consistency and readability,
-enhancing the user experience and data handling.</p></div>
+            <div class="description"><p>UTXO Model for Satoshi Showdown.
+This model defines the structure and constraints for UTXOs on the platform.</p></div>
         
 
         
@@ -72,7 +70,7 @@ enhancing the user experience and data handling.</p></div>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utils_formatUtil.js.html">utils/formatUtil.js</a>, <a href="utils_formatUtil.js.html#line1">line 1</a>
+        <a href="models_utxoModel.js.html">models/utxoModel.js</a>, <a href="models_utxoModel.js.html#line1">line 1</a>
     </li></ul></dd>
     
 
@@ -94,7 +92,7 @@ enhancing the user experience and data handling.</p></div>
         <h3 class="subsection-title">Requires</h3>
 
         <ul>
-            <li>module:luxon</li>
+            <li>module:mongoose</li>
         </ul>
     
 
@@ -109,38 +107,44 @@ enhancing the user experience and data handling.</p></div>
     
 
     
-        <h3 class="subsection-title">Methods</h3>
+
+    
+        <h3 class="subsection-title">Type Definitions</h3>
 
         
-            
+                
+<h4 class="name" id="~UTXOSchema">UTXOSchema</h4>
 
-    
-
-    
-    <h4 class="name" id="~formatCryptoAddress"><span class="type-signature">(inner) </span>formatCryptoAddress<span class="signature">(address)</span><span class="type-signature"> &rarr; {string}</span></h4>
-    
-
-    
 
 
 
 <div class="description">
-    <p>Placeholder function for formatting cryptocurrency addresses.
-Can be implemented to format addresses according to specific requirements.</p>
+    <p>UTXO Schema definition for Satoshi Showdown.
+Represents Unspent Transaction Output (UTXO) data, crucial for tracking and managing cryptocurrency transactions.
+Includes references to users, events, and wallets, along with key transactional data like address, amount, and blockchain information.</p>
 </div>
 
 
 
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Object</span>
+
+
+        </li>
+    </ul>
 
 
 
 
 
+    <h5 class="subsection-title">Properties:</h5>
 
-    <h5>Parameters:</h5>
     
 
-<table class="params">
+<table class="props">
     <thead>
     <tr>
         
@@ -158,6 +162,52 @@ Can be implemented to format addresses according to specific requirements.</p>
     </thead>
 
     <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>userRef</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">mongoose.Schema.Types.ObjectId</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Reference to the User model, linking the UTXO to a specific user.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>eventRef</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">mongoose.Schema.Types.ObjectId</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Reference to the Event model, associating the UTXO with a particular event.</p></td>
+        </tr>
+
     
 
         <tr>
@@ -178,149 +228,9 @@ Can be implemented to format addresses according to specific requirements.</p>
 
             
 
-            <td class="description last"><p>The cryptocurrency address to format.</p></td>
+            <td class="description last"><p>Address owning the UTXO.</p></td>
         </tr>
 
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utils_formatUtil.js.html">utils/formatUtil.js</a>, <a href="utils_formatUtil.js.html#line37">line 37</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>The formatted cryptocurrency address.</p>
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">string</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="~formatCurrency"><span class="type-signature">(inner) </span>formatCurrency<span class="signature">(amount, currency<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {string}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Formats a numeric amount into a currency string.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-        <th>Attributes</th>
-        
-
-        
-        <th>Default</th>
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
     
 
         <tr>
@@ -338,29 +248,17 @@ Can be implemented to format addresses according to specific requirements.</p>
             </td>
 
             
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
 
             
-                <td class="default">
-                
-                </td>
-            
 
-            <td class="description last"><p>The numeric amount to format.</p></td>
+            <td class="description last"><p>Amount of cryptocurrency (in satoshis) represented by this UTXO.</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>currency</code></td>
+                <td class="name"><code>transactionHash</code></td>
             
 
             <td class="type">
@@ -373,173 +271,109 @@ Can be implemented to format addresses according to specific requirements.</p>
             </td>
 
             
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
 
             
-                <td class="default">
-                
-                    "USD"
-                
-                </td>
-            
 
-            <td class="description last"><p>The currency code to format the amount in (e.g., &quot;USD&quot;).</p></td>
+            <td class="description last"><p>Hash of the transaction where this UTXO originated.</p></td>
         </tr>
 
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utils_formatUtil.js.html">utils/formatUtil.js</a>, <a href="utils_formatUtil.js.html#line24">line 24</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>The formatted currency string.</p>
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">string</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="~formatDate"><span class="type-signature">(inner) </span>formatDate<span class="signature">(date, formatStr<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {string}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Formats a JavaScript Date object into a specified string format using Luxon.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-        <th>Attributes</th>
-        
-
-        
-        <th>Default</th>
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
     
 
         <tr>
             
-                <td class="name"><code>date</code></td>
+                <td class="name"><code>outputIndex</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Output index in the transaction (vout).</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>scriptPubKey</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>ScriptPubKey for the output, defining how the UTXO can be spent.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>scriptType</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Type of script, e.g., 'pay-to-pubkey-hash'.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>blockHeight</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Block height at which this UTXO was mined (optional).</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>timestamp</code></td>
             
 
             <td class="type">
@@ -552,29 +386,40 @@ Can be implemented to format addresses according to specific requirements.</p>
             </td>
 
             
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
 
             
-                <td class="default">
-                
-                </td>
-            
 
-            <td class="description last"><p>The date object to format.</p></td>
+            <td class="description last"><p>Timestamp of when the transaction was confirmed.</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>formatStr</code></td>
+                <td class="name"><code>spent</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Indicates if the UTXO has been spent.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>spendingTxHash</code></td>
             
 
             <td class="type">
@@ -587,33 +432,84 @@ Can be implemented to format addresses according to specific requirements.</p>
             </td>
 
             
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
 
-                
+            
 
+            <td class="description last"><p>Transaction hash that spent this UTXO (if spent).</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>refund</code></td>
+            
+
+            <td class="type">
+            
                 
-                </td>
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
             
 
             
-                <td class="default">
-                
-                    "yyyy-MM-dd HH:mm:ss"
-                
-                </td>
+
+            <td class="description last"><p>Marks the UTXO as part of a refund (optional).</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>refundTxHash</code></td>
             
 
-            <td class="description last"><p>The string format to use for the output.</p></td>
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Reference to the transaction that refunded this UTXO (if applicable).</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>keyPath</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>HD wallet key path for this UTXO (optional).</p></td>
         </tr>
 
     
     </tbody>
 </table>
-
-
 
 
 
@@ -647,7 +543,7 @@ Can be implemented to format addresses according to specific requirements.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utils_formatUtil.js.html">utils/formatUtil.js</a>, <a href="utils_formatUtil.js.html#line13">line 13</a>
+        <a href="models_utxoModel.js.html">models/utxoModel.js</a>, <a href="models_utxoModel.js.html#line12">line 12</a>
     </li></ul></dd>
     
 
@@ -663,45 +559,7 @@ Can be implemented to format addresses according to specific requirements.</p>
 
 
 
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>The formatted date string.</p>
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">string</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-    
-
+            
     
 
     
