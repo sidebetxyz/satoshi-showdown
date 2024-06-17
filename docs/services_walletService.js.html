@@ -28,10 +28,9 @@
         <article>
             <pre class="prettyprint source linenums"><code>/**
  * @fileoverview Wallet Service for Satoshi Showdown.
- * Provides functionalities for managing cryptocurrency wallets, specifically for Bitcoin SegWit wallets.
- * It includes operations such as wallet creation, retrieval, balance update, and transaction association.
- * This service is essential for financial transactions within the platform, ensuring secure and efficient
- * management of user and event-related wallets.
+ * Provides functionalities for managing cryptocurrency wallets, specifically focusing on HD SegWit Bitcoin wallets.
+ * It includes operations such as wallet creation, retrieval, balance update, transaction association, and generating new addresses.
+ * This service is essential for financial transactions within the platform, ensuring secure and efficient management of wallets.
  *
  * @module services/walletService
  * @requires models/walletModel - Wallet data model for database interactions.
@@ -41,51 +40,104 @@
  */
 
 const Wallet = require("../models/walletModel");
+const UTXO = require("../models/utxoModel");
+const { createUTXO } = require("../services/utxoService");
+const {
+  generateHDSegWitWalletWithSeed,
+  generateChildAddress,
+} = require("../utils/keyUtil");
 const { decryptPrivateKey } = require("../utils/encryptionUtil");
-const { generateSegWitBitcoinKeys } = require("../utils/keyUtil");
 const { NotFoundError } = require("../utils/errorUtil");
 const log = require("../utils/logUtil");
 
 const bitcoin = require("bitcoinjs-lib");
 const network = bitcoin.networks.testnet;
+
 const ecPairFactory = require("ecpair").default;
+const { BIP32Factory } = require("bip32");
 const ecc = require("tiny-secp256k1");
+
+// Initialize bip32 with tiny-secp256k1
+const bip32 = BIP32Factory(ecc);
 
 // Initialize ECPair factory with tiny-secp256k1
 const ecPair = ecPairFactory(ecc);
 
 /**
- * Creates a new Segregated Witness (SegWit) Bitcoin wallet, primarily for event-related financial activities.
- * Generates a unique Bitcoin address and corresponding encrypted private key.
- * This wallet type is optimized for Satoshi Showdown's transaction processing needs, ensuring security and efficiency.
+ * Creates a new HD SegWit wallet for an event, including the seed.
  *
  * @async
- * @function createSegWitWalletForEvent
- * @return {Promise&lt;Object>} The created wallet object, including public address and encrypted private key details.
- * @throws {Error} If there's an issue in key generation or saving the wallet to the database.
+ * @function createHDSegWitWalletForEvent
+ * @return {Promise&lt;Object>} The created wallet object, including master public key, encrypted master private key, and encrypted seed.
+ * @throws {Error} If there's an issue in wallet generation or saving the wallet to the database.
  */
-const createSegWitWalletForEvent = async () => {
-  const { address, encryptedPrivateKey } = generateSegWitBitcoinKeys();
+const createHDSegWitWalletForEvent = async () => {
+  const {
+    masterPublicKey,
+    encryptedMasterPrivateKey,
+    encryptedSeed,
+    derivationPath,
+  } = generateHDSegWitWalletWithSeed();
+
+  console.log("Master Public Key:", masterPublicKey);
+  console.log("Encrypted Master Private Key:", encryptedMasterPrivateKey);
+  console.log("Encrypted Seed:", encryptedSeed);
+  console.log("Derivation Path:", derivationPath);
 
   const wallet = new Wallet({
-    publicAddress: address,
-    encryptedPrivateKey,
-    walletType: "SegWit",
+    walletType: "HD-SegWit",
+    masterPublicKey,
+    encryptedMasterPrivateKey,
+    encryptedSeed,
+    derivationPath,
   });
+
+  // Generate the initial address and path for the wallet
+  const initialAddressData = await generateChildAddressForWallet(
+    masterPublicKey,
+    0,
+  );
+
+  // Add the initial address and path to the addresses array
+  wallet.addresses.push(initialAddressData);
 
   try {
     await wallet.save();
-    log.info(`Wallet created with address: ${wallet.publicAddress}`);
+    log.info(`HD Wallet created for event`);
     return wallet;
   } catch (err) {
-    log.error(`Error in createSegWitWalletForEvent: ${err.message}`);
+    log.error(`Error in createHDSegWitWalletForEvent: ${err.message}`);
+    throw err;
+  }
+};
+
+/**
+ * Generates a new child address from a given HD wallet's master public key.
+ *
+ * @async
+ * @function generateChildAddressForWallet
+ * @param {string} masterPublicKey - The master public key of the HD wallet.
+ * @param {string} path - The derivation path for the child address.
+ * @return {Promise&lt;Object>} An object containing the child address and path.
+ * @throws {Error} If there's an issue in address generation.
+ */
+const generateChildAddressForWallet = async (masterPublicKey, path) => {
+  try {
+    const { address, path: derivedPath } = generateChildAddress(
+      masterPublicKey,
+      path,
+    );
+    log.info(`Child address generated at path ${derivedPath}`);
+    return { address, path: derivedPath };
+  } catch (err) {
+    log.error(`Error in generateChildAddressForWallet: ${err.message}`);
     throw err;
   }
 };
 
 /**
  * Creates a raw Bitcoin transaction using UTXOs, target address, amount, change address, and a pre-calculated transaction fee.
- * It signs the transaction inputs with the corresponding decrypted private keys from the wallets.
+ * It signs the transaction inputs with the corresponding decrypted private keys from the wallets and includes the necessary witness scripts for SegWit transactions.
  *
  * @async
  * @function createRawBitcoinTransaction
@@ -109,53 +161,99 @@ const createRawBitcoinTransaction = async (
 
     // Add inputs with necessary UTXO details
     for (const utxo of selectedUTXOs) {
+      console.log(utxo);
+      const wallet = await Wallet.findOne({
+        "addresses.address": utxo.address,
+      });
+      if (!wallet) {
+        throw new Error(`Wallet not found for address ${utxo.address}`);
+      }
+      const decryptedMasterPrivateKey = decryptPrivateKey(
+        wallet.encryptedMasterPrivateKey,
+      );
+      const node = bip32.fromBase58(decryptedMasterPrivateKey, network);
+      const child = node.derivePath(utxo.keyPath);
+      const pubkey = child.publicKey;
+
+      const p2wpkh = bitcoin.payments.p2wpkh({ pubkey, network });
       psbt.addInput({
         hash: utxo.transactionHash,
         index: utxo.outputIndex,
         witnessUtxo: {
-          script: Buffer.from(utxo.scriptPubKey, "hex"), // scriptPubKey as a Buffer
-          value: utxo.amount, // Amount in satoshis
+          script: Buffer.from(utxo.scriptPubKey, "hex"),
+          value: utxo.amount,
         },
       });
+      console.log(psbt.data.inputs);
     }
 
-    // Add outputs
+    // Add outputs for toAddress and changeAddress
     psbt.addOutput({
       address: toAddress,
       value: amountToSend,
     });
 
-    const changeAmount =
-      selectedUTXOs.reduce((acc, utxo) => acc + utxo.amount, 0) -
-      amountToSend -
-      transactionFee;
+    const totalAmount = selectedUTXOs.reduce(
+      (sum, utxo) => sum + utxo.amount,
+      0,
+    );
+    const changeAmount = totalAmount - amountToSend - transactionFee;
     if (changeAmount > 0) {
-      psbt.addOutput({
-        address: changeAddress,
-        value: changeAmount,
-      });
+      psbt.addOutput({ address: changeAddress, value: changeAmount });
     }
+    console.log("totalAmount:", totalAmount);
+    console.log("changeAmount:", changeAmount);
 
     // Sign each input
-    for (const utxo of selectedUTXOs) {
-      const wallet = await Wallet.findOne({ publicAddress: utxo.address });
-      if (!wallet) {
-        throw new Error(`Wallet not found for address ${utxo.address}`);
-      }
-      const privateKey = decryptPrivateKey(wallet.encryptedPrivateKey);
-      const keyPair = ecPair.fromWIF(privateKey, network);
-      psbt.signInput(selectedUTXOs.indexOf(utxo), keyPair);
+    for (const [index, utxo] of selectedUTXOs.entries()) {
+      const wallet = await Wallet.findOne({
+        "addresses.address": utxo.address,
+      });
+      const decryptedMasterPrivateKey = decryptPrivateKey(
+        wallet.encryptedMasterPrivateKey,
+      );
+      const node = bip32.fromBase58(decryptedMasterPrivateKey, network);
+      const child = node.derivePath(utxo.keyPath);
+      const keyPair = ecPair.fromPrivateKey(child.privateKey, {
+        network: network,
+      });
+      psbt.signInput(index, keyPair);
     }
+
+    console.log(psbt.data.inputs);
+    console.log("OUTPUTS:", psbt.data.outputs);
 
     // Finalize and extract transaction
     psbt.finalizeAllInputs();
     const transaction = psbt.extractTransaction();
-
     return transaction.toHex();
   } catch (error) {
     throw new Error(
       `Error in creating raw Bitcoin transaction: ${error.message}`,
     );
+  }
+};
+
+/**
+ * Retrieves a wallet by its MongoDB ObjectId from the database.
+ * This function is essential for operations that require wallet details based on its unique ID.
+ *
+ * @async
+ * @function getWalletById
+ * @param {string} walletId - The MongoDB ObjectId of the wallet to retrieve.
+ * @return {Promise&lt;Wallet>} A promise that resolves to the wallet object.
+ * @throws {NotFoundError} Thrown if no wallet is found with the given ID.
+ */
+const getWalletById = async (walletId) => {
+  try {
+    const wallet = await Wallet.findById(walletId);
+    if (!wallet) {
+      throw new NotFoundError(`Wallet with ID ${walletId} not found`);
+    }
+    return wallet;
+  } catch (err) {
+    log.error(`Error in getWalletById: ${err.message}`);
+    throw err;
   }
 };
 
@@ -205,18 +303,26 @@ const updateWalletBalanceById = async (walletId, updateData) => {
       throw new NotFoundError(`Wallet with ID ${walletId} not found`);
     }
 
-    const updatesToApply = {
-      confirmedBalance:
-        updateData.confirmedBalance ?? existingWallet.confirmedBalance,
-      unconfirmedBalance:
-        updateData.unconfirmedBalance ?? existingWallet.unconfirmedBalance,
-    };
+    // Calculate potential new balances
+    const updatedConfirmedBalance =
+      existingWallet.confirmedBalance +
+      (updateData.confirmedIncrement || 0) -
+      (updateData.confirmedDecrement || 0);
+    const updatedUnconfirmedBalance =
+      existingWallet.unconfirmedBalance +
+      (updateData.unconfirmedIncrement || 0) -
+      (updateData.unconfirmedDecrement || 0);
 
-    // Update only if there's a change in balance
+    // Check if there are actual changes to apply
     if (
-      updatesToApply.confirmedBalance !== existingWallet.confirmedBalance ||
-      updatesToApply.unconfirmedBalance !== existingWallet.unconfirmedBalance
+      existingWallet.confirmedBalance !== updatedConfirmedBalance ||
+      existingWallet.unconfirmedBalance !== updatedUnconfirmedBalance
     ) {
+      const updatesToApply = {
+        confirmedBalance: updatedConfirmedBalance,
+        unconfirmedBalance: updatedUnconfirmedBalance,
+      };
+
       const updatedWallet = await Wallet.findByIdAndUpdate(
         walletId,
         updatesToApply,
@@ -242,31 +348,43 @@ const updateWalletBalanceById = async (walletId, updateData) => {
  *
  * @async
  * @function addUTXOToWallet
- * @param {string} walletAddress - The public address of the wallet.
+ * @param {string} walletRef - The MongoDB ObjectId of the wallet.
  * @param {string} utxoId - The ID of the UTXO to add to the wallet.
  * @return {Promise&lt;Object>} The updated wallet object with the new UTXO reference.
  * @throws {NotFoundError} Thrown if the wallet or UTXO is not found.
  * @throws {Error} Thrown if there is an issue updating the wallet.
  */
-const addUTXOToWallet = async (walletAddress, utxoId) => {
+const addUTXOToWallet = async (walletRef, utxoData) => {
   try {
-    // Retrieve the wallet by its public address
-    const wallet = await Wallet.findOne({ publicAddress: walletAddress });
+    // Retrieve the wallet by its MongoDB ObjectId
+    const wallet = await Wallet.findById(walletRef);
     if (!wallet) {
-      throw new NotFoundError(`Wallet with address ${walletAddress} not found`);
+      throw new NotFoundError(`Wallet with ID ${walletRef} not found`);
     }
 
+    // Find the address data within the wallet to get the keyPath
+    const addressData = wallet.addresses.find(
+      (a) => a.address === utxoData.address,
+    );
+    if (!addressData) {
+      throw new Error(`Address data not found for ${utxoData.address}`);
+    }
+
+    // Add keyPath to the UTXO data
+    utxoData.keyPath = addressData.path;
+
+    // Create UTXO with complete data
+    const utxo = await createUTXO(utxoData);
+
     // Check if UTXO already exists in the wallet to avoid duplicates
-    if (!wallet.utxoRefs.includes(utxoId)) {
+    if (!wallet.utxoRefs.includes(utxo._id)) {
       // Add the UTXO reference to the wallet's UTXO references array
-      wallet.utxoRefs.push(utxoId);
+      wallet.utxoRefs.push(utxo._id);
       await wallet.save();
-      log.info(
-        `UTXO with ID ${utxoId} added to wallet: ${wallet.publicAddress}`,
-      );
+      log.info(`UTXO with ID ${utxo._id} added to wallet with ID ${walletRef}`);
     } else {
       log.info(
-        `UTXO with ID ${utxoId} already exists in wallet: ${wallet.publicAddress}`,
+        `UTXO with ID ${utxo._id} already exists in wallet with ID ${walletRef}`,
       );
     }
 
@@ -277,11 +395,92 @@ const addUTXOToWallet = async (walletAddress, utxoId) => {
   }
 };
 
+/**
+ * Creates a raw Bitcoin transaction with an accurately calculated fee.
+ *
+ * @async
+ * @function createAccurateFeeBitcoinTransaction
+ * @param {Array} selectedUTXOs - Array of UTXOs to be used in the transaction.
+ * @param {string} toAddress - The Bitcoin address to send the amount to.
+ * @param {number} amountToSend - The amount to send in satoshis.
+ * @param {string} changeAddress - The address where the change will be sent.
+ * @param {number} feeRate - The fee rate in satoshis per byte.
+ * @return {Promise&lt;string>} - A promise that resolves to the raw transaction hex string.
+ * @throws {Error} - Throws an error if transaction creation fails.
+ */
+const createAccurateFeeBitcoinTransaction = async (
+  selectedUTXOs,
+  toAddress,
+  amountToSend,
+  changeAddress,
+  feeRate,
+) => {
+  try {
+    const psbt = new bitcoin.Psbt({ network: network });
+
+    // Add inputs
+    selectedUTXOs.forEach((utxo) => {
+      psbt.addInput({
+        hash: utxo.transactionHash,
+        index: utxo.outputIndex,
+        witnessUtxo: {
+          script: Buffer.from(utxo.scriptPubKey, "hex"),
+          value: utxo.amount,
+        },
+      });
+    });
+
+    // Add outputs (initially without considering the transaction fee)
+    psbt.addOutput({ address: toAddress, value: amountToSend });
+
+    // Total amount from all UTXOs
+    const totalInputAmount = selectedUTXOs.reduce(
+      (acc, utxo) => acc + utxo.amount,
+      0,
+    );
+
+    // Adding a dummy output for change to calculate the transaction size
+    psbt.addOutput({
+      address: changeAddress,
+      value: totalInputAmount - amountToSend,
+    });
+
+    // Calculate the size of the transaction to estimate the fee
+    const virtualSize = psbt.__CACHE.__TX.virtualSize();
+    const estimatedFee = Math.ceil(virtualSize * feeRate);
+
+    // Recalculate and update the change output considering the estimated fee
+    const changeValue = totalInputAmount - amountToSend - estimatedFee;
+    psbt.updateOutput(1, { address: changeAddress, value: changeValue });
+
+    // Sign each input
+    selectedUTXOs.forEach((utxo, index) => {
+      const keyPair = ecPair.fromWIF(utxo.privateKeyWIF, network);
+      psbt.signInput(index, keyPair);
+    });
+
+    // Finalize and extract the transaction
+    psbt.finalizeAllInputs();
+    const transaction = psbt.extractTransaction();
+
+    return transaction.toHex();
+  } catch (error) {
+    throw new Error(
+      `Error in creating accurate fee Bitcoin transaction: ${error.message}`,
+    );
+  }
+};
+
+module.exports = { createAccurateFeeBitcoinTransaction };
+
 module.exports = {
-  createSegWitWalletForEvent,
+  createHDSegWitWalletForEvent,
   createRawBitcoinTransaction,
+  getWalletById,
   getWalletByAddress,
   updateWalletBalanceById,
+  createHDSegWitWalletForEvent,
+  generateChildAddressForWallet,
   addUTXOToWallet,
 };
 </code></pre>
@@ -294,7 +493,7 @@ module.exports = {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-middlewares_corsSecurityMiddleware.html">middlewares/corsSecurityMiddleware</a></li><li><a href="module-middlewares_errorMiddleware.html">middlewares/errorMiddleware</a></li><li><a href="module-middlewares_httpSecurityMiddleware.html">middlewares/httpSecurityMiddleware</a></li><li><a href="module-middlewares_jsonParserMiddleware.html">middlewares/jsonParserMiddleware</a></li><li><a href="module-middlewares_requestLoggerMiddleware.html">middlewares/requestLoggerMiddleware</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_feeUtil.html">utils/feeUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#createUTXO">createUTXO</a></li><li><a href="global.html#findUTXOsByAddress">findUTXOsByAddress</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#markUTXOAsSpent">markUTXOAsSpent</a></li><li><a href="global.html#port">port</a></li><li><a href="global.html#selectUTXOsForTransaction">selectUTXOsForTransaction</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-middlewares_corsSecurityMiddleware.html">middlewares/corsSecurityMiddleware</a></li><li><a href="module-middlewares_errorMiddleware.html">middlewares/errorMiddleware</a></li><li><a href="module-middlewares_httpSecurityMiddleware.html">middlewares/httpSecurityMiddleware</a></li><li><a href="module-middlewares_jsonParserMiddleware.html">middlewares/jsonParserMiddleware</a></li><li><a href="module-middlewares_requestLoggerMiddleware.html">middlewares/requestLoggerMiddleware</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_feeUtil.html">utils/feeUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#createUTXO">createUTXO</a></li><li><a href="global.html#findUTXOsByAddress">findUTXOsByAddress</a></li><li><a href="global.html#generateChildAddress">generateChildAddress</a></li><li><a href="global.html#generateHDSegWitWalletWithSeed">generateHDSegWitWalletWithSeed</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#markUTXOAsSpent">markUTXOAsSpent</a></li><li><a href="global.html#port">port</a></li><li><a href="global.html#selectUTXOsForAward">selectUTXOsForAward</a></li><li><a href="global.html#selectUTXOsForTransaction">selectUTXOsForTransaction</a></li></ul>
 </nav>
 
 <br class="clear">

@@ -46,9 +46,15 @@
  */
 
 const Event = require("../models/eventModel");
-const { selectUTXOsForTransaction, markUTXOAsSpent } = require("./utxoService");
+const Wallet = require("../models/walletModel");
 const {
-  createSegWitWalletForEvent,
+  selectUTXOsForTransaction,
+  selectUTXOsForAward,
+  markUTXOAsSpent,
+} = require("./utxoService");
+const {
+  createHDSegWitWalletForEvent,
+  generateChildAddressForWallet,
   createRawBitcoinTransaction,
 } = require("./walletService");
 const {
@@ -115,14 +121,22 @@ const createEvent = async (eventData) => {
 
     // Add transaction reference to event details
     eventDetails.transactions = [financialSetup.transaction._id];
+    eventDetails.walletRef = financialSetup.wallet._id;
 
     // Create and save the new event
     const newEvent = new Event(eventDetails);
+    // Automatically add event creator as a participant
+    newEvent.participants.push({
+      userId: user._id,
+      depositAddress: financialSetup.wallet.addresses[0].address,
+      userAddress,
+      joinedAt: new Date(),
+    });
     await newEvent.save();
 
     // Now create a webhook for the event
     const webhook = await createWebhook(
-      financialSetup.wallet.publicAddress,
+      financialSetup.wallet.addresses[0].address,
       financialSetup.wallet._id,
       financialSetup.transaction._id,
       user._id,
@@ -191,51 +205,135 @@ const updateEvent = async (eventId, updateData) => {
 };
 
 /**
- * Adds a user to an event if there is space available. Manages the event's status based on participant count.
- * Throws an error if the event is full or closed, or if the event or user does not exist.
+ * Adds a user to an event if there is space available, creates a transaction record,
+ * and sets up a webhook for transaction monitoring.
+ * Also handles optional prize pool contribution by the user.
  *
  * @async
  * @function joinEvent
  * @param {string} eventId - The unique identifier of the event to join.
- * @param {string} userId - The unique identifier of the user attempting to join the event.
- * @return {Promise&lt;Object>} The updated event object reflecting the new participant.
+ * @param {string} userId - The unique identifier (UUID) of the user attempting to join the event.
+ * @param {number} [prizePoolContribution=0] - Optional contribution to the prize pool by the user.
+ * @return {Promise&lt;Object>} The updated event object reflecting the new participant and transaction.
  * @throws {NotFoundError} If the specified event or user is not found.
  * @throws {Error} If the event is already full or closed for new participants.
  */
-const joinEvent = async (eventId, userId) => {
-  // Find the event by its ID.
-  const event = await Event.findById(eventId);
-  if (!event) {
-    // If the event does not exist, throw an error.
-    throw new NotFoundError(`Event with ID ${eventId} not found`);
+const joinEvent = async (
+  eventId,
+  userId,
+  userWalletAddress,
+  prizePoolContribution = 0,
+) => {
+  try {
+    // Find the event by its ID.
+    const event = await Event.findOne({ eventId: eventId });
+    if (!event) {
+      throw new NotFoundError(`Event with ID ${eventId} not found`);
+    }
+
+    if (
+      event.creator.toString() === userId ||
+      event.participants.some(
+        (participant) => participant.userId.toString() === userId,
+      )
+    ) {
+      throw new Error(
+        "Event creator or an already participating user cannot join the event",
+      );
+    }
+
+    // Check if the event is open for new participants and not already full.
+    if (!event.isOpen || event.participants.length >= event.maxParticipants) {
+      throw new Error("Event is full or closed for new participants");
+    }
+
+    // Retrieve the user based on the provided userId.
+    const user = await getUserById(userId);
+    if (!user) {
+      throw new NotFoundError(`User with ID ${userId} not found`);
+    }
+
+    // Retrieve the wallet
+    const wallet = await Wallet.findById(event.walletRef);
+    if (!wallet) {
+      throw new NotFoundError(`Wallet with ID ${event.walletRef} not found`);
+    }
+
+    // Calculate total transaction amount (entry fee + optional prize pool contribution)
+    const totalAmount = event.entryFee + prizePoolContribution;
+
+    // Determine the next child index for the new address
+    const childIndex = wallet.addresses.length;
+
+    // Generate a new address based on the wallet
+    const userDepositAddressData = await generateChildAddressForWallet(
+      wallet.masterPublicKey,
+      childIndex,
+    );
+
+    // Add the new address and path to the wallet
+    wallet.addresses.push(userDepositAddressData);
+
+    // Save the updated wallet
+    await wallet.save();
+
+    const transactionData = {
+      userRef: user._id,
+      walletRef: event.walletRef,
+      transactionType: "incoming",
+      expectedAmount: totalAmount,
+      walletAddresses: [userDepositAddressData.address], // Add address to the first slot in the array      userAddress: userWalletAddress,
+      userAddress: userWalletAddress,
+      purpose:
+        prizePoolContribution > 0 ? "payFeeAndFundPool" : "entryFeePayment",
+    };
+
+    const transaction = await createTransactionRecord(transactionData);
+
+    // Update the prize pool if there's a contribution
+    if (prizePoolContribution > 0) {
+      event.prizePool += prizePoolContribution;
+    }
+
+    event.prizePool += event.entryFee;
+
+    // Add the user to the event's participants list
+    event.participants.push({
+      userId: user._id,
+      depositAddress: userDepositAddressData.address,
+      userAddress: userWalletAddress,
+      joinedAt: new Date(),
+    });
+    event.transactions.push(transaction._id);
+
+    // Update event status to 'active' if it reaches the minimum number of participants.
+    if (event.participants.length === event.minParticipants) {
+      event.isOpen = false;
+      event.status = "active";
+    }
+
+    // Save the updated event information to the database.
+    await event.save();
+
+    // Create a webhook for the transaction
+    const webhook = await createWebhook(
+      userDepositAddressData.address,
+      wallet._id,
+      transaction._id,
+      user._id,
+      event._id,
+    );
+
+    // Return the updated event object including transaction details.
+    return {
+      event: event,
+      transaction: transaction,
+      webhook: webhook,
+    };
+  } catch (err) {
+    log.error(`Error in joinEvent: ${err.message}`);
+    throw err;
   }
-
-  // Check if the event is open for new participants and not already full.
-  if (!event.isOpen || event.participants.length >= event.maxParticipants) {
-    throw new Error("Event is full or closed for new participants");
-  }
-
-  // Retrieve the user based on the provided userId.
-  const user = await getUserById(userId);
-  if (!user) {
-    // If the user does not exist, throw an error.
-    throw new NotFoundError(`User with ID ${userId} not found`);
-  }
-
-  // Add the user to the event's participants list with the current timestamp.
-  event.participants.push({ userId: user._id, joinedAt: new Date() });
-
-  // Update event status to 'ready' if it reaches the maximum number of participants.
-  if (event.participants.length === event.maxParticipants) {
-    event.isOpen = false;
-    event.status = "ready";
-  }
-
-  // Save the updated event information to the database.
-  await event.save();
-
-  // Return the updated event object.
-  return event;
 };
 
 /**
@@ -344,7 +442,7 @@ const handleFinancialSetup = async (
     // END OF MOVE THIS TO A SEPARATE FUNCTION
 
     // Create a SegWit wallet for the event
-    const wallet = await createSegWitWalletForEvent();
+    const wallet = await createHDSegWitWalletForEvent();
 
     // Prepare transaction data for the financial setup
     const transactionData = {
@@ -352,7 +450,8 @@ const handleFinancialSetup = async (
       walletRef: wallet._id,
       transactionType: "incoming",
       expectedAmount: expectedAmount,
-      walletAddress: wallet.publicAddress,
+      unconfirmedAmount: expectedAmount,
+      walletAddresses: [wallet.addresses[0].address],
       userAddress: userAddress,
       purpose: transactionPurpose,
     };
@@ -472,14 +571,350 @@ const refundEventCreator = async (eventId) => {
   }
 };
 
+/**
+ * Refunds a user associated with an event or a specific transaction.
+ * @async
+ * @function refundUser
+ * @param {string} userId - ID of the user to refund.
+ * @param {string} eventId - ID of the event associated with the refund.
+ * @param {number} [refundAmount] - Amount to refund. If not provided, full amount is refunded.
+ * @return {Promise&lt;Object>} Details of the refund transaction.
+ * @throws {Error} If the refund process encounters an issue.
+ */
+const refundUser = async (userId, eventId, refundAmount = null) => {
+  try {
+    const event = await Event.findById(eventId);
+    if (!event) {
+      throw new NotFoundError(`Event with ID ${eventId} not found`);
+    }
+
+    // Determine the transaction to refund
+    let transactionToRefund;
+    for (const transactionId of event.transactions) {
+      const transaction = await getTransactionRecordById(transactionId);
+      if (transaction.userRef.toString() === userId.toString()) {
+        transactionToRefund = transaction;
+        break;
+      }
+    }
+
+    if (!transactionToRefund) {
+      throw new Error(
+        `No transaction found for user ID ${userId} in event ID ${eventId}`,
+      );
+    }
+
+    // If refundAmount not specified, refund the full transaction amount
+    refundAmount = refundAmount || transactionToRefund.confirmedAmount;
+
+    // Select UTXOs for the refund transaction
+    const selectedUTXOs = await selectUTXOsForTransaction(
+      userId,
+      eventId,
+      refundAmount,
+    );
+
+    // Estimate transaction fee and adjust refund amount
+    const feeRates = await getCurrentFeeRates();
+    const estimatedFee = estimateTransactionFee(
+      selectedUTXOs.length,
+      1,
+      feeRates.lowFeePerByte,
+    );
+    const adjustedRefundAmount = adjustAmountForFee(refundAmount, estimatedFee);
+
+    // Prepare the refund transaction data
+    const refundTransactionData = {
+      userRef: userId,
+      walletRef: transactionToRefund.walletRef,
+      transactionType: "outgoing",
+      purpose: "refundUser",
+      walletAddress: transactionToRefund.walletAddress,
+      userAddress: transactionToRefund.userAddress,
+      expectedAmount: adjustedRefundAmount,
+      unconfirmedAmount: adjustedRefundAmount,
+      confirmedAmount: 0,
+      status: "pending",
+      transactionHash: null,
+    };
+
+    const refundTransaction = await createRefundTransactionRecord(
+      refundTransactionData,
+    );
+
+    // Update the event's transactions to include the refund transaction
+    event.transactions.push(refundTransaction._id);
+    await event.save();
+
+    // Specify a change address - ideally, this should be a new address generated for the user or event
+    const changeAddress =
+      event.walletAddress || transactionToRefund.walletAddress;
+
+    // Create the raw Bitcoin transaction
+    const rawTransaction = await createRawBitcoinTransaction(
+      selectedUTXOs,
+      refundTransaction.userAddress,
+      adjustedRefundAmount - estimatedFee,
+      changeAddress,
+      estimatedFee,
+    );
+
+    log.info(`Refund processed for user ${userId} in event ${eventId}`);
+    return { refundTransaction, rawTransaction };
+  } catch (err) {
+    log.error("Error in refundUser: ${err.message}");
+    throw err;
+  }
+};
+
+/**
+ * Settles an event based on participant votes.
+ * @param {string} eventId - ID of the event to settle.
+ */
+const settleEvent = async (eventId) => {
+  try {
+    const event = await Event.findById(eventId);
+    if (!event) {
+      throw new NotFoundError(`Event with ID ${eventId} not found`);
+    }
+
+    if (event.status === "active" &amp;&amp; new Date() > event.endTime) {
+      event.status = "settling";
+      event.settlementStatus = "voting";
+      await event.save();
+      log.info(`Event ${eventId} status updated to settling`);
+    } else {
+      throw new Error(
+        "Event is not in a state to be settled or end time not reached",
+      );
+    }
+  } catch (err) {
+    log.error(`Error in settleEvent: ${err.message}`);
+    throw err;
+  }
+};
+
+/**
+ * Casts a vote for an event participant.
+ *
+ * @async
+ * @function castVote
+ * @param {string} eventId - The event's unique identifier.
+ * @param {string} userId - The user's unique identifier.
+ * @param {string} vote - The vote cast by the user.
+ * @return {Promise&lt;Object>} Confirmation message.
+ * @throws {NotFoundError} If the event or user is not found.
+ * @throws {Error} If voting is not open or if invalid voting attempt.
+ */
+const castVote = async (eventId, userId, vote) => {
+  try {
+    const event = await Event.findOne({ eventId: eventId });
+    if (!event) {
+      throw new NotFoundError(`Event with ID ${eventId} not found`);
+    }
+
+    if (event.status !== "settling" &amp;&amp; event.settlementStatus !== "voting") {
+      throw new Error("Voting is not open for this event");
+    }
+
+    const user = await getUserById(userId);
+    if (!user) {
+      throw new NotFoundError(`User with ID ${userId} not found`);
+    }
+
+    const isParticipant = event.participants.some(
+      (p) => p.userId.toString() === user._id.toString(),
+    );
+    const hasVoted = event.voteResults.some(
+      (v) => v.userId.toString() === user._id.toString(),
+    );
+
+    if (!isParticipant || hasVoted) {
+      throw new Error("Invalid voting attempt");
+    }
+
+    event.voteResults.push({ userId: user._id, vote, timestamp: new Date() });
+    await event.save();
+
+    log.info(`Vote recorded for user ${userId} in event ${eventId}`);
+    return { message: "Vote cast successfully" };
+  } catch (err) {
+    log.error(`Error in castVote: ${err.message}`);
+    throw err;
+  }
+};
+
+/**
+ * Determines the outcome of an event based on participant votes.
+ * Retrieves the event from the database, checks the vote results against the number of participants,
+ * and updates the event document accordingly.
+ *
+ * @async
+ * @function determineOutcome
+ * @param {string} eventId - The ID of the event to determine the outcome for.
+ * @return {Promise&lt;Object>} An object representing the outcome of the event.
+ * @throws {Error} If the event is not found or if there's an error in processing the votes.
+ */
+const determineOutcome = async (eventId) => {
+  try {
+    // Retrieve the event from the database
+    const event = await Event.findById(eventId);
+    if (!event) {
+      throw new Error(`Event with ID ${eventId} not found`);
+    }
+
+    // Ensure the number of votes is equal to the number of participants
+    if (event.voteResults.length !== event.participants.length) {
+      throw new Error("Not all participants have voted");
+    }
+
+    // Extract votes from the event document
+    const { voteResults } = event;
+    const voteCount = voteResults.reduce((acc, vote) => {
+      acc[vote.vote] = (acc[vote.vote] || 0) + 1;
+      return acc;
+    }, {});
+
+    // Determine outcome based on votes
+    if (voteCount.win === 1 &amp;&amp; voteCount.loss === 1) {
+      const winnerVote = voteResults.find((v) => v.vote === "win");
+      event.winners = [winnerVote.userId];
+      event.isDisputed = false;
+      event.settlementStatus = "processing";
+      await event.save(); // Save the updated event
+      return { winner: winnerVote.userId, isDisputed: false };
+    } else if (voteCount.draw === event.participants.length) {
+      event.isDisputed = false;
+      await event.save(); // Save the updated event
+      return { isDraw: true, isDisputed: false };
+    } else {
+      event.isDisputed = true;
+      await event.save(); // Save the updated event
+      // Any other combination is considered a dispute
+      return { isDisputed: true };
+    }
+  } catch (err) {
+    throw new Error(`Error in determineOutcome: ${err.message}`);
+  }
+};
+
+/**
+ * Awards the prize to the winner of an event. This function is called after an event
+ * has been settled and a winner has been determined. It retrieves the event's UTXOs,
+ * calculates the total prize amount, creates a raw Bitcoin transaction for prize distribution,
+ * and updates the event status to 'completed'.
+ *
+ * The function fetches the winner's user address from the participants array in the event document
+ * using the winner's user ID stored in the winners field. It ensures that the event is in the
+ * appropriate state for awarding the prize and that a winner is present. The prize is then
+ * sent to the winner's user address.
+ *
+ * @async
+ * @function awardWinner
+ * @param {string} eventId - The unique identifier of the event whose winner is to be awarded.
+ * @return {Promise&lt;Object>} An object containing details of the prize distribution transaction and the raw transaction.
+ * @throws {NotFoundError} If the event or the winner is not found.
+ * @throws {Error} If the event is not in the correct state to award the winner or if there are issues in creating the transaction.
+ */
+const awardWinner = async (eventId) => {
+  try {
+    const event = await Event.findById(eventId);
+    if (!event) {
+      throw new NotFoundError(`Event with ID ${eventId} not found`);
+    }
+
+    if (
+      event.status !== "settling" ||
+      event.settlementStatus !== "processing"
+    ) {
+      throw new Error("Event is not in a state to award the winner");
+    }
+
+    if (event.winners.length === 0) {
+      throw new Error("No winners to award in this event");
+    }
+
+    const winnerId = event.winners[0];
+    const winnerParticipant = event.participants.find((p) =>
+      p.userId.equals(winnerId),
+    );
+    if (!winnerParticipant) {
+      throw new NotFoundError(
+        `Winner with ID ${winnerId} not found in participants`,
+      );
+    }
+
+    // Since the UTXOs now directly reflect the prize pool, we don't need to pass the required amount
+    const selectedUTXOs = await selectUTXOsForAward(eventId);
+
+    // Estimate transaction fee
+    const testnetFeeRate = 22; // Assuming testnet usage
+    const estimatedFee = estimateTransactionFee(
+      selectedUTXOs.length,
+      1,
+      testnetFeeRate,
+    );
+
+    console.log("estimatedFee:", estimatedFee);
+
+    // Adjust prize amount after fee
+    const prizeAmountAfterFee = event.prizePool - estimatedFee;
+
+    // Create the raw Bitcoin transaction
+    const rawTransaction = await createRawBitcoinTransaction(
+      selectedUTXOs,
+      winnerParticipant.userAddress,
+      prizeAmountAfterFee,
+      winnerParticipant.userAddress, // If there's change just send to user for now
+      estimatedFee,
+    );
+
+    const prizeDistributionTransaction = {
+      userRef: winnerId,
+      walletRef: event.walletRef,
+      transactionType: "outgoing",
+      purpose: "winnerPayout",
+      walletAddresses: selectedUTXOs.map((utxo) => utxo.address),
+      userAddress: winnerParticipant.userAddress,
+      expectedAmount: prizeAmountAfterFee,
+      unconfirmedAmount: prizeAmountAfterFee,
+      confirmedAmount: 0,
+      status: "pending",
+      transactionHash: null,
+    };
+
+    await createTransactionRecord(prizeDistributionTransaction);
+
+    // Mark the used UTXOs as spent
+    // for (const utxo of selectedUTXOs) {
+    //   await markUTXOAsSpent(utxo.transactionHash, utxo.outputIndex);
+    // }
+
+    // event.status = "completed";
+    // event.settlementStatus = "settled";
+    // await event.save();
+
+    log.info(`Prize awarded to winner for event ${eventId}`);
+    return { transaction: prizeDistributionTransaction, rawTransaction };
+  } catch (err) {
+    log.error(`Error in awardWinner: ${err.message}`);
+    throw err;
+  }
+};
+
 module.exports = {
   createEvent,
-  getEvent,
-  getAllEvents,
   updateEvent,
   joinEvent,
+  getEvent,
+  getAllEvents,
   deleteEvent,
+  refundUser,
   refundEventCreator,
+  settleEvent,
+  castVote,
+  determineOutcome,
+  awardWinner,
 };
 </code></pre>
         </article>
@@ -491,7 +926,7 @@ module.exports = {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-middlewares_corsSecurityMiddleware.html">middlewares/corsSecurityMiddleware</a></li><li><a href="module-middlewares_errorMiddleware.html">middlewares/errorMiddleware</a></li><li><a href="module-middlewares_httpSecurityMiddleware.html">middlewares/httpSecurityMiddleware</a></li><li><a href="module-middlewares_jsonParserMiddleware.html">middlewares/jsonParserMiddleware</a></li><li><a href="module-middlewares_requestLoggerMiddleware.html">middlewares/requestLoggerMiddleware</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_feeUtil.html">utils/feeUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#createUTXO">createUTXO</a></li><li><a href="global.html#findUTXOsByAddress">findUTXOsByAddress</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#markUTXOAsSpent">markUTXOAsSpent</a></li><li><a href="global.html#port">port</a></li><li><a href="global.html#selectUTXOsForTransaction">selectUTXOsForTransaction</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-middlewares_corsSecurityMiddleware.html">middlewares/corsSecurityMiddleware</a></li><li><a href="module-middlewares_errorMiddleware.html">middlewares/errorMiddleware</a></li><li><a href="module-middlewares_httpSecurityMiddleware.html">middlewares/httpSecurityMiddleware</a></li><li><a href="module-middlewares_jsonParserMiddleware.html">middlewares/jsonParserMiddleware</a></li><li><a href="module-middlewares_requestLoggerMiddleware.html">middlewares/requestLoggerMiddleware</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_feeUtil.html">utils/feeUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#createUTXO">createUTXO</a></li><li><a href="global.html#findUTXOsByAddress">findUTXOsByAddress</a></li><li><a href="global.html#generateChildAddress">generateChildAddress</a></li><li><a href="global.html#generateHDSegWitWalletWithSeed">generateHDSegWitWalletWithSeed</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#markUTXOAsSpent">markUTXOAsSpent</a></li><li><a href="global.html#port">port</a></li><li><a href="global.html#selectUTXOsForAward">selectUTXOsForAward</a></li><li><a href="global.html#selectUTXOsForTransaction">selectUTXOsForTransaction</a></li></ul>
 </nav>
 
 <br class="clear">

@@ -35,10 +35,9 @@
     
         
             <div class="description"><p>Wallet Service for Satoshi Showdown.
-Provides functionalities for managing cryptocurrency wallets, specifically for Bitcoin SegWit wallets.
-It includes operations such as wallet creation, retrieval, balance update, and transaction association.
-This service is essential for financial transactions within the platform, ensuring secure and efficient
-management of user and event-related wallets.</p></div>
+Provides functionalities for managing cryptocurrency wallets, specifically focusing on HD SegWit Bitcoin wallets.
+It includes operations such as wallet creation, retrieval, balance update, transaction association, and generating new addresses.
+This service is essential for financial transactions within the platform, ensuring secure and efficient management of wallets.</p></div>
         
 
         
@@ -97,7 +96,7 @@ management of user and event-related wallets.</p></div>
         <ul>
             <li>module:models/walletModel</li>
         
-            <li><a href="module-utils_keyUtil.html">module:utils/keyUtil</a></li>
+            <li>module:utils/keyUtil</li>
         
             <li><a href="module-utils_errorUtil.html">module:utils/errorUtil</a></li>
         
@@ -124,7 +123,7 @@ management of user and event-related wallets.</p></div>
     
 
     
-    <h4 class="name" id="~addUTXOToWallet"><span class="type-signature">(async, inner) </span>addUTXOToWallet<span class="signature">(walletAddress, utxoId)</span><span class="type-signature"> &rarr; {Promise.&lt;Object>}</span></h4>
+    <h4 class="name" id="~addUTXOToWallet"><span class="type-signature">(async, inner) </span>addUTXOToWallet<span class="signature">(walletRef, utxoId)</span><span class="type-signature"> &rarr; {Promise.&lt;Object>}</span></h4>
     
 
     
@@ -169,7 +168,7 @@ This function is essential for updating the wallet's transaction history and bal
 
         <tr>
             
-                <td class="name"><code>walletAddress</code></td>
+                <td class="name"><code>walletRef</code></td>
             
 
             <td class="type">
@@ -185,7 +184,7 @@ This function is essential for updating the wallet's transaction history and bal
 
             
 
-            <td class="description last"><p>The public address of the wallet.</p></td>
+            <td class="description last"><p>The MongoDB ObjectId of the wallet.</p></td>
         </tr>
 
     
@@ -249,7 +248,7 @@ This function is essential for updating the wallet's transaction history and bal
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="services_walletService.js.html">services/walletService.js</a>, <a href="services_walletService.js.html#line211">line 211</a>
+        <a href="services_walletService.js.html">services/walletService.js</a>, <a href="services_walletService.js.html#line317">line 317</a>
     </li></ul></dd>
     
 
@@ -363,6 +362,429 @@ This function is essential for updating the wallet's transaction history and bal
     
 
     
+    <h4 class="name" id="~createAccurateFeeBitcoinTransaction"><span class="type-signature">(async, inner) </span>createAccurateFeeBitcoinTransaction<span class="signature">(selectedUTXOs, toAddress, amountToSend, changeAddress, feeRate)</span><span class="type-signature"> &rarr; {Promise.&lt;string>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Creates a raw Bitcoin transaction with an accurately calculated fee.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>selectedUTXOs</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Array of UTXOs to be used in the transaction.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>toAddress</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The Bitcoin address to send the amount to.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>amountToSend</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The amount to send in satoshis.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>changeAddress</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The address where the change will be sent.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>feeRate</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The fee rate in satoshis per byte.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="services_walletService.js.html">services/walletService.js</a>, <a href="services_walletService.js.html#line370">line 370</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Throws:</h5>
+
+        
+
+<dl>
+    <dt>
+        <div class="param-desc">
+        <ul>
+<li>Throws an error if transaction creation fails.</li>
+</ul>
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl>
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type">Error</span>
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+
+    
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <ul>
+<li>A promise that resolves to the raw transaction hex string.</li>
+</ul>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;string></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="~createHDSegWitWalletForEvent"><span class="type-signature">(async, inner) </span>createHDSegWitWalletForEvent<span class="signature">()</span><span class="type-signature"> &rarr; {Promise.&lt;Object>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Creates a new HD SegWit wallet for an event, including the seed.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="services_walletService.js.html">services/walletService.js</a>, <a href="services_walletService.js.html#line38">line 38</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Throws:</h5>
+
+        
+
+<dl>
+    <dt>
+        <div class="param-desc">
+        <p>If there's an issue in wallet generation or saving the wallet to the database.</p>
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl>
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type">Error</span>
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+
+    
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>The created wallet object, including master public key, encrypted master private key, and encrypted seed.</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;Object></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
     <h4 class="name" id="~createRawBitcoinTransaction"><span class="type-signature">(async, inner) </span>createRawBitcoinTransaction<span class="signature">(selectedUTXOs, toAddress, amountToSend, changeAddress, transactionFee)</span><span class="type-signature"> &rarr; {Promise.&lt;string>}</span></h4>
     
 
@@ -372,7 +794,7 @@ This function is essential for updating the wallet's transaction history and bal
 
 <div class="description">
     <p>Creates a raw Bitcoin transaction using UTXOs, target address, amount, change address, and a pre-calculated transaction fee.
-It signs the transaction inputs with the corresponding decrypted private keys from the wallets.</p>
+It signs the transaction inputs with the corresponding decrypted private keys from the wallets and includes the necessary witness scripts for SegWit transactions.</p>
 </div>
 
 
@@ -557,7 +979,7 @@ It signs the transaction inputs with the corresponding decrypted private keys fr
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="services_walletService.js.html">services/walletService.js</a>, <a href="services_walletService.js.html#line58">line 58</a>
+        <a href="services_walletService.js.html">services/walletService.js</a>, <a href="services_walletService.js.html#line110">line 110</a>
     </li></ul></dd>
     
 
@@ -644,7 +1066,7 @@ It signs the transaction inputs with the corresponding decrypted private keys fr
     
 
     
-    <h4 class="name" id="~createSegWitWalletForEvent"><span class="type-signature">(async, inner) </span>createSegWitWalletForEvent<span class="signature">()</span><span class="type-signature"> &rarr; {Promise.&lt;Object>}</span></h4>
+    <h4 class="name" id="~generateChildAddressForWallet"><span class="type-signature">(async, inner) </span>generateChildAddressForWallet<span class="signature">(masterPublicKey, path)</span><span class="type-signature"> &rarr; {Promise.&lt;Object>}</span></h4>
     
 
     
@@ -652,9 +1074,7 @@ It signs the transaction inputs with the corresponding decrypted private keys fr
 
 
 <div class="description">
-    <p>Creates a new Segregated Witness (SegWit) Bitcoin wallet, primarily for event-related financial activities.
-Generates a unique Bitcoin address and corresponding encrypted private key.
-This wallet type is optimized for Satoshi Showdown's transaction processing needs, ensuring security and efficiency.</p>
+    <p>Generates a new child address from a given HD wallet's master public key.</p>
 </div>
 
 
@@ -663,6 +1083,78 @@ This wallet type is optimized for Satoshi Showdown's transaction processing need
 
 
 
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>masterPublicKey</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The master public key of the HD wallet.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>path</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The derivation path for the child address.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
 
 
 
@@ -698,7 +1190,7 @@ This wallet type is optimized for Satoshi Showdown's transaction processing need
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="services_walletService.js.html">services/walletService.js</a>, <a href="services_walletService.js.html#line29">line 29</a>
+        <a href="services_walletService.js.html">services/walletService.js</a>, <a href="services_walletService.js.html#line86">line 86</a>
     </li></ul></dd>
     
 
@@ -728,7 +1220,7 @@ This wallet type is optimized for Satoshi Showdown's transaction processing need
 <dl>
     <dt>
         <div class="param-desc">
-        <p>If there's an issue in key generation or saving the wallet to the database.</p>
+        <p>If there's an issue in address generation.</p>
         </div>
     </dt>
     <dd></dd>
@@ -756,7 +1248,7 @@ This wallet type is optimized for Satoshi Showdown's transaction processing need
 
         
 <div class="param-desc">
-    <p>The created wallet object, including public address and encrypted private key details.</p>
+    <p>An object containing the child address and path.</p>
 </div>
 
 
@@ -889,7 +1381,7 @@ that operations involving a particular wallet address are accurately processed.<
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="services_walletService.js.html">services/walletService.js</a>, <a href="services_walletService.js.html#line134">line 134</a>
+        <a href="services_walletService.js.html">services/walletService.js</a>, <a href="services_walletService.js.html#line232">line 232</a>
     </li></ul></dd>
     
 
@@ -986,6 +1478,195 @@ that operations involving a particular wallet address are accurately processed.<
     <dd>
         
 <span class="param-type">Promise.&lt;Object></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="~getWalletById"><span class="type-signature">(async, inner) </span>getWalletById<span class="signature">(walletId)</span><span class="type-signature"> &rarr; {Promise.&lt;Wallet>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Retrieves a wallet by its MongoDB ObjectId from the database.
+This function is essential for operations that require wallet details based on its unique ID.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>walletId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The MongoDB ObjectId of the wallet to retrieve.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="services_walletService.js.html">services/walletService.js</a>, <a href="services_walletService.js.html#line209">line 209</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Throws:</h5>
+
+        
+
+<dl>
+    <dt>
+        <div class="param-desc">
+        <p>Thrown if no wallet is found with the given ID.</p>
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl>
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type">NotFoundError</span>
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+
+    
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>A promise that resolves to the wallet object.</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;Wallet></span>
 
 
     </dd>
@@ -1129,7 +1810,7 @@ It retrieves the existing wallet record and applies balance updates as necessary
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="services_walletService.js.html">services/walletService.js</a>, <a href="services_walletService.js.html#line160">line 160</a>
+        <a href="services_walletService.js.html">services/walletService.js</a>, <a href="services_walletService.js.html#line258">line 258</a>
     </li></ul></dd>
     
 
@@ -1253,7 +1934,7 @@ It retrieves the existing wallet record and applies balance updates as necessary
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-middlewares_corsSecurityMiddleware.html">middlewares/corsSecurityMiddleware</a></li><li><a href="module-middlewares_errorMiddleware.html">middlewares/errorMiddleware</a></li><li><a href="module-middlewares_httpSecurityMiddleware.html">middlewares/httpSecurityMiddleware</a></li><li><a href="module-middlewares_jsonParserMiddleware.html">middlewares/jsonParserMiddleware</a></li><li><a href="module-middlewares_requestLoggerMiddleware.html">middlewares/requestLoggerMiddleware</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_feeUtil.html">utils/feeUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#createUTXO">createUTXO</a></li><li><a href="global.html#findUTXOsByAddress">findUTXOsByAddress</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#markUTXOAsSpent">markUTXOAsSpent</a></li><li><a href="global.html#port">port</a></li><li><a href="global.html#selectUTXOsForTransaction">selectUTXOsForTransaction</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-middlewares_corsSecurityMiddleware.html">middlewares/corsSecurityMiddleware</a></li><li><a href="module-middlewares_errorMiddleware.html">middlewares/errorMiddleware</a></li><li><a href="module-middlewares_httpSecurityMiddleware.html">middlewares/httpSecurityMiddleware</a></li><li><a href="module-middlewares_jsonParserMiddleware.html">middlewares/jsonParserMiddleware</a></li><li><a href="module-middlewares_requestLoggerMiddleware.html">middlewares/requestLoggerMiddleware</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_feeUtil.html">utils/feeUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#createUTXO">createUTXO</a></li><li><a href="global.html#findUTXOsByAddress">findUTXOsByAddress</a></li><li><a href="global.html#generateChildAddress">generateChildAddress</a></li><li><a href="global.html#generateHDSegWitWalletWithSeed">generateHDSegWitWalletWithSeed</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#markUTXOAsSpent">markUTXOAsSpent</a></li><li><a href="global.html#port">port</a></li><li><a href="global.html#selectUTXOsForAward">selectUTXOsForAward</a></li><li><a href="global.html#selectUTXOsForTransaction">selectUTXOsForTransaction</a></li></ul>
 </nav>
 
 <br class="clear">

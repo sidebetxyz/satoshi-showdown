@@ -43,7 +43,6 @@
  */
 
 const Webhook = require("../models/webhookModel");
-const { createUTXO } = require("./utxoService");
 const { updateTransactionById } = require("./transactionService");
 const { updateWalletBalanceById, addUTXOToWallet } = require("./walletService");
 const { postAPI, deleteAPI } = require("../utils/apiUtil");
@@ -103,14 +102,6 @@ const createWebhook = async (
 };
 
 /**
- * Retrieves all webhook objects currently stored in the Satoshi Showdown database.
- *
- * @async
- * @return {Promise&lt;Array>} A promise resolving to an array of webhook objects.
- */
-const getAllWebhooks = async () => await Webhook.find({});
-
-/**
  * Processes a received webhook by updating its status and associated transaction and wallet records.
  * Efficiently handles the headers, body, and confirmation status of the incoming webhook data.
  *
@@ -136,14 +127,13 @@ const processWebhook = async (urlId, headers, data) => {
   // Process transaction and wallet updates based on webhook data
   const { transactionUpdate, walletUpdate } =
     await _processWebhookTransactionData(webhook);
+
   const transaction = await updateTransactionById(
     webhook.transactionRef,
     transactionUpdate,
   );
-  const wallet = await updateWalletBalanceById(
-    transaction.walletRef,
-    walletUpdate,
-  );
+
+  const wallet = await updateWalletBalanceById(webhook.walletRef, walletUpdate);
 
   log.info(
     `Webhook processed: Transaction - ${transaction._id}, Wallet - ${wallet._id}`,
@@ -196,7 +186,7 @@ const _processWebhookStatus = async (webhook, currentConfirmations) => {
     statusUpdate.status = "success";
 
     // Delete the webhook from BlockCypher
-    await _deleteWebhook(webhook.response.id);
+    await _deleteWebhook(webhook.response.id, webhook._id);
   }
 
   return statusUpdate;
@@ -227,29 +217,28 @@ const _processWebhookTransactionData = async (webhook) => {
     // Create UTXO records only for the first confirmation
     if (transactionDetails.confirmations === 1) {
       const utxoPromises = transactionDetails.outputs
-        .map((output, index) => ({
-          output,
-          index,
-        }))
-        .filter(({ output }) => output.addresses.includes(monitoredAddress))
-        .map(async ({ output, index }) => {
-          const utxo = await createUTXO({
-            userRef: webhook.userRef,
-            eventRef: webhook.eventRef,
-            transactionHash: transactionDetails.hash,
-            outputIndex: index,
-            amount: output.value,
-            address: monitoredAddress,
-            scriptPubKey: output.script,
-            scriptType: output.script_type,
-            blockHeight: transactionDetails.block_height,
-            timestamp: new Date(transactionDetails.received),
-          });
+        .map((output, index) => {
+          if (output.addresses.includes(monitoredAddress)) {
+            // Prepare UTXO data with the correct output index
+            const utxoData = {
+              userRef: webhook.userRef,
+              eventRef: webhook.eventRef,
+              transactionHash: transactionDetails.hash,
+              outputIndex: index,
+              amount: output.value,
+              address: monitoredAddress,
+              scriptPubKey: output.script,
+              scriptType: output.script_type,
+              blockHeight: transactionDetails.block_height,
+              timestamp: new Date(transactionDetails.received),
+            };
 
-          // Add the UTXO to the corresponding wallet
-          await addUTXOToWallet(monitoredAddress, utxo._id);
-          return utxo;
-        });
+            // Add UTXO to wallet
+            return addUTXOToWallet(webhook.walletRef, utxoData);
+          }
+          return null;
+        })
+        .filter((promise) => promise !== null);
 
       try {
         await Promise.all(utxoPromises);
@@ -272,8 +261,10 @@ const _processWebhookTransactionData = async (webhook) => {
 
     // Prepare wallet update data
     const walletUpdate = {
-      confirmedBalance: isConfirmed ? amountInvolved : 0,
-      unconfirmedBalance: !isConfirmed ? amountInvolved : 0,
+      confirmedIncrement: isConfirmed ? amountInvolved : 0,
+      unconfirmedIncrement:
+        transactionDetails.confirmations === 1 ? amountInvolved : 0,
+      unconfirmedDecrement: isConfirmed ? amountInvolved : 0,
     };
 
     return { transactionUpdate, walletUpdate };
@@ -331,7 +322,6 @@ const _deleteWebhook = async (blockcypherId, webhookId) => {
 
 module.exports = {
   createWebhook,
-  getAllWebhooks,
   processWebhook,
 };
 </code></pre>
@@ -344,7 +334,7 @@ module.exports = {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-middlewares_corsSecurityMiddleware.html">middlewares/corsSecurityMiddleware</a></li><li><a href="module-middlewares_errorMiddleware.html">middlewares/errorMiddleware</a></li><li><a href="module-middlewares_httpSecurityMiddleware.html">middlewares/httpSecurityMiddleware</a></li><li><a href="module-middlewares_jsonParserMiddleware.html">middlewares/jsonParserMiddleware</a></li><li><a href="module-middlewares_requestLoggerMiddleware.html">middlewares/requestLoggerMiddleware</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_feeUtil.html">utils/feeUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#createUTXO">createUTXO</a></li><li><a href="global.html#findUTXOsByAddress">findUTXOsByAddress</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#markUTXOAsSpent">markUTXOAsSpent</a></li><li><a href="global.html#port">port</a></li><li><a href="global.html#selectUTXOsForTransaction">selectUTXOsForTransaction</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-middlewares_corsSecurityMiddleware.html">middlewares/corsSecurityMiddleware</a></li><li><a href="module-middlewares_errorMiddleware.html">middlewares/errorMiddleware</a></li><li><a href="module-middlewares_httpSecurityMiddleware.html">middlewares/httpSecurityMiddleware</a></li><li><a href="module-middlewares_jsonParserMiddleware.html">middlewares/jsonParserMiddleware</a></li><li><a href="module-middlewares_requestLoggerMiddleware.html">middlewares/requestLoggerMiddleware</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_feeUtil.html">utils/feeUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#createUTXO">createUTXO</a></li><li><a href="global.html#findUTXOsByAddress">findUTXOsByAddress</a></li><li><a href="global.html#generateChildAddress">generateChildAddress</a></li><li><a href="global.html#generateHDSegWitWalletWithSeed">generateHDSegWitWalletWithSeed</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#markUTXOAsSpent">markUTXOAsSpent</a></li><li><a href="global.html#port">port</a></li><li><a href="global.html#selectUTXOsForAward">selectUTXOsForAward</a></li><li><a href="global.html#selectUTXOsForTransaction">selectUTXOsForTransaction</a></li></ul>
 </nav>
 
 <br class="clear">

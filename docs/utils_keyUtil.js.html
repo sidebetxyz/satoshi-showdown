@@ -26,71 +26,71 @@
     
     <section>
         <article>
-            <pre class="prettyprint source linenums"><code>/**
- * @fileoverview Key Utility for Satoshi Showdown.
- * This module provides functionalities related to cryptographic key generation and management,
- * especially for Bitcoin wallets. It utilizes bitcoinjs-lib and tiny-secp256k1 for cryptographic
- * operations and supports the generation of SegWit and Taproot Bitcoin wallet keys.
- *
- * @module utils/keyUtil
- * @requires bitcoinjs-lib - A JavaScript Bitcoin library for node.js and browsers.
- * @requires ecpair - Factory for creating Elliptic Curve pairs for Bitcoin.
- * @requires tiny-secp256k1 - A small elliptic curve library optimized for secp256k1 in JavaScript.
- * @requires utils/encryptionUtil - Utility for encrypting private keys.
- */
-
-const bitcoin = require("bitcoinjs-lib");
-const ecPairFactory = require("ecpair").default;
+            <pre class="prettyprint source linenums"><code>const bitcoin = require("bitcoinjs-lib");
+const { BIP32Factory } = require("bip32");
+const bip39 = require("bip39");
 const ecc = require("tiny-secp256k1");
 const { encryptPrivateKey } = require("./encryptionUtil");
 
-// Initialize ECPair factory with tiny-secp256k1
-const ecPair = ecPairFactory(ecc);
-
-// Define the network for which to generate wallets (testnet or mainnet)
+// Define the network for testnet
 const network = bitcoin.networks.testnet;
 
+// Initialize bip32 with tiny-secp256k1
+const bip32 = BIP32Factory(ecc);
+
 /**
- * Generates a new SegWit Bitcoin wallet (P2WPKH).
- * Creates a random key pair and derives the corresponding SegWit address.
- * The private key is encrypted for security.
+ * Generates a new HD wallet using BIP84 standard including the seed.
+ * Uses BIP39 for mnemonic generation and BIP32 for key derivation.
  *
- * @function generateSegWitBitcoinKeys
- * @return {Object} An object containing the generated SegWit address and the encrypted private key.
+ * @function generateHDSegWitWalletWithSeed
+ * @return {Object} An object containing the master public key, encrypted master private key,
+ *                  encrypted seed, and derivation path.
  */
-const generateSegWitBitcoinKeys = () => {
-  const keyPair = ecPair.makeRandom({ network });
-  const { address } = bitcoin.payments.p2wpkh({
-    pubkey: keyPair.publicKey,
-    network,
-  });
-  const privateKey = keyPair.toWIF();
-  const encryptedPrivateKey = encryptPrivateKey(privateKey);
-  return { address, encryptedPrivateKey };
+const generateHDSegWitWalletWithSeed = () => {
+  const mnemonic = bip39.generateMnemonic();
+  const seed = bip39.mnemonicToSeedSync(mnemonic);
+  const root = bip32.fromSeed(seed, network);
+  const masterPublicKey = root.neutered().toBase58();
+  const encryptedMasterPrivateKey = encryptPrivateKey(root.toBase58());
+  const encryptedSeed = encryptPrivateKey(mnemonic);
+  const derivationPath = "m/84'/1'/0'"; // For reference (P2WSH) BIP84 Testnet Hardened Derivation Path
+
+  return {
+    masterPublicKey,
+    encryptedMasterPrivateKey,
+    encryptedSeed,
+    derivationPath,
+  };
 };
 
 /**
- * Generates a new Taproot Bitcoin wallet (P2TR).
- * Creates a random key pair and derives the corresponding Taproot address.
- * The private key is encrypted for security.
+ * Generate a child address from the master key using a specified derivation path.
+ * This function supports generating P2WPKH addresses.
  *
- * @function generateTaprootBitcoinKeys
- * @return {Object} An object containing the generated Taproot address and the encrypted private key.
+ * @function generateChildAddress
+ * @param {string} masterPublicKey - The master public key of the HD wallet.
+ * @param {number} childIndex - The index of the child key to generate.
+ * @return {Object} An object containing the child address and derivation path.
  */
-const generateTaprootBitcoinKeys = () => {
-  const keyPair = ecPair.makeRandom({ network, compressed: false });
-  const { address } = bitcoin.payments.p2tr({
-    pubkey: keyPair.publicKey,
+const generateChildAddress = (masterPublicKey, childIndex) => {
+  const node = bip32.fromBase58(masterPublicKey, network);
+
+  // Adjust the derivation path to include the child index for non-hardened derivation
+  const derivationPath = `m/84/1/0/0/${childIndex}`; // BIP84 for P2WPKH (SegWit) derivation path for Testnet
+  const child = node.derivePath(derivationPath);
+
+  // Create a P2WPKH address
+  const { address } = bitcoin.payments.p2wpkh({
+    pubkey: child.publicKey,
     network,
   });
-  const privateKey = keyPair.toWIF();
-  const encryptedPrivateKey = encryptPrivateKey(privateKey);
-  return { address, encryptedPrivateKey };
+
+  return { address, path: derivationPath };
 };
 
 module.exports = {
-  generateSegWitBitcoinKeys,
-  generateTaprootBitcoinKeys,
+  generateHDSegWitWalletWithSeed,
+  generateChildAddress,
 };
 </code></pre>
         </article>
@@ -102,7 +102,7 @@ module.exports = {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-middlewares_corsSecurityMiddleware.html">middlewares/corsSecurityMiddleware</a></li><li><a href="module-middlewares_errorMiddleware.html">middlewares/errorMiddleware</a></li><li><a href="module-middlewares_httpSecurityMiddleware.html">middlewares/httpSecurityMiddleware</a></li><li><a href="module-middlewares_jsonParserMiddleware.html">middlewares/jsonParserMiddleware</a></li><li><a href="module-middlewares_requestLoggerMiddleware.html">middlewares/requestLoggerMiddleware</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_feeUtil.html">utils/feeUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#createUTXO">createUTXO</a></li><li><a href="global.html#findUTXOsByAddress">findUTXOsByAddress</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#markUTXOAsSpent">markUTXOAsSpent</a></li><li><a href="global.html#port">port</a></li><li><a href="global.html#selectUTXOsForTransaction">selectUTXOsForTransaction</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-middlewares_corsSecurityMiddleware.html">middlewares/corsSecurityMiddleware</a></li><li><a href="module-middlewares_errorMiddleware.html">middlewares/errorMiddleware</a></li><li><a href="module-middlewares_httpSecurityMiddleware.html">middlewares/httpSecurityMiddleware</a></li><li><a href="module-middlewares_jsonParserMiddleware.html">middlewares/jsonParserMiddleware</a></li><li><a href="module-middlewares_requestLoggerMiddleware.html">middlewares/requestLoggerMiddleware</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_feeUtil.html">utils/feeUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#createUTXO">createUTXO</a></li><li><a href="global.html#findUTXOsByAddress">findUTXOsByAddress</a></li><li><a href="global.html#generateChildAddress">generateChildAddress</a></li><li><a href="global.html#generateHDSegWitWalletWithSeed">generateHDSegWitWalletWithSeed</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#markUTXOAsSpent">markUTXOAsSpent</a></li><li><a href="global.html#port">port</a></li><li><a href="global.html#selectUTXOsForAward">selectUTXOsForAward</a></li><li><a href="global.html#selectUTXOsForTransaction">selectUTXOsForTransaction</a></li></ul>
 </nav>
 
 <br class="clear">

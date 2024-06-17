@@ -41,13 +41,21 @@
 
 const express = require("express");
 const {
+  authorizeUser,
+  authorizeAdmin,
+} = require("../middlewares/jwtAuthorizeMiddleware");
+const {
   handleCreateEvent,
   handleUpdateEvent,
   handleDeleteEvent,
   handleGetEvent,
   handleGetAllEvents,
   handleJoinEvent,
-  handleRefundEventCreator,
+  handleSettleEvent,
+  handleCastVote,
+  handleDetermineOutcome,
+  handleAwardWinner,
+  handleRefundUser,
 } = require("../controllers/eventController");
 
 const router = new express.Router();
@@ -66,7 +74,7 @@ const router = new express.Router();
  * @param {callback} middleware - Express middleware (controller function).
  * @access Public/Private (depending on your application's requirement)
  */
-router.post("/create", handleCreateEvent);
+router.post("/create", authorizeUser, handleCreateEvent);
 
 /**
  * PUT route to update an existing event identified by its ID.
@@ -142,13 +150,13 @@ router.get("/getAll", handleGetAllEvents);
  * @param {callback} middleware - Express middleware (controller function).
  * @access Public/Private (as required)
  */
-router.post("/join", handleJoinEvent);
+router.post("/join", authorizeUser, handleJoinEvent);
 
 /**
- * POST route to process a refund for the creator of an event.
+ * POST route to settle an event.
  * Expects the event ID as a URL parameter.
  *
- * @name post/refund
+ * @name post/settle
  * @function
  * @memberof module:routes/eventRoutes
  * @inner
@@ -156,7 +164,52 @@ router.post("/join", handleJoinEvent);
  * @param {callback} middleware - Express middleware (controller function).
  * @access Public/Private (as required)
  */
-router.post("/refund/:eventId", handleRefundEventCreator);
+router.post("/settle/:eventId", authorizeUser, handleSettleEvent);
+
+/**
+ * POST route to cast a vote for a user.
+ * Expects the user ID and vote data in the request body.
+ *
+ * @name post/vote
+ * @function
+ * @memberof module:routes/eventRoutes
+ * @inner
+ * @param {string} path - Express path.
+ * @param {callback} middleware - Express middleware (controller function).
+ * @access Public/Private (as required)
+ */
+router.post("/vote", authorizeUser, handleCastVote);
+
+/**
+ * POST route to determine the outcome of an event.
+ * This route calls the handleDetermineOutcome controller to process the event outcome determination.
+ * The event ID is expected as a URL parameter.
+ *
+ * @name post/outcome
+ * @function
+ * @memberof module:routes/eventRoutes
+ * @inner
+ * @param {string} path - Express path with event ID as a parameter.
+ * @param {callback} middleware - Express middleware (controller function).
+ * @access Public/Private (depending on your application's requirement)
+ */
+router.post("/outcome/:eventId", authorizeUser, handleDetermineOutcome);
+
+/**
+ * POST route to award the winner of an event.
+ * This route is used to process the prize distribution for the winner of a specified event.
+ *
+ * @name post/awardWinner
+ * @function
+ * @memberof module:routes/eventRoutes
+ * @inner
+ * @param {string} path - Express path with event ID as a parameter.
+ * @param {callback} middleware - Express middleware (controller function).
+ * @access Private (Admins or authorized personnel only)
+ */
+router.post("/award/:eventId", authorizeUser, handleAwardWinner);
+
+router.post("/refund", handleRefundUser);
 
 module.exports = router;
 </code></pre>
@@ -169,7 +222,7 @@ module.exports = router;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-middlewares_corsSecurityMiddleware.html">middlewares/corsSecurityMiddleware</a></li><li><a href="module-middlewares_errorMiddleware.html">middlewares/errorMiddleware</a></li><li><a href="module-middlewares_httpSecurityMiddleware.html">middlewares/httpSecurityMiddleware</a></li><li><a href="module-middlewares_jsonParserMiddleware.html">middlewares/jsonParserMiddleware</a></li><li><a href="module-middlewares_requestLoggerMiddleware.html">middlewares/requestLoggerMiddleware</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_feeUtil.html">utils/feeUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_keyUtil.html">utils/keyUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#createUTXO">createUTXO</a></li><li><a href="global.html#findUTXOsByAddress">findUTXOsByAddress</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#markUTXOAsSpent">markUTXOAsSpent</a></li><li><a href="global.html#port">port</a></li><li><a href="global.html#selectUTXOsForTransaction">selectUTXOsForTransaction</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_eventController.html">controllers/eventController</a></li><li><a href="module-controllers_userController.html">controllers/userController</a></li><li><a href="module-controllers_webhookController.html">controllers/webhookController</a></li><li><a href="module-middlewares_corsSecurityMiddleware.html">middlewares/corsSecurityMiddleware</a></li><li><a href="module-middlewares_errorMiddleware.html">middlewares/errorMiddleware</a></li><li><a href="module-middlewares_httpSecurityMiddleware.html">middlewares/httpSecurityMiddleware</a></li><li><a href="module-middlewares_jsonParserMiddleware.html">middlewares/jsonParserMiddleware</a></li><li><a href="module-middlewares_requestLoggerMiddleware.html">middlewares/requestLoggerMiddleware</a></li><li><a href="module-models_Event.html">models/Event</a></li><li><a href="module-models_User.html">models/User</a></li><li><a href="module-models_Wallet.html">models/Wallet</a></li><li><a href="module-models_Webhook.html">models/Webhook</a></li><li><a href="module-routes_eventRoutes.html">routes/eventRoutes</a></li><li><a href="module-routes_userRoutes.html">routes/userRoutes</a></li><li><a href="module-routes_webhookRoutes.html">routes/webhookRoutes</a></li><li><a href="module-services_eventService.html">services/eventService</a></li><li><a href="module-services_transactionService.html">services/transactionService</a></li><li><a href="module-services_userService.html">services/userService</a></li><li><a href="module-services_walletService.html">services/walletService</a></li><li><a href="module-services_webhookService.html">services/webhookService</a></li><li><a href="module-utils_apiUtil.html">utils/apiUtil</a></li><li><a href="module-utils_databaseUtil.html">utils/databaseUtil</a></li><li><a href="module-utils_encryptionUtil.html">utils/encryptionUtil</a></li><li><a href="module-utils_errorUtil.html">utils/errorUtil</a></li><li><a href="module-utils_feeUtil.html">utils/feeUtil</a></li><li><a href="module-utils_formatUtil.html">utils/formatUtil</a></li><li><a href="module-utils_httpsUtil.html">utils/httpsUtil</a></li><li><a href="module-utils_logUtil.html">utils/logUtil</a></li><li><a href="module-utils_middlewareUtil.html">utils/middlewareUtil</a></li><li><a href="module-utils_routeUtil.html">utils/routeUtil</a></li><li><a href="module-utils_serverUtil.html">utils/serverUtil</a></li><li><a href="module-utils_signalUtil.html">utils/signalUtil</a></li><li><a href="module-utils_validationUtil.html">utils/validationUtil</a></li></ul><h3>Classes</h3><ul><li><a href="module-utils_errorUtil-BaseError.html">BaseError</a></li><li><a href="module-utils_errorUtil-DatabaseError.html">DatabaseError</a></li><li><a href="module-utils_errorUtil-NotFoundError.html">NotFoundError</a></li><li><a href="module-utils_errorUtil-ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#app">app</a></li><li><a href="global.html#createUTXO">createUTXO</a></li><li><a href="global.html#findUTXOsByAddress">findUTXOsByAddress</a></li><li><a href="global.html#generateChildAddress">generateChildAddress</a></li><li><a href="global.html#generateHDSegWitWalletWithSeed">generateHDSegWitWalletWithSeed</a></li><li><a href="global.html#httpsServer">httpsServer</a></li><li><a href="global.html#markUTXOAsSpent">markUTXOAsSpent</a></li><li><a href="global.html#port">port</a></li><li><a href="global.html#selectUTXOsForAward">selectUTXOsForAward</a></li><li><a href="global.html#selectUTXOsForTransaction">selectUTXOsForTransaction</a></li></ul>
 </nav>
 
 <br class="clear">
