@@ -1,5 +1,9 @@
 # Satoshi Showdown Server
 
+## Notice
+
+Refer to [[JSDocs API Documentation]](https://sidebetxyz.github.io/satoshi-showdown/) for detailed API documentation.
+
 ## Overview
 
 Satoshi Showdown is a sophisticated web-based platform dedicated to organizing and running competitive events, leveraging Bitcoin transactions. It combines efficient event management with secure transaction handling, targeting gaming enthusiasts and event organizers interested in cryptocurrency-based solutions.
@@ -57,7 +61,7 @@ Located in the `server` directory, this application handles critical functionali
 
 ### Installation
 
-1. Clone the repository: `git clone [repository-url]`
+1. Clone the repository: `git clone git@github.com:sidebetxyz/satoshi-showdown.git`
 2. Navigate to the project directory: `cd satoshi-showdown-server`
 3. Install dependencies: `npm install`
 4. Set up environment variables in `.env` file
@@ -70,7 +74,7 @@ Located in the `server` directory, this application handles critical functionali
 
 ## API Documentation
 
-Refer to `[link-to-api-documentation]` for detailed API documentation.
+Refer to [[JSDocs API Documentation]](https://sidebetxyz.github.io/satoshi-showdown/) for detailed API documentation.
 
 ## Development
 
